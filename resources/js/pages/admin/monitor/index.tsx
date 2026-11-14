@@ -110,7 +110,7 @@ export default function SystemMonitor({ monitor }: Props) {
             <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
                             <Activity className="size-5" />
                         </span>
                         <div>
@@ -205,7 +205,7 @@ export default function SystemMonitor({ monitor }: Props) {
                             </p>
                             <Link
                                 href="/admin/failed-jobs"
-                                className="text-xs font-medium text-[#c8102e] hover:underline"
+                                className="text-xs font-medium text-brand hover:underline"
                             >
                                 Open Failed Jobs
                             </Link>

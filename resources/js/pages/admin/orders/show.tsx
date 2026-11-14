@@ -626,7 +626,7 @@ export default function OrderShow({
                                                     'admin.customers.show',
                                                     order.user.id,
                                                 )}
-                                                className="text-xs text-[#c8102e] hover:underline"
+                                                className="text-xs text-brand hover:underline"
                                             >
                                                 View customer →
                                             </Link>
@@ -826,7 +826,7 @@ export default function OrderShow({
                                                             disabled={
                                                                 addressProcessing
                                                             }
-                                                            className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                                            className="flex-1 bg-brand text-brand-foreground hover:bg-brand-hover"
                                                         >
                                                             {addressProcessing
                                                                 ? 'Saving…'
@@ -938,7 +938,7 @@ export default function OrderShow({
                                                 <span className="absolute top-3.5 bottom-0 left-[3px] w-px bg-slate-200" />
                                             )}
                                             <div
-                                                className={`relative mt-1 size-2 shrink-0 rounded-full ${index === order.status_histories.length - 1 ? 'bg-[#c8102e] ring-4 ring-red-50' : 'bg-slate-300'}`}
+                                                className={`relative mt-1 size-2 shrink-0 rounded-full ${index === order.status_histories.length - 1 ? 'bg-brand ring-4 ring-red-50' : 'bg-slate-300'}`}
                                             />
                                             <div>
                                                 <p className="text-xs font-medium text-slate-700">
@@ -1382,7 +1382,7 @@ export default function OrderShow({
                                             to collect.
                                         </p>
                                         <Select
-                                            selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                             value={courierProvider}
                                             onChange={(e) =>
                                                 setCourierProvider(
@@ -1400,7 +1400,7 @@ export default function OrderShow({
                                             </option>
                                         </Select>
                                         <Button
-                                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            className="w-full bg-brand text-brand-foreground hover:bg-brand-hover"
                                             disabled={
                                                 courierSending ||
                                                 [

@@ -435,7 +435,7 @@ export default function ProductCreate({
                                     <textarea
                                         maxLength={300}
                                         rows={2}
-                                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 focus:outline-none ${errors.short_description ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 focus:outline-none ${errors.short_description ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`}
                                         value={data.short_description}
                                         onChange={(e) =>
                                             setData(
@@ -693,7 +693,7 @@ export default function ProductCreate({
                                     <textarea
                                         maxLength={160}
                                         rows={2}
-                                        className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none`}
+                                        className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none`}
                                         value={data.meta_description}
                                         onChange={(e) =>
                                             setData(
@@ -862,7 +862,7 @@ export default function ProductCreate({
 
                                 <Field label="Brand" error={errors.brand_id}>
                                     <Select
-                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                         value={data.brand_id}
                                         onChange={(e) =>
                                             setData('brand_id', e.target.value)
@@ -896,7 +896,7 @@ export default function ProductCreate({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Active (visible in store)
                                 </label>
@@ -910,7 +910,7 @@ export default function ProductCreate({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Featured
                                 </label>
@@ -934,7 +934,7 @@ export default function ProductCreate({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Crying baby on Add to Cart
                                 </label>
@@ -955,7 +955,7 @@ export default function ProductCreate({
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="min-w-40 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="min-w-40 bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Saving…' : 'Create Product'}
                         </Button>

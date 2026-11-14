@@ -91,7 +91,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                         href={route('admin.landing-pages.create')}
                         className="w-full sm:w-auto"
                     >
-                        <Button className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto">
+                        <Button className="w-full bg-brand text-brand-foreground hover:bg-brand-hover sm:w-auto">
                             <Plus className="size-4" /> New Landing Page
                         </Button>
                     </Link>

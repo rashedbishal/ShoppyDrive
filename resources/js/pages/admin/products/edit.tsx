@@ -500,7 +500,7 @@ export default function ProductEdit({
                                     <textarea
                                         maxLength={300}
                                         rows={2}
-                                        className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none`}
+                                        className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none`}
                                         value={data.short_description}
                                         onChange={(e) =>
                                             setData(
@@ -758,7 +758,7 @@ export default function ProductEdit({
                                     <textarea
                                         maxLength={160}
                                         rows={2}
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                         value={data.meta_description}
                                         onChange={(e) =>
                                             setData(
@@ -879,7 +879,7 @@ export default function ProductEdit({
                                     error={errors.category_id}
                                 >
                                     <Select
-                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                         value={data.category_id}
                                         onChange={(e) => {
                                             setData((prev) => ({
@@ -905,7 +905,7 @@ export default function ProductEdit({
                                     error={errors.sub_category_id}
                                 >
                                     <Select
-                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-brand'}`}
                                         value={data.sub_category_id}
                                         onChange={(e) =>
                                             setData(
@@ -937,7 +937,7 @@ export default function ProductEdit({
 
                                 <Field label="Brand" error={errors.brand_id}>
                                     <Select
-                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                         value={data.brand_id}
                                         onChange={(e) =>
                                             setData('brand_id', e.target.value)
@@ -971,7 +971,7 @@ export default function ProductEdit({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Active (visible in store)
                                 </label>
@@ -985,7 +985,7 @@ export default function ProductEdit({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Featured
                                 </label>
@@ -1009,7 +1009,7 @@ export default function ProductEdit({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Free Delivery
                                 </label>
@@ -1068,7 +1068,7 @@ export default function ProductEdit({
                                                 e.target.checked,
                                             )
                                         }
-                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                        className="size-4 rounded border-slate-300 accent-brand"
                                     />
                                     Crying baby on Add to Cart
                                 </label>
@@ -1089,7 +1089,7 @@ export default function ProductEdit({
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="min-w-40 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="min-w-40 bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
                         </Button>

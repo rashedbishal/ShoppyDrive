@@ -689,6 +689,8 @@ export interface SharedPageProps {
     appName: string;
     auth: Auth;
     cart: Cart | null;
+    /** Admin › Settings › Brand Colour override (inline CSS), or null for the default colour. */
+    brandCss?: string | null;
     active_bundle_recipes: BundleRecipe[];
     flash: {
         success?: string | null;

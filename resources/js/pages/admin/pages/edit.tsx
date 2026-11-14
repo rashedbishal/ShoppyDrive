@@ -18,7 +18,7 @@ type EditablePage = {
 type Props = { page: EditablePage; publicUrl: string };
 
 const inputClass = (err?: string) =>
-    `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
+    `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`;
 
 function Field({
     label,
@@ -88,7 +88,7 @@ export default function PageEdit({ page, publicUrl }: Props) {
                                 href={publicUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-normal text-[#c8102e] hover:underline"
+                                className="font-normal text-brand hover:underline"
                             >
                                 /{page.slug}
                             </a>
@@ -155,7 +155,7 @@ export default function PageEdit({ page, publicUrl }: Props) {
                             <textarea
                                 maxLength={160}
                                 rows={2}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                 value={data.meta_description}
                                 onChange={(e) =>
                                     setData('meta_description', e.target.value)
@@ -175,7 +175,7 @@ export default function PageEdit({ page, publicUrl }: Props) {
                                 onChange={(e) =>
                                     setData('is_published', e.target.checked)
                                 }
-                                className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                className="size-4 rounded border-slate-300 accent-brand"
                             />
                             Published (visible on the storefront; hidden pages
                             show "not found")
@@ -185,7 +185,7 @@ export default function PageEdit({ page, publicUrl }: Props) {
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                             >
                                 {processing ? 'Saving…' : 'Save Changes'}
                             </Button>

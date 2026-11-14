@@ -138,6 +138,14 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.settings.security.customer-erasure.confirm',
     'admin.settings.security.customer-erasure.destroy',
 
+    // Brand Colour (owner decisions 2026-11-14): changes the whole site's
+    // colour, so mother admin only, enforced by `admin.mother` on the route
+    // group (verified by BrandColorTest); deliberately not a grantable
+    // AdminSections entry.
+    'admin.settings.brand-color.edit',
+    'admin.settings.brand-color.update',
+    'admin.settings.brand-color.destroy',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',

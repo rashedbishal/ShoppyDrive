@@ -38,7 +38,7 @@ type Props = {
 };
 
 const inputClass =
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none';
+    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none';
 
 function ReportTable({ report }: { report: RestoreReport }) {
     const totals = report.tables.reduce(

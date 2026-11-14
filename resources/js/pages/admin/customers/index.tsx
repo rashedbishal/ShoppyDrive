@@ -97,7 +97,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                     onKeyDown={(e) =>
                                         e.key === 'Enter' && applyFilters()
                                     }
-                                    className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                    className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                                 />
                             </div>
                             <button
@@ -190,7 +190,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             );
                                         }
                                     }}
-                                    className="admin-row-card flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8102e] sm:flex-nowrap sm:gap-4"
+                                    className="admin-row-card flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand sm:flex-nowrap sm:gap-4"
                                 >
                                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
                                         {customer.name

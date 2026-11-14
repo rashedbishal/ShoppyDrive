@@ -78,7 +78,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
+                            className="w-full bg-brand text-brand-foreground hover:bg-brand-hover sm:w-auto"
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
                         </Button>
@@ -323,7 +323,7 @@ export default function ContactPageConfig({ settings }: Props) {
                     <Button
                         type="submit"
                         disabled={processing}
-                        className="bg-[#c8102e] px-8 text-white hover:bg-[#a50d25]"
+                        className="bg-brand px-8 text-brand-foreground hover:bg-brand-hover"
                     >
                         {processing ? 'Saving…' : 'Save Changes'}
                     </Button>

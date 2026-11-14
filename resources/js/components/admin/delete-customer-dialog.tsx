@@ -88,7 +88,7 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
                             setData('mother_password', e.target.value)
                         }
                         onKeyDown={(e) => e.key === 'Enter' && submit()}
-                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:outline-none"
+                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-brand focus:outline-none"
                         placeholder="Required to confirm this action"
                     />
                     {errors.mother_password && (

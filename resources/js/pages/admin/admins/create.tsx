@@ -35,7 +35,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
         });
 
     const inputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -218,7 +218,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Creating…' : 'Create Admin'}
                         </Button>

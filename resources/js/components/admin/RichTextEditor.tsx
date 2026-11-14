@@ -131,7 +131,7 @@ function InsertImageDialog({
                                 }
                             }}
                             placeholder="https://example.com/image.jpg"
-                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"
                         />
                     </div>
                 </div>
@@ -150,7 +150,7 @@ function InsertImageDialog({
                         disabled={
                             processing || (!data.image && !urlInput.trim())
                         }
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                         {processing ? 'Uploading…' : 'Insert Image'}
                     </Button>
@@ -298,7 +298,7 @@ export function RichTextEditor({
 
     return (
         <>
-            <div className="overflow-hidden rounded-lg border border-slate-200 focus-within:border-[#c8102e] focus-within:ring-1 focus-within:ring-[#c8102e]">
+            <div className="overflow-hidden rounded-lg border border-slate-200 focus-within:border-brand focus-within:ring-1 focus-within:ring-brand">
                 {/* Toolbar */}
                 <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-100 bg-slate-50 p-1.5">
                     {/* Formatting */}
@@ -468,7 +468,7 @@ export function RichTextEditor({
                         minHeight,
                         maxHeight: Math.max(minHeight, maxHeight),
                     }}
-                    className="overflow-y-auto p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-600 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                    className="overflow-y-auto p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-brand [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-600 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
                 />
                 {maxTextLength !== undefined ? (
                     <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">

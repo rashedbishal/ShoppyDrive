@@ -59,7 +59,7 @@ function BrandCard({
             className={cn(
                 'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.25)]',
                 selected
-                    ? 'border-[#c8102e] ring-2 ring-[#c8102e]/20'
+                    ? 'border-brand ring-2 ring-brand/20'
                     : 'border-slate-200 hover:border-slate-300',
             )}
         >
@@ -97,7 +97,7 @@ function BrandCard({
                         className="max-h-14 max-w-[70%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#c8102e] to-[#8f0b20] text-sm font-bold tracking-wide text-white shadow-md shadow-[#c8102e]/25 transition-transform duration-300 group-hover:scale-105">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-[#8f0b20] text-sm font-bold tracking-wide text-white shadow-md shadow-brand/25 transition-transform duration-300 group-hover:scale-105">
                         {brand.name.slice(0, 2).toUpperCase()}
                     </div>
                 )}
@@ -217,7 +217,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
             <div className="space-y-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
                             <Tag className="size-5" />
                         </span>
                         <div>
@@ -232,7 +232,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
                     <Button
                         asChild
                         size="sm"
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                         <Link href={route('admin.brands.create')}>
                             <Plus className="mr-1.5 size-4" /> Add Brand
@@ -253,7 +253,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applyFilters({})
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <Select

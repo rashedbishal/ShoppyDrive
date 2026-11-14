@@ -37,7 +37,7 @@ const pillClass = (active: boolean, disabled = false) =>
     cn(
         'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
         active
-            ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+            ? 'border-brand bg-brand/10 text-brand'
             : 'border-slate-200 text-slate-600 hover:border-slate-300',
         disabled && 'cursor-not-allowed opacity-40 hover:border-slate-200',
     );
@@ -196,7 +196,7 @@ export function CouponTargetsCard({
                                 onChange={() =>
                                     onChange({ applies_to: option })
                                 }
-                                className="size-4 accent-[#c8102e]"
+                                className="size-4 accent-brand"
                             />
                             {label}
                         </label>
@@ -313,7 +313,7 @@ export function CouponTargetsCard({
                                             setQuery(e.target.value);
                                             setPendingVariantFor(null);
                                         }}
-                                        className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                     />
                                     {(results.length > 0 ||
                                         pendingVariantFor) && (

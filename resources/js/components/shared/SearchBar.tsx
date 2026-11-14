@@ -263,7 +263,7 @@ export function SearchBar({
                 onSubmit={handleSubmit}
                 className={`flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 transition-all duration-200 ${
                     isFocused
-                        ? 'border-[#c8102e] bg-white shadow-[0_0_0_3px_rgba(200,16,46,0.08)]'
+                        ? 'border-brand bg-white shadow-[0_0_0_3px_rgb(var(--brand-rgb)/0.08)]'
                         : 'border-gray-200 bg-gray-50'
                 }`}
             >
@@ -303,7 +303,7 @@ export function SearchBar({
                 )}
                 <button
                     type="submit"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#c8102e] text-white transition hover:bg-[#a50d25]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground transition hover:bg-brand-hover"
                     aria-label="Search"
                 >
                     <SearchIcon className="size-3.5" />
@@ -419,7 +419,7 @@ export function SearchBar({
                                                                     }
                                                                 </p>
                                                                 <div className="mt-0.5 flex items-center gap-1.5">
-                                                                    <span className="text-sm font-bold text-[#c8102e]">
+                                                                    <span className="text-sm font-bold text-brand">
                                                                         {formatCurrency(
                                                                             currentPrice,
                                                                         )}
@@ -585,8 +585,8 @@ export function SearchBar({
                                         }
                                         className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
                                             activeIndex === seeAllIndex
-                                                ? 'bg-red-50 text-[#c8102e]'
-                                                : 'text-[#c8102e] hover:bg-red-50'
+                                                ? 'bg-red-50 text-brand'
+                                                : 'text-brand hover:bg-red-50'
                                         }`}
                                     >
                                         <span>
@@ -611,7 +611,7 @@ export function SearchBar({
                                     </p>
                                     <button
                                         onClick={() => navigateToQuery(query)}
-                                        className="mt-3 text-sm font-semibold text-[#c8102e] hover:underline"
+                                        className="mt-3 text-sm font-semibold text-brand hover:underline"
                                     >
                                         Search anyway →
                                     </button>
@@ -635,7 +635,7 @@ export function SearchBar({
                                                 setQuery(term);
                                                 navigateToQuery(term);
                                             }}
-                                            className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#c8102e]/30 hover:bg-red-50 hover:text-[#c8102e]"
+                                            className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-brand/30 hover:bg-red-50 hover:text-brand"
                                         >
                                             {term}
                                         </button>

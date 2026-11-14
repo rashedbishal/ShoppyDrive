@@ -277,7 +277,7 @@ export default function ReceivedSmsIndex({
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applyFilters({})
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <Select
@@ -400,7 +400,7 @@ export default function ReceivedSmsIndex({
                                                         'admin.orders.show',
                                                         item.matched_order.id,
                                                     )}
-                                                    className="inline-flex items-center text-xs font-semibold text-[#c8102e] hover:underline"
+                                                    className="inline-flex items-center text-xs font-semibold text-brand hover:underline"
                                                 >
                                                     Order:{' '}
                                                     {

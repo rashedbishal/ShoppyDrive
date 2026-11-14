@@ -165,7 +165,7 @@ export default function AboutPageConfig({ settings }: Props) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
                         </Button>
@@ -669,7 +669,7 @@ export default function AboutPageConfig({ settings }: Props) {
                     <Button
                         type="submit"
                         disabled={processing}
-                        className="bg-[#c8102e] px-8 text-white hover:bg-[#a50d25]"
+                        className="bg-brand px-8 text-brand-foreground hover:bg-brand-hover"
                     >
                         {processing ? 'Saving…' : 'Save Changes'}
                     </Button>

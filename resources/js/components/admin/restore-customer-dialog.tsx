@@ -78,7 +78,7 @@ export function RestoreCustomerDialog({ customer, onOpenChange }: Props) {
                             setData('mother_password', e.target.value)
                         }
                         onKeyDown={(e) => e.key === 'Enter' && submit()}
-                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:outline-none"
+                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-brand focus:outline-none"
                         placeholder="Required to confirm this action"
                     />
                     {errors.mother_password && (
@@ -100,7 +100,7 @@ export function RestoreCustomerDialog({ customer, onOpenChange }: Props) {
                         type="button"
                         disabled={processing || !data.mother_password}
                         onClick={submit}
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                         {processing ? 'Restoring…' : 'Restore Customer'}
                     </Button>

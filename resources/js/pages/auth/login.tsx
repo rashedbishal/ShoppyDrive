@@ -55,7 +55,7 @@ export default function Login(): React.JSX.Element {
             <Head title="Sign In — ShoppyDrive" />
 
             {/* ── Left brand panel ── */}
-            <div className="relative hidden w-[46%] overflow-hidden bg-[#c8102e] lg:flex lg:flex-col lg:justify-between">
+            <div className="relative hidden w-[46%] overflow-hidden bg-brand lg:flex lg:flex-col lg:justify-between">
                 {/* Subtle pattern */}
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -83,16 +83,18 @@ export default function Login(): React.JSX.Element {
                 {/* Content */}
                 <div className="relative z-10 space-y-8 p-10 pb-16">
                     <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-brand-foreground">
                             <Zap className="size-3.5" />
                             Bangladesh's #1 Shopping Destination
                         </div>
-                        <h2 className="text-4xl leading-tight font-bold text-white">
+                        <h2 className="text-4xl leading-tight font-bold text-brand-foreground">
                             Shop smarter.
                             <br />
-                            <span className="text-white/70">Save bigger.</span>
+                            <span className="text-brand-foreground/70">
+                                Save bigger.
+                            </span>
                         </h2>
-                        <p className="max-w-sm text-sm leading-7 text-white/70">
+                        <p className="max-w-sm text-sm leading-7 text-brand-foreground/70">
                             Join thousands of happy shoppers enjoying exclusive
                             deals, lightning-fast delivery, and a seamless
                             experience.
@@ -105,8 +107,8 @@ export default function Login(): React.JSX.Element {
                                 key={text}
                                 className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-4 py-3"
                             >
-                                <Icon className="size-4 shrink-0 text-white" />
-                                <span className="text-[13px] text-white/80">
+                                <Icon className="size-4 shrink-0 text-brand-foreground" />
+                                <span className="text-[13px] text-brand-foreground/80">
                                     {text}
                                 </span>
                             </div>
@@ -123,11 +125,11 @@ export default function Login(): React.JSX.Element {
                                 />
                             ))}
                         </div>
-                        <p className="mt-2 text-sm text-white/75 italic">
+                        <p className="mt-2 text-sm text-brand-foreground/75 italic">
                             "Best shopping experience in Bangladesh. Fast
                             delivery and great support!"
                         </p>
-                        <p className="mt-2 text-xs font-semibold text-white/50">
+                        <p className="mt-2 text-xs font-semibold text-brand-foreground/50">
                             — Rafi A., Dhaka
                         </p>
                     </div>
@@ -240,7 +242,7 @@ export default function Login(): React.JSX.Element {
                                             setData('email', e.target.value)
                                         }
                                         placeholder="you@example.com"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-4 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-4 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                 </div>
@@ -257,7 +259,7 @@ export default function Login(): React.JSX.Element {
                                     </label>
                                     <Link
                                         href={route('password.request')}
-                                        className="text-xs font-medium text-[#c8102e] hover:underline"
+                                        className="text-xs font-medium text-brand hover:underline"
                                     >
                                         Forgot password?
                                     </Link>
@@ -276,7 +278,7 @@ export default function Login(): React.JSX.Element {
                                             setData('password', e.target.value)
                                         }
                                         placeholder="••••••••"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-12 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-12 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                     <button
@@ -303,7 +305,7 @@ export default function Login(): React.JSX.Element {
                                     onChange={(e) =>
                                         setData('remember', e.target.checked)
                                     }
-                                    className="size-4 rounded border-gray-300 accent-[#c8102e]"
+                                    className="size-4 rounded border-gray-300 accent-brand"
                                 />
                                 <span className="text-sm text-gray-600">
                                     Remember me for 30 days
@@ -313,7 +315,7 @@ export default function Login(): React.JSX.Element {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {processing ? (
                                     <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -331,7 +333,7 @@ export default function Login(): React.JSX.Element {
                         New to ShoppyDrive?{' '}
                         <Link
                             href={route('register')}
-                            className="font-semibold text-[#c8102e] hover:underline"
+                            className="font-semibold text-brand hover:underline"
                         >
                             Create a free account
                         </Link>

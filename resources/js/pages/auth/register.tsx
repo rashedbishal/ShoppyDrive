@@ -62,7 +62,7 @@ export default function Register({
             <Head title="Create Account — ShoppyDrive" />
 
             {/* ── Left brand panel ── */}
-            <div className="relative hidden w-[42%] overflow-hidden bg-[#c8102e] lg:flex lg:flex-col lg:justify-between">
+            <div className="relative hidden w-[42%] overflow-hidden bg-brand lg:flex lg:flex-col lg:justify-between">
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.06]"
                     style={{
@@ -88,14 +88,14 @@ export default function Register({
                 {/* Content */}
                 <div className="relative z-10 space-y-5 p-7 pb-8 xl:space-y-8 xl:p-10 xl:pb-12">
                     <div className="space-y-2 xl:space-y-3">
-                        <h2 className="text-2xl leading-tight font-bold text-white xl:text-3xl">
+                        <h2 className="text-2xl leading-tight font-bold text-brand-foreground xl:text-3xl">
                             Join millions of
                             <br />
-                            <span className="text-white/70">
+                            <span className="text-brand-foreground/70">
                                 happy shoppers
                             </span>
                         </h2>
-                        <p className="text-sm leading-6 text-white/70 xl:leading-7">
+                        <p className="text-sm leading-6 text-brand-foreground/70 xl:leading-7">
                             Create your free account and start enjoying
                             exclusive deals, fast delivery, and premium
                             products.
@@ -121,14 +121,14 @@ export default function Register({
                             },
                         ].map(({ n, title, desc }) => (
                             <div key={n} className="flex items-start gap-4">
-                                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/20 text-sm font-bold text-white">
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/20 text-sm font-bold text-brand-foreground">
                                     {n}
                                 </span>
                                 <div>
-                                    <p className="text-sm font-semibold text-white">
+                                    <p className="text-sm font-semibold text-brand-foreground">
                                         {title}
                                     </p>
-                                    <p className="text-xs text-white/60">
+                                    <p className="text-xs text-brand-foreground/60">
                                         {desc}
                                     </p>
                                 </div>
@@ -137,8 +137,8 @@ export default function Register({
                     </div>
 
                     <div className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-                        <ShieldCheck className="size-4 text-white" />
-                        <span className="text-xs font-medium text-white/90">
+                        <ShieldCheck className="size-4 text-brand-foreground" />
+                        <span className="text-xs font-medium text-brand-foreground/90">
                             100% secure with SSL encryption
                         </span>
                     </div>
@@ -167,11 +167,11 @@ export default function Register({
                         {settings.referral_enabled &&
                             referralCode &&
                             referralCodeValid && (
-                                <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#c8102e]/20 bg-[#c8102e]/5 p-3">
-                                    <Gift className="mt-0.5 size-4 shrink-0 text-[#c8102e]" />
+                                <div className="mb-3 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 p-3">
+                                    <Gift className="mt-0.5 size-4 shrink-0 text-brand" />
                                     <p className="text-xs text-gray-700">
                                         You were referred! You&apos;ll get{' '}
-                                        <span className="font-semibold text-[#c8102e]">
+                                        <span className="font-semibold text-brand">
                                             {settings.referral_discount_type ===
                                             'fixed'
                                                 ? `${settings.currency_symbol}${settings.referral_discount_value}`
@@ -289,7 +289,7 @@ export default function Register({
                                             setData('name', e.target.value)
                                         }
                                         placeholder="Your full name"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                 </div>
@@ -316,7 +316,7 @@ export default function Register({
                                             setData('email', e.target.value)
                                         }
                                         placeholder="you@example.com"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                 </div>
@@ -346,7 +346,7 @@ export default function Register({
                                             setData('phone', e.target.value)
                                         }
                                         placeholder="+880 1XXX"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                     />
                                 </div>
                             </div>
@@ -376,7 +376,7 @@ export default function Register({
                                                 )
                                             }
                                             placeholder="e.g. AB12CD34EF56"
-                                            className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                            className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         />
                                     </div>
                                     <InputError
@@ -407,7 +407,7 @@ export default function Register({
                                             setData('password', e.target.value)
                                         }
                                         placeholder="Create a password"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-10 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-10 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                     <button
@@ -453,7 +453,7 @@ export default function Register({
                                             )
                                         }
                                         placeholder="Repeat password"
-                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-10 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-10 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                         required
                                     />
                                     <button
@@ -481,7 +481,7 @@ export default function Register({
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="col-span-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="col-span-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {processing ? (
                                     <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -499,7 +499,7 @@ export default function Register({
                         Already have an account?{' '}
                         <Link
                             href={route('login')}
-                            className="font-semibold text-[#c8102e] hover:underline"
+                            className="font-semibold text-brand hover:underline"
                         >
                             Sign in
                         </Link>

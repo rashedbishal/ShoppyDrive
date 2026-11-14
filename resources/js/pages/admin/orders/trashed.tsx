@@ -115,7 +115,7 @@ export default function TrashedOrders({
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applySearch()
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <ClearFiltersButton

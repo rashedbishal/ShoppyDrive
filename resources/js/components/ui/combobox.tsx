@@ -93,7 +93,7 @@ export function ComboboxField<T extends ComboboxItem>({
                                 'h-11 w-full rounded-lg border bg-white pr-9 pl-3 text-sm focus:outline-none focus:ring-1',
                                 error
                                     ? 'border-red-400 focus:ring-red-400'
-                                    : 'border-slate-200 focus:ring-[#c8102e]',
+                                    : 'border-slate-200 focus:ring-brand',
                                 inputClassName,
                             )}
                         />
@@ -137,7 +137,7 @@ export function ComboboxField<T extends ComboboxItem>({
                                     value={option.value}
                                     className={
                                         optionClassName ??
-                                        'group relative flex cursor-pointer items-center gap-2 rounded-lg py-2 pr-3 pl-3 text-sm text-slate-700 select-none data-focus:bg-red-50 data-focus:text-[#c8102e] data-selected:font-semibold'
+                                        'group relative flex cursor-pointer items-center gap-2 rounded-lg py-2 pr-3 pl-3 text-sm text-slate-700 select-none data-focus:bg-red-50 data-focus:text-brand data-selected:font-semibold'
                                     }
                                 >
                                     {renderOption ? (

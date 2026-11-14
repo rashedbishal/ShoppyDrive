@@ -25,8 +25,8 @@ export default function AdminLogin(): React.JSX.Element {
 
             {/* Left decorative panel */}
             <div className="relative hidden w-[44%] overflow-hidden bg-gradient-to-br from-gray-900 via-gray-950 to-black lg:flex lg:flex-col lg:justify-between">
-                <div className="pointer-events-none absolute top-20 -left-10 h-72 w-72 rounded-full bg-[#c8102e] opacity-[0.07] blur-3xl" />
-                <div className="pointer-events-none absolute right-0 bottom-20 h-56 w-56 rounded-full bg-[#c8102e] opacity-[0.05] blur-3xl" />
+                <div className="pointer-events-none absolute top-20 -left-10 h-72 w-72 rounded-full bg-brand opacity-[0.07] blur-3xl" />
+                <div className="pointer-events-none absolute right-0 bottom-20 h-56 w-56 rounded-full bg-brand opacity-[0.05] blur-3xl" />
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.04]"
                     style={{
@@ -49,7 +49,7 @@ export default function AdminLogin(): React.JSX.Element {
 
                 <div className="relative z-10 space-y-6 p-10 pb-16">
                     <div className="space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[#c8102e]/20 bg-[#c8102e]/10 px-3 py-1.5 text-xs font-semibold text-[#c8102e]">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand">
                             <ShieldCheck className="size-3.5" />
                             Restricted Access
                         </div>
@@ -69,8 +69,8 @@ export default function AdminLogin(): React.JSX.Element {
                         'Configure store settings',
                     ].map((item) => (
                         <div key={item} className="flex items-center gap-3">
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/15">
-                                <span className="size-1.5 rounded-full bg-[#c8102e]" />
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand/15">
+                                <span className="size-1.5 rounded-full bg-brand" />
                             </span>
                             <span className="text-sm text-gray-400">
                                 {item}
@@ -122,7 +122,7 @@ export default function AdminLogin(): React.JSX.Element {
                                             setData('email', e.target.value)
                                         }
                                         placeholder="admin@example.com"
-                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-4 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-4 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"
                                         required
                                     />
                                 </div>
@@ -149,7 +149,7 @@ export default function AdminLogin(): React.JSX.Element {
                                             setData('password', e.target.value)
                                         }
                                         placeholder="••••••••"
-                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-12 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-12 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"
                                         required
                                     />
                                     <button
@@ -176,7 +176,7 @@ export default function AdminLogin(): React.JSX.Element {
                                     onChange={(e) =>
                                         setData('remember', e.target.checked)
                                     }
-                                    className="size-4 rounded border-gray-700 accent-[#c8102e]"
+                                    className="size-4 rounded border-gray-700 accent-brand"
                                 />
                                 <span className="text-sm text-gray-400">
                                     Keep me signed in
@@ -186,7 +186,7 @@ export default function AdminLogin(): React.JSX.Element {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60"
+                                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:opacity-60"
                             >
                                 {processing ? (
                                     <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

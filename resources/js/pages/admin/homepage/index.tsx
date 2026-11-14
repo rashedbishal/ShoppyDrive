@@ -275,8 +275,7 @@ export default function HomepageIndex({ sections }: Props) {
 
                 <Card
                     className={cn(
-                        isReordering &&
-                            'ring-2 ring-[#c8102e]/20 ring-offset-2',
+                        isReordering && 'ring-2 ring-brand/20 ring-offset-2',
                     )}
                 >
                     <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
@@ -312,7 +311,7 @@ export default function HomepageIndex({ sections }: Props) {
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
+                                                className="w-full bg-brand text-brand-foreground hover:bg-brand-hover sm:w-auto"
                                                 onClick={confirmReordering}
                                                 disabled={savingOrder}
                                             >
@@ -381,7 +380,7 @@ export default function HomepageIndex({ sections }: Props) {
                                         touchReorder.touchOverIndex === index &&
                                             touchReorder.touchDraggingIndex !==
                                                 index &&
-                                            'ring-2 ring-[#c8102e]/40 ring-inset',
+                                            'ring-2 ring-brand/40 ring-inset',
                                     )}
                                 >
                                     <div

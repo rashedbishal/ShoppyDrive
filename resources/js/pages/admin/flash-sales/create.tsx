@@ -83,7 +83,7 @@ export default function FlashSaleCreate() {
     };
 
     const inputClass = (err?: string) =>
-        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
+        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`;
 
     return (
         <>
@@ -208,7 +208,7 @@ export default function FlashSaleCreate() {
                                                     e.target.checked,
                                                 )
                                             }
-                                            className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                            className="size-4 rounded border-slate-300 accent-brand"
                                         />
                                         Active
                                     </label>
@@ -221,7 +221,7 @@ export default function FlashSaleCreate() {
                         <Button
                             type="submit"
                             disabled={processing || !isFormValid}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Saving…' : 'Create Flash Sale'}
                         </Button>

@@ -92,9 +92,10 @@ export const SHADOWS = {
 
 export const DESIGN_TOKENS = {
     colors: {
-        primary: '#C8102E',
-        primaryHover: '#A50D25',
-        primaryLight: '#FFF0F2',
+        // Admin › Settings › Brand Colour (CSS variables; see app.css).
+        primary: 'var(--brand)',
+        primaryHover: 'var(--brand-hover)',
+        primaryLight: 'var(--brand-light)',
         secondary: '#1A1A2E',
         accent: '#F5A623',
         accentLight: '#FFF8EC',

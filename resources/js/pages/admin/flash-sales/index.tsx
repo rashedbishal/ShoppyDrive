@@ -124,7 +124,7 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
                     <Button
                         asChild
                         size="sm"
-                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
+                        className="w-full bg-brand text-brand-foreground hover:bg-brand-hover sm:w-auto"
                     >
                         <Link href={route('admin.flash-sales.create')}>
                             <Plus className="mr-1.5 size-4" /> Add Flash Sale
@@ -145,7 +145,7 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applySearch()
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <ClearFiltersButton

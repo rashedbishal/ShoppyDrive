@@ -22,7 +22,7 @@ const ABILITY_LABELS: Record<string, string> = {
 };
 
 const checkboxClass =
-    'size-4 rounded border-slate-300 accent-[#c8102e] disabled:cursor-not-allowed disabled:opacity-40';
+    'size-4 rounded border-slate-300 accent-brand disabled:cursor-not-allowed disabled:opacity-40';
 
 /**
  * The permission matrix on Admin > Admins > create/edit. Checking a

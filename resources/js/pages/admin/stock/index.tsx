@@ -435,7 +435,7 @@ function AdjustDialogBody({
                                 className={
                                     isAdd
                                         ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                        : 'bg-[#c8102e] text-white hover:bg-[#a50d25]'
+                                        : 'bg-brand text-brand-foreground hover:bg-brand-hover'
                                 }
                             >
                                 {form.processing
@@ -562,7 +562,7 @@ export default function StockIndex({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                            <Boxes className="size-5 text-[#c8102e]" /> Stock
+                            <Boxes className="size-5 text-brand" /> Stock
                             Management
                         </h1>
                         <p className="text-sm text-slate-600">
@@ -602,7 +602,7 @@ export default function StockIndex({
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applyFilters({})
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <Select
@@ -695,7 +695,7 @@ export default function StockIndex({
                                                                     'admin.products.edit',
                                                                     row.productId,
                                                                 )}
-                                                                className="block truncate font-semibold text-slate-800 hover:text-[#c8102e]"
+                                                                className="block truncate font-semibold text-slate-800 hover:text-brand"
                                                             >
                                                                 {row.name}
                                                             </Link>

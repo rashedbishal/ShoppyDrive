@@ -192,9 +192,9 @@ export default function NewsletterCompose({
                         <button
                             type="button"
                             onClick={() => setEmailType('custom')}
-                            className="group flex flex-col items-start gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 text-left transition hover:border-[#c8102e] hover:shadow-md"
+                            className="group flex flex-col items-start gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 text-left transition hover:border-brand hover:shadow-md"
                         >
-                            <div className="flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-[#c8102e]/10 group-hover:text-[#c8102e]">
+                            <div className="flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-brand/10 group-hover:text-brand">
                                 <Mail className="size-6" />
                             </div>
                             <div>
@@ -206,7 +206,7 @@ export default function NewsletterCompose({
                                     formatting, images, and file attachments.
                                 </p>
                             </div>
-                            <span className="mt-auto text-xs font-semibold text-[#c8102e] opacity-0 transition group-hover:opacity-100">
+                            <span className="mt-auto text-xs font-semibold text-brand opacity-0 transition group-hover:opacity-100">
                                 Select →
                             </span>
                         </button>
@@ -215,9 +215,9 @@ export default function NewsletterCompose({
                         <button
                             type="button"
                             onClick={() => setEmailType('product_promotion')}
-                            className="group flex flex-col items-start gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 text-left transition hover:border-[#c8102e] hover:shadow-md"
+                            className="group flex flex-col items-start gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 text-left transition hover:border-brand hover:shadow-md"
                         >
-                            <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-[#c8102e]/10 group-hover:text-[#c8102e]">
+                            <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-brand/10 group-hover:text-brand">
                                 <Package className="size-6" />
                             </div>
                             <div>
@@ -229,7 +229,7 @@ export default function NewsletterCompose({
                                     price, and a professional layout.
                                 </p>
                             </div>
-                            <span className="mt-auto text-xs font-semibold text-[#c8102e] opacity-0 transition group-hover:opacity-100">
+                            <span className="mt-auto text-xs font-semibold text-brand opacity-0 transition group-hover:opacity-100">
                                 Select →
                             </span>
                         </button>
@@ -263,8 +263,8 @@ export default function NewsletterCompose({
                                     variants={dialogItem}
                                     className="flex items-center gap-3"
                                 >
-                                    <div className="flex size-10 items-center justify-center rounded-full bg-[#c8102e]/10">
-                                        <Send className="size-5 text-[#c8102e]" />
+                                    <div className="flex size-10 items-center justify-center rounded-full bg-brand/10">
+                                        <Send className="size-5 text-brand" />
                                     </div>
                                     <div>
                                         <p className="text-[15px] font-semibold text-slate-900">
@@ -310,7 +310,7 @@ export default function NewsletterCompose({
                                     <button
                                         type="button"
                                         onClick={confirmSend}
-                                        className="flex-1 rounded-lg bg-[#c8102e] py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25]"
+                                        className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover"
                                     >
                                         Send Now
                                     </button>
@@ -367,7 +367,7 @@ export default function NewsletterCompose({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"
                                         />
                                         <CharCount
                                             value={customForm.data.subject}
@@ -409,7 +409,7 @@ export default function NewsletterCompose({
                                                 (optional)
                                             </span>
                                         </label>
-                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-600 transition hover:border-[#c8102e] hover:text-[#c8102e]">
+                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-600 transition hover:border-brand hover:text-brand">
                                             <Paperclip className="size-4" />
                                             <span>Click to attach files</span>
                                             <input
@@ -496,7 +496,7 @@ export default function NewsletterCompose({
                                             !customForm.data.body.trim() ||
                                             customForm.processing
                                         }
-                                        className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
+                                        className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:opacity-50"
                                     >
                                         <Send className="size-4" />
                                         {customForm.processing
@@ -532,7 +532,7 @@ export default function NewsletterCompose({
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none"
                                             />
                                             <CharCount
                                                 value={productForm.data.subject}
@@ -564,7 +564,7 @@ export default function NewsletterCompose({
                                                             ),
                                                         )
                                                     }
-                                                    selectClassName="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                                    selectClassName="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                                                 >
                                                     <option value="">
                                                         -- Choose a product --
@@ -618,7 +618,7 @@ export default function NewsletterCompose({
                                                                     className={`overflow-hidden rounded-lg border-2 transition ${
                                                                         selectedImage ===
                                                                         media.path
-                                                                            ? 'border-[#c8102e] shadow-md'
+                                                                            ? 'border-brand shadow-md'
                                                                             : 'border-transparent hover:border-slate-300'
                                                                     }`}
                                                                 >
@@ -653,7 +653,7 @@ export default function NewsletterCompose({
                                                 !productForm.data.product_id ||
                                                 productForm.processing
                                             }
-                                            className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
+                                            className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:opacity-50"
                                         >
                                             <Send className="size-4" />
                                             {productForm.processing
@@ -676,11 +676,11 @@ export default function NewsletterCompose({
                                                 <div className="overflow-hidden rounded-b-lg bg-[#f4f5f7] p-3">
                                                     <div className="overflow-hidden rounded-xl bg-white shadow-sm">
                                                         {/* Mini header */}
-                                                        <div className="bg-[#c8102e] px-4 py-3 text-center">
-                                                            <p className="text-sm font-bold text-white">
+                                                        <div className="bg-brand px-4 py-3 text-center">
+                                                            <p className="text-sm font-bold text-brand-foreground">
                                                                 ShoppyDrive
                                                             </p>
-                                                            <p className="mt-0.5 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/80">
+                                                            <p className="mt-0.5 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-brand-foreground/80">
                                                                 Featured Product
                                                             </p>
                                                         </div>
@@ -716,7 +716,7 @@ export default function NewsletterCompose({
                                                                 </p>
                                                             )}
                                                             <div className="mt-2 flex items-baseline gap-2">
-                                                                <span className="text-sm font-black text-[#c8102e]">
+                                                                <span className="text-sm font-black text-brand">
                                                                     ৳
                                                                     {selectedProduct.price.toLocaleString()}
                                                                 </span>

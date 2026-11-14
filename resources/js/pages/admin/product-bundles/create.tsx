@@ -667,7 +667,7 @@ export default function ProductBundleCreate() {
                                                                             item,
                                                                         )}
                                                                         className={cn(
-                                                                            'h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none',
+                                                                            'h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none',
                                                                             Number(
                                                                                 item.quantity,
                                                                             ) >

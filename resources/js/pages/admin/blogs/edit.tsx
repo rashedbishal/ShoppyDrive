@@ -43,7 +43,7 @@ function Field({
 }
 
 const inputClass = (err?: string) =>
-    `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
+    `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`;
 
 export default function BlogEdit({ blog }: Props) {
     const listUrl = useAdminListUrl('admin.blogs.index');
@@ -165,7 +165,7 @@ export default function BlogEdit({ blog }: Props) {
                                 <textarea
                                     maxLength={400}
                                     rows={2}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                     value={data.excerpt}
                                     onChange={(e) =>
                                         setData('excerpt', e.target.value)
@@ -262,7 +262,7 @@ export default function BlogEdit({ blog }: Props) {
                                 <textarea
                                     maxLength={160}
                                     rows={2}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                     value={data.meta_description}
                                     onChange={(e) =>
                                         setData(
@@ -288,7 +288,7 @@ export default function BlogEdit({ blog }: Props) {
                                             e.target.checked,
                                         )
                                     }
-                                    className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                    className="size-4 rounded border-slate-300 accent-brand"
                                 />
                                 Published (visible on the storefront)
                             </label>
@@ -297,7 +297,7 @@ export default function BlogEdit({ blog }: Props) {
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                 >
                                     {processing ? 'Saving…' : 'Save Changes'}
                                 </Button>

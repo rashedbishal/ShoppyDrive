@@ -1,5 +1,5 @@
 export const settingsInputClass =
-    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 
 export function SettingsField({
     label,

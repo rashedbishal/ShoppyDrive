@@ -185,7 +185,7 @@ export default function ErrorLogIndex({
                                             level: null,
                                         })
                                     }
-                                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:ring-1 focus:ring-brand focus:outline-none"
                                 >
                                     {files.map((candidate) => (
                                         <option

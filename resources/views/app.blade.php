@@ -42,6 +42,10 @@
             }
         </style>
 
+        {{-- Admin › Settings › Brand Colour. Absent for the default colour, so app.css alone applies. Built only from a validated hex value (App\Support\BrandColor::css()); app.tsx keeps this tag current after the colour is changed. --}}
+        @php($brandCss = \App\Support\BrandColor::css())
+        <style id="brand-color">{!! $brandCss ?? '' !!}</style>
+
         {{-- Admin › Settings › Favicon, else the bundled files. An .ico can't be a home-screen icon, so apple-touch keeps its bundled PNG then. --}}
         @php($siteFavicon = \App\Support\LayoutCache::settings()['favicon'] ?? null)
         @if($siteFavicon)

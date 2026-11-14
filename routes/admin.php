@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\AttributeValueController;
 use App\Http\Controllers\Admin\AuditTrailController;
 use App\Http\Controllers\Admin\BlockedIpController;
 use App\Http\Controllers\Admin\BlogController;
+use App\Http\Controllers\Admin\BrandColorController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
@@ -246,6 +247,13 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
         Route::get('{user}/summary', [CustomerErasureController::class, 'summary'])->name('summary')->whereNumber('user');
         Route::post('{user}/confirm', [CustomerErasureController::class, 'confirm'])->name('confirm')->whereNumber('user')->middleware('throttle:mother-actions')->block(10, 10);
         Route::delete('{user}', [CustomerErasureController::class, 'destroy'])->name('destroy')->whereNumber('user')->middleware('throttle:mother-actions')->block(10, 10);
+    });
+    // Brand Colour (owner decisions 2026-11-14): changes the whole site's
+    // colour, so mother admin only, deliberately not in AdminSections.
+    Route::middleware('admin.mother')->prefix('settings/brand-color')->name('settings.brand-color.')->group(function () {
+        Route::get('/', [BrandColorController::class, 'edit'])->name('edit');
+        Route::put('/', [BrandColorController::class, 'update'])->name('update');
+        Route::delete('/', [BrandColorController::class, 'destroy'])->name('destroy');
     });
     // OPS-002: same hardcoded mother-only pattern as settings.security.update.
     Route::put('settings/security/heartbeat', [SecuritySettingsController::class, 'updateHeartbeat'])->name('settings.security.heartbeat.update');

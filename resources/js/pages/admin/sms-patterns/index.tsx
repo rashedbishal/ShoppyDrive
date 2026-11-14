@@ -44,7 +44,7 @@ const emptyForm = {
 };
 
 const inputClass =
-    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 const providerColor = {
     bkash: 'bg-pink-100 text-pink-700',
     nagad: 'bg-orange-100 text-orange-700',
@@ -180,7 +180,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                 <Button
                                     size="sm"
                                     onClick={openNew}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                 >
                                     <Plus className="mr-1.5 size-4" />
                                     Add Pattern
@@ -193,7 +193,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                 <AnimatePresence initial={false}>
                     {editingId !== null && (
                         <AdminReveal key="form">
-                            <Card className="border-[#c8102e]/20 shadow-sm">
+                            <Card className="border-brand/20 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                                     <CardTitle className="text-sm font-semibold text-slate-700">
                                         {editingId === 'new'
@@ -469,7 +469,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 type="submit"
                                                 size="sm"
                                                 disabled={processing}
-                                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                             >
                                                 {processing
                                                     ? 'Saving…'

@@ -131,7 +131,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                         <button
                             type="button"
                             onClick={() => setRestoreTarget(customer)}
-                            className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#c8102e]/20 px-3 py-2 text-xs font-semibold text-[#c8102e] hover:bg-[#c8102e]/5 sm:w-auto sm:py-1.5"
+                            className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-brand/20 px-3 py-2 text-xs font-semibold text-brand hover:bg-brand/5 sm:w-auto sm:py-1.5"
                         >
                             <RotateCcw className="size-3.5" />
                             Restore Customer
@@ -188,7 +188,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                                         'admin.orders.show',
                                                         order.id,
                                                     )}
-                                                    className="text-xs text-[#c8102e] hover:underline"
+                                                    className="text-xs text-brand hover:underline"
                                                 >
                                                     View →
                                                 </Link>

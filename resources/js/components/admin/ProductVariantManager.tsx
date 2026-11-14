@@ -417,7 +417,7 @@ export function ProductVariantManager({
     };
 
     const fieldInputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+        'h-9 w-full rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 
     return (
         <div className="space-y-4">
@@ -442,7 +442,7 @@ export function ProductVariantManager({
                                 className={cn(
                                     'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition',
                                     active
-                                        ? 'border-[#c8102e] bg-[#c8102e]/5 text-[#c8102e]'
+                                        ? 'border-brand bg-brand/5 text-brand'
                                         : 'border-slate-200 text-slate-700 hover:border-slate-300',
                                     attribute.values.length === 0 &&
                                         !active &&
@@ -461,7 +461,7 @@ export function ProductVariantManager({
                                         !active && attribute.values.length === 0
                                     }
                                     onChange={() => toggleAttribute(attribute)}
-                                    className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
+                                    className="size-4 rounded border-slate-300 text-brand focus:ring-brand"
                                 />
                                 {attribute.name}
                             </label>
@@ -533,7 +533,7 @@ export function ProductVariantManager({
                                             className={cn(
                                                 'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition',
                                                 active
-                                                    ? 'border-[#c8102e] bg-[#c8102e]/5 text-[#c8102e]'
+                                                    ? 'border-brand bg-brand/5 text-brand'
                                                     : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                             )}
                                         >
@@ -570,7 +570,7 @@ export function ProductVariantManager({
                                     <button
                                         type="button"
                                         onClick={selectAllCombinations}
-                                        className="text-xs font-medium text-[#c8102e] hover:underline"
+                                        className="text-xs font-medium text-brand hover:underline"
                                     >
                                         Select all {combinations.length}
                                     </button>
@@ -604,7 +604,7 @@ export function ProductVariantManager({
                                                 className={cn(
                                                     'flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition',
                                                     checked
-                                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/5 text-slate-800'
+                                                        ? 'border-brand/40 bg-brand/5 text-slate-800'
                                                         : 'border-slate-200 text-slate-600',
                                                 )}
                                             >
@@ -615,7 +615,7 @@ export function ProductVariantManager({
                                                     onChange={() =>
                                                         toggleCombination(combo)
                                                     }
-                                                    className="size-3.5 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
+                                                    className="size-3.5 rounded border-slate-300 text-brand focus:ring-brand disabled:opacity-40"
                                                 />
                                                 {swatch && (
                                                     <span
@@ -700,7 +700,7 @@ export function ProductVariantManager({
                             <button
                                 type="button"
                                 onClick={applyBulkFields}
-                                className="mt-3 rounded-lg bg-[#c8102e] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a50d25]"
+                                className="mt-3 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition hover:bg-brand-hover"
                             >
                                 Apply to all {variants.length} variants
                             </button>
@@ -725,7 +725,7 @@ export function ProductVariantManager({
                                                 className={cn(
                                                     'rounded-xl border p-4 transition',
                                                     row.is_default
-                                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/[0.03]'
+                                                        ? 'border-brand/40 bg-brand/[0.03]'
                                                         : 'border-slate-200',
                                                 )}
                                             >

@@ -10,6 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <title>@yield('title')</title>
+{{-- Admin › Settings › Brand Colour (App\Support\BrandColor); the default is the original red. --}}
+@php($brandPalette = \App\Support\BrandColor::palette())
 <style>
   body { margin: 0; padding: 0; background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
   .wrapper { width: 100%; background: #f4f5f7; padding: 40px 16px; }
@@ -21,7 +23,7 @@
   .body { padding: 40px 40px 32px; }
   .body-content { color: #374151; font-size: 15px; line-height: 1.75; }
   .heading { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 16px; }
-  .btn { display: inline-block; margin: 20px 0; padding: 12px 28px; border-radius: 8px; background: #c8102e; color: #ffffff !important; font-size: 15px; font-weight: 600; text-decoration: none; }
+  .btn { display: inline-block; margin: 20px 0; padding: 12px 28px; border-radius: 8px; background: {{ $brandPalette['brand'] }}; color: {{ $brandPalette['foreground'] }} !important; font-size: 15px; font-weight: 600; text-decoration: none; }
   table.items { width: 100%; border-collapse: collapse; margin: 20px 0; }
   table.items th { text-align: left; font-size: 12px; text-transform: uppercase; color: #9ca3af; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
   table.items td { font-size: 14px; color: #374151; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }

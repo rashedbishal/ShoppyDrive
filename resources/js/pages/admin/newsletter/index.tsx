@@ -111,7 +111,7 @@ export default function NewsletterIndex({
                     </div>
                     <Link
                         href={route('admin.newsletter.compose')}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#c8102e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] sm:w-auto"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover sm:w-auto"
                     >
                         <Mail className="size-4" />
                         Send Email
@@ -168,7 +168,7 @@ export default function NewsletterIndex({
                                 onKeyDown={(e) =>
                                     e.key === 'Enter' && applyFilters()
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                             />
                         </div>
                         <Select
@@ -178,7 +178,7 @@ export default function NewsletterIndex({
                                 applyFilters({ status: e.target.value });
                             }}
                             containerClassName="min-w-40"
-                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus:border-[#c8102e] focus:outline-none"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus:border-brand focus:outline-none"
                         >
                             <option value="">All statuses</option>
                             <option value="active">Active</option>

@@ -449,6 +449,14 @@ const navSections: NavSection[] = [
                 extraMatches: [] as string[],
                 section: 'security',
             },
+            {
+                label: 'Brand Colour',
+                href: '/admin/settings/brand-color',
+                icon: Palette,
+                exact: false,
+                extraMatches: [] as string[],
+                motherOnly: true,
+            },
         ],
     },
 ];
@@ -728,12 +736,12 @@ function SidebarContent({
                                                         : 'gap-2.5 px-2.5 py-2'
                                                 } ${
                                                     isActive
-                                                        ? 'bg-[#c8102e]/8 font-semibold text-[#c8102e]'
+                                                        ? 'bg-brand/8 font-semibold text-brand'
                                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                                 }`}
                                             >
                                                 {isActive && (
-                                                    <span className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-full bg-[#c8102e]" />
+                                                    <span className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-full bg-brand" />
                                                 )}
                                                 <span className="relative flex shrink-0">
                                                     <Icon
@@ -750,7 +758,7 @@ function SidebarContent({
                                                                 className={`absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-white ${
                                                                     unseenCount >
                                                                     0
-                                                                        ? 'bg-[#c8102e]'
+                                                                        ? 'bg-brand'
                                                                         : 'bg-amber-500'
                                                                 }`}
                                                             />
@@ -770,7 +778,7 @@ function SidebarContent({
                                                             )}
                                                             {unseenCount >
                                                                 0 && (
-                                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8102e] px-1.5 text-[11px] font-bold text-white">
+                                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-brand-foreground">
                                                                     {unseenCount >
                                                                     99
                                                                         ? '99+'
@@ -800,7 +808,7 @@ function SidebarContent({
                     >
                         <span
                             title={collapsed ? admin.name : undefined}
-                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/10 text-xs font-bold text-[#c8102e]"
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-bold text-brand"
                         >
                             {initials}
                         </span>

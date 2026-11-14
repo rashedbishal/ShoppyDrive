@@ -10,6 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <title>Confirm your email change</title>
+{{-- Admin › Settings › Brand Colour (App\Support\BrandColor); the default is the original red. --}}
+@php($brandPalette = \App\Support\BrandColor::palette())
 <style>
   body { margin: 0; padding: 0; background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
   .wrapper { width: 100%; background: #f4f5f7; padding: 40px 16px; }
@@ -20,7 +22,7 @@
   .header-site-name { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
   .body { padding: 40px 40px 32px; }
   .body-content { color: #374151; font-size: 15px; line-height: 1.75; text-align: center; }
-  .code { display: inline-block; margin: 24px 0; padding: 16px 28px; border-radius: 12px; background: #fef2f2; color: #c8102e; font-size: 36px; font-weight: 700; letter-spacing: 8px; }
+  .code { display: inline-block; margin: 24px 0; padding: 16px 28px; border-radius: 12px; background: {{ $brandPalette['brand'] === \App\Support\BrandColor::DEFAULT ? '#fef2f2' : $brandPalette['light'] }}; color: {{ $brandPalette['brand'] }}; font-size: 36px; font-weight: 700; letter-spacing: 8px; }
   .divider { border: none; border-top: 1px solid #f3f4f6; margin: 0; }
   .footer { padding: 24px 40px; background: #fafafa; text-align: center; }
   .footer p { margin: 0 0 6px; font-size: 12px; color: #9ca3af; }

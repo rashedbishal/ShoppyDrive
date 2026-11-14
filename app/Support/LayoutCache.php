@@ -62,6 +62,8 @@ final class LayoutCache
         'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',
         // Whether review photos are allowed and how many (not secrets: the review form needs them).
         'review_images_enabled', 'review_images_max',
+        // Admin › Settings › Brand Colour (a hex colour, not a secret): App\Support\BrandColor.
+        'brand_color',
     ];
 
     public static function forget(string ...$keys): void

@@ -89,7 +89,7 @@ function KeywordRow({
     };
 
     const inputClass =
-        'h-8 rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+        'h-8 rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 
     return (
         <div
@@ -102,7 +102,7 @@ function KeywordRow({
             className={cn(
                 'flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/60',
                 reorder.dragging && 'opacity-40',
-                reorder.isTarget && 'ring-2 ring-[#c8102e]/40 ring-inset',
+                reorder.isTarget && 'ring-2 ring-brand/40 ring-inset',
             )}
         >
             <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
@@ -178,7 +178,7 @@ function KeywordRow({
                                 size="sm"
                                 disabled={processing}
                                 onClick={save}
-                                className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                className="shrink-0 bg-brand text-brand-foreground hover:bg-brand-hover"
                             >
                                 <Save className="size-3.5" />
                             </Button>
@@ -449,7 +449,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                     <div>
                                         <input
                                             maxLength={60}
-                                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                             value={data.keyword}
                                             onChange={(e) =>
                                                 setData(
@@ -473,7 +473,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                        className="w-full bg-brand text-brand-foreground hover:bg-brand-hover"
                                     >
                                         <Plus className="size-4" />
                                         Add

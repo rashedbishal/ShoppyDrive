@@ -441,7 +441,7 @@ export default function ReferralConfig({ settings }: Props) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {processing ? 'Saving…' : 'Save'}
                         </Button>

@@ -261,7 +261,7 @@ export default function StorageCleanupIndex({
                             size="sm"
                             onClick={() => setPending({ kind: 'quarantine' })}
                             disabled={totals.unused === 0}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             <FolderInput className="size-4" />
                             {totals.unused > 0

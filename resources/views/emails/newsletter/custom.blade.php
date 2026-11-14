@@ -10,6 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <title>{{ $emailSubject }}</title>
+{{-- Admin › Settings › Brand Colour (App\Support\BrandColor); the default is the original red. --}}
+@php($brandPalette = \App\Support\BrandColor::palette())
 <style>
   body { margin: 0; padding: 0; background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
   .wrapper { width: 100%; background: #f4f5f7; padding: 40px 16px; }
@@ -22,7 +24,7 @@
   .body-content { color: #374151; font-size: 15px; line-height: 1.75; }
   .body-content h1, .body-content h2, .body-content h3 { color: #111827; margin-top: 0; }
   .body-content img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 16px 0; }
-  .body-content a { color: #c8102e; }
+  .body-content a { color: {{ $brandPalette['brand'] }}; }
   .body-content blockquote { border-left: 3px solid #e5e7eb; margin: 16px 0; padding: 8px 16px; color: #6b7280; }
   .divider { border: none; border-top: 1px solid #f3f4f6; margin: 0; }
   .footer { padding: 24px 40px; background: #fafafa; text-align: center; }

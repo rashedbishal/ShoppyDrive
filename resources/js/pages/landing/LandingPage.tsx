@@ -377,7 +377,7 @@ function InlinePayment({
                     <input
                         maxLength={40}
                         id="lp-transaction-id"
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm tracking-wider uppercase focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/30 focus:outline-none"
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm tracking-wider uppercase focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
                         value={data.transaction_id}
                         onChange={(e) =>
                             setData('transaction_id', e.target.value)
@@ -475,7 +475,7 @@ function OptionCard({
                         </span>
                     )}
                     {option.kind === 'combo' && !option.badge && (
-                        <span className="rounded-full bg-[#c8102e]/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-[#c8102e] uppercase">
+                        <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-brand uppercase">
                             Combo
                         </span>
                     )}
@@ -486,7 +486,7 @@ function OptionCard({
                     </p>
                 )}
                 <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <span className="font-extrabold text-[#c8102e]">
+                    <span className="font-extrabold text-brand">
                         {formatCurrency(option.price)}
                     </span>
                     {option.compare && option.compare > option.price && (
@@ -526,7 +526,7 @@ function OptionCard({
                 className={cn(
                     'group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50',
                     selected
-                        ? 'border-[#c8102e] shadow-[0_14px_34px_-14px_rgba(200,16,46,0.55)]'
+                        ? 'border-brand shadow-[0_14px_34px_-14px_rgb(var(--brand-rgb)/0.55)]'
                         : 'border-slate-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md',
                 )}
             >
@@ -551,7 +551,7 @@ function OptionCard({
                         className={cn(
                             'absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border-2 shadow transition-colors',
                             selected
-                                ? 'border-[#c8102e] bg-[#c8102e] text-white'
+                                ? 'border-brand bg-brand text-brand-foreground'
                                 : 'border-white bg-white/80 text-transparent',
                         )}
                     >
@@ -577,7 +577,7 @@ function OptionCard({
                         </p>
                     )}
                     <p className="flex flex-wrap items-baseline gap-x-1.5">
-                        <span className="text-sm font-extrabold text-[#c8102e]">
+                        <span className="text-sm font-extrabold text-brand">
                             {formatCurrency(option.price)}
                         </span>
                         {option.compare && option.compare > option.price && (
@@ -602,7 +602,7 @@ function OptionCard({
             className={cn(
                 'flex flex-col gap-3 rounded-2xl border-2 bg-white p-3 transition-all duration-200 sm:flex-row sm:items-center',
                 selected
-                    ? 'border-[#c8102e] shadow-[0_10px_30px_-12px_rgba(200,16,46,0.5)]'
+                    ? 'border-brand shadow-[0_10px_30px_-12px_rgb(var(--brand-rgb)/0.5)]'
                     : 'border-slate-200',
                 soldOut && 'opacity-50',
             )}
@@ -632,7 +632,7 @@ function OptionCard({
                         onChange(qty + 1);
                     }}
                     aria-label={`Increase ${option.name}`}
-                    className="flex size-9 items-center justify-center rounded-full bg-[#c8102e] text-white shadow-sm transition hover:bg-[#a50d25] disabled:opacity-40"
+                    className="flex size-9 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
                 >
                     <Plus className="size-4" />
                 </button>
@@ -682,7 +682,7 @@ function SectionHeading({
 }
 
 const fieldClass =
-    'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none';
+    'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10 focus:outline-none';
 
 function OrderSection({
     product,
@@ -846,7 +846,7 @@ function OrderSection({
             id="order"
             className="relative scroll-mt-20 overflow-hidden bg-[#faf7f2] px-4 py-20"
         >
-            <div className="pointer-events-none absolute -top-40 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-[#c8102e]/10 blur-3xl" />
+            <div className="pointer-events-none absolute -top-40 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl" />
             <div className="relative mx-auto max-w-6xl">
                 <SectionHeading
                     eyebrow="Order now"
@@ -911,7 +911,7 @@ function OrderSection({
                                         <p className="font-bold text-slate-900">
                                             {product.name}
                                         </p>
-                                        <p className="text-sm font-extrabold text-[#c8102e]">
+                                        <p className="text-sm font-extrabold text-brand">
                                             {formatCurrency(product.price)}
                                         </p>
                                     </div>
@@ -931,7 +931,7 @@ function OrderSection({
                                             type="button"
                                             onClick={() => updateQty(qty + 1)}
                                             aria-label="Increase quantity"
-                                            className="flex size-9 items-center justify-center rounded-full bg-[#c8102e] text-white shadow-sm hover:bg-[#a50d25]"
+                                            className="flex size-9 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm hover:bg-brand-hover"
                                         >
                                             <Plus className="size-4" />
                                         </button>
@@ -953,7 +953,7 @@ function OrderSection({
                         {/* Right: price summary, then the form */}
                         <div className="space-y-6">
                             <div className="overflow-hidden rounded-3xl bg-[#0b1020] text-white shadow-[0_24px_70px_-24px_rgba(11,16,32,0.7)]">
-                                <div className="bg-gradient-to-r from-[#c8102e] to-[#ff3a55] px-6 py-3 text-sm font-extrabold tracking-wide uppercase">
+                                <div className="bg-gradient-to-r from-brand to-brand-bright px-6 py-3 text-sm font-extrabold tracking-wide text-brand-foreground uppercase">
                                     Price summary
                                 </div>
                                 <div className="space-y-3 p-6 text-sm">
@@ -1241,7 +1241,7 @@ function OrderSection({
                                         id={`${fieldId}-notes`}
                                         rows={2}
                                         maxLength={500}
-                                        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none"
+                                        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10 focus:outline-none"
                                         placeholder={
                                             sel.notes_placeholder ||
                                             'Anything we should know? (optional)'
@@ -1273,7 +1273,7 @@ function OrderSection({
                                             className={cn(
                                                 'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 transition',
                                                 data.payment_method === 'cod'
-                                                    ? 'border-[#c8102e] bg-[#c8102e]/5'
+                                                    ? 'border-brand bg-brand/5'
                                                     : 'border-slate-200 hover:border-slate-300',
                                             )}
                                         >
@@ -1291,7 +1291,7 @@ function OrderSection({
                                                         'cod',
                                                     )
                                                 }
-                                                className="accent-[#c8102e]"
+                                                className="accent-brand"
                                             />
                                             <span className="text-sm font-semibold">
                                                 Cash on Delivery
@@ -1306,7 +1306,7 @@ function OrderSection({
                                                         : 'cursor-not-allowed opacity-50',
                                                     data.payment_method ===
                                                         'mobile_banking'
-                                                        ? 'border-[#c8102e] bg-[#c8102e]/5'
+                                                        ? 'border-brand bg-brand/5'
                                                         : 'border-slate-200 hover:border-slate-300',
                                                 )}
                                             >
@@ -1327,7 +1327,7 @@ function OrderSection({
                                                             'mobile_banking',
                                                         )
                                                     }
-                                                    className="accent-[#c8102e]"
+                                                    className="accent-brand"
                                                 />
                                                 <span className="text-sm font-semibold">
                                                     Mobile Banking (Bkash /
@@ -1403,7 +1403,7 @@ function OrderSection({
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="lp-glow relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-[#ff3a55] to-[#c8102e] text-lg font-extrabold tracking-wide text-white ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
+                                    className="lp-glow relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-brand-bright to-brand text-lg font-extrabold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
                                 >
                                     <span
                                         aria-hidden
@@ -1443,8 +1443,8 @@ const landingCss = `
         unicode-range: U+0980-U+09FF;
     }
     @keyframes lp-glow {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(232, 17, 42, 0.55), 0 10px 30px -6px rgba(232, 17, 42, 0.65); }
-        50% { box-shadow: 0 0 0 14px rgba(232, 17, 42, 0), 0 14px 46px -4px rgba(255, 58, 85, 0.95); }
+        0%, 100% { box-shadow: 0 0 0 0 rgb(var(--brand-dark-rgb) / 0.55), 0 10px 30px -6px rgb(var(--brand-dark-rgb) / 0.65); }
+        50% { box-shadow: 0 0 0 14px rgb(var(--brand-dark-rgb) / 0), 0 14px 46px -4px rgb(var(--brand-bright-rgb) / 0.95); }
     }
     @keyframes lp-shine { 0% { left: -40%; } 60%, 100% { left: 140%; } }
     @keyframes lp-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -1715,7 +1715,7 @@ export default function LandingPageShow({
                         }}
                         className="relative overflow-hidden px-4 pt-14 pb-20 text-white sm:pt-20"
                     >
-                        <div className="pointer-events-none absolute -top-32 -left-24 size-[30rem] rounded-full bg-[#c8102e]/35 blur-[110px]" />
+                        <div className="pointer-events-none absolute -top-32 -left-24 size-[30rem] rounded-full bg-brand/35 blur-[110px]" />
                         <div className="pointer-events-none absolute -right-24 bottom-0 size-[28rem] rounded-full bg-amber-400/20 blur-[110px]" />
                         <div className="relative mx-auto max-w-6xl">
                             <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
@@ -1751,7 +1751,7 @@ export default function LandingPageShow({
                                                             heroCompare,
                                                         )}
                                                     </span>
-                                                    <span className="rounded-full bg-[#c8102e] px-2.5 py-0.5 text-xs font-extrabold">
+                                                    <span className="rounded-full bg-brand px-2.5 py-0.5 text-xs font-extrabold text-brand-foreground">
                                                         {Math.round(
                                                             (1 -
                                                                 heroPrice /
@@ -1897,7 +1897,7 @@ export default function LandingPageShow({
                                                             i ===
                                                                 activeMediaIdx &&
                                                                 !showVariantImage
-                                                                ? 'border-[#c8102e] shadow-md'
+                                                                ? 'border-brand shadow-md'
                                                                 : 'border-transparent opacity-70 hover:opacity-100',
                                                         )}
                                                     >
@@ -1941,7 +1941,7 @@ export default function LandingPageShow({
                                 {description.enabled !== false && (
                                     <div className="space-y-4">
                                         {description.badge && (
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#c8102e] px-3.5 py-1 text-xs font-extrabold tracking-wide text-white uppercase">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1 text-xs font-extrabold tracking-wide text-brand-foreground uppercase">
                                                 <Sparkles className="size-3.5" />
                                                 {description.badge}
                                             </span>

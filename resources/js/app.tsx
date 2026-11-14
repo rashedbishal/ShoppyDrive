@@ -815,8 +815,28 @@ if (typeof window !== 'undefined') {
     });
 }
 
+/**
+ * Admin › Settings › Brand Colour: app.blade.php renders the colour into
+ * <style id="brand-color"> on a full page load; this keeps it current when
+ * the colour changes during an SPA session (e.g. right after saving it).
+ * A response without shared props (a 500/503) leaves it as it is.
+ */
+function applyBrandColor(props: SharedPageProps): void {
+    if (typeof document === 'undefined' || !('brandCss' in props)) {
+        return;
+    }
+
+    const css = props.brandCss ?? '';
+    const tag = document.getElementById('brand-color');
+
+    if (tag && tag.textContent !== css) {
+        tag.textContent = css;
+    }
+}
+
 router.on('navigate', (event) => {
     const props = event.detail.page.props as SharedPageProps;
+    applyBrandColor(props);
     currentPageComponent = event.detail.page.component;
     const startupAppliedThisCart = initialPageCartApplied;
     initialPageCartApplied = false;

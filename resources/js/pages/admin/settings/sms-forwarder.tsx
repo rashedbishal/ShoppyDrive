@@ -347,7 +347,7 @@ export default function SmsForwarderSettings({
     };
 
     const inputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-[#c8102e] bg-slate-50 text-slate-700';
+        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand bg-slate-50 text-slate-700';
 
     return (
         <>
@@ -480,7 +480,7 @@ export default function SmsForwarderSettings({
                                         onClick={() =>
                                             setRegenerateDialogOpen(true)
                                         }
-                                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                     >
                                         Regenerate Token
                                     </Button>

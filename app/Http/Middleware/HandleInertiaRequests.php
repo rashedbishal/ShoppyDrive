@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\Wishlist;
 use App\Services\BundleService;
 use App\Support\AdminListUrl;
+use App\Support\BrandColor;
 use App\Support\CartManager;
 use App\Support\LayoutCache;
 use App\Support\LoadingScreenSettings;
@@ -145,6 +146,10 @@ class HandleInertiaRequests extends Middleware
             // onceKey() for why this is exact rather than time-based.
             'navCategories' => Inertia::once(fn () => $navCategories)->as($this->onceKey('navCategories', $navCategories)),
             'settings' => Inertia::once(fn () => $settingsData)->as($this->onceKey('settings', $settingsData)),
+            // Admin › Settings › Brand Colour: the inline CSS app.blade.php
+            // renders on a full page load, re-sent so app.tsx can apply a
+            // changed colour without one. Null for the default colour.
+            'brandCss' => BrandColor::css(),
             // The brand (name, logo, page-loading screen) under its own key:
             // several admin pages send a page prop also called `settings`
             // (the form's values), which replaces the shared one above, so

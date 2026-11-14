@@ -177,7 +177,7 @@ function ValueChip({
                 className={cn(
                     'flex cursor-grab items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pr-3.5 pl-2 shadow-sm',
                     isDragging && 'opacity-40',
-                    isDropTarget && 'ring-2 ring-[#c8102e]/40',
+                    isDropTarget && 'ring-2 ring-brand/40',
                 )}
             >
                 <GripVertical className="size-3.5 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing" />
@@ -379,7 +379,7 @@ function AttributeCard({
                                         size="sm"
                                         disabled={reordering}
                                         onClick={confirmReorder}
-                                        className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
+                                        className="h-8 bg-brand px-3 text-xs text-brand-foreground hover:bg-brand-hover"
                                     >
                                         <Check className="size-3.5" />
                                         Save order
@@ -415,7 +415,7 @@ function AttributeCard({
                                     <Button
                                         size="sm"
                                         onClick={() => onAdd(attribute)}
-                                        className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
+                                        className="h-8 bg-brand px-3 text-xs text-brand-foreground hover:bg-brand-hover"
                                     >
                                         <Plus className="size-3.5" />
                                         Add
@@ -437,7 +437,7 @@ function AttributeCard({
                         <button
                             type="button"
                             onClick={() => onAdd(attribute)}
-                            className="text-xs font-semibold text-[#c8102e] hover:underline"
+                            className="text-xs font-semibold text-brand hover:underline"
                         >
                             Add the first one
                         </button>
@@ -679,7 +679,7 @@ export default function AttributesIndex({ attributes }: Props) {
             <div className="space-y-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
                             <Tags className="size-5" />
                         </span>
                         <div>
@@ -697,7 +697,7 @@ export default function AttributesIndex({ attributes }: Props) {
                     </div>
                     <Button
                         onClick={openAddAttribute}
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                         <Plus className="size-4" />
                         New attribute
@@ -767,7 +767,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                         }}
                                                     />
                                                 ) : (
-                                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
                                                         <Ruler className="size-5" />
                                                     </span>
                                                 )}
@@ -787,7 +787,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                     </DialogPrimitive.Description>
                                                 </div>
                                                 <DialogPrimitive.Close
-                                                    className="flex size-8 shrink-0 items-center justify-center self-start rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#c8102e] focus-visible:outline-none"
+                                                    className="flex size-8 shrink-0 items-center justify-center self-start rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
                                                     aria-label="Close"
                                                 >
                                                     <X className="size-4" />
@@ -829,7 +829,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                                   : 'e.g. 12pcs'
                                                         }
                                                         maxLength={20}
-                                                        className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-[#c8102e] focus:bg-white focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
+                                                        className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/15 focus:outline-none"
                                                     />
                                                     <CharCount
                                                         value={form.data.value}
@@ -854,7 +854,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                                 normalizeHex(
                                                                     hexDraft,
                                                                 )
-                                                                    ? 'border-slate-200 focus-within:border-[#c8102e] focus-within:ring-[#c8102e]/15'
+                                                                    ? 'border-slate-200 focus-within:border-brand focus-within:ring-brand/15'
                                                                     : 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/15',
                                                             )}
                                                         >
@@ -1008,7 +1008,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                     onClick={submitForm}
                                                     loading={form.processing}
                                                     loadingText="Saving…"
-                                                    className="bg-[#c8102e] text-white shadow-sm shadow-[#c8102e]/25 hover:bg-[#a50d25]"
+                                                    className="bg-brand text-brand-foreground shadow-sm shadow-brand/25 hover:bg-brand-hover"
                                                 >
                                                     {editingValue
                                                         ? 'Save changes'
@@ -1054,7 +1054,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                 Name
                             </span>
                             <input
-                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                 placeholder="e.g. Set"
                                 maxLength={40}
                                 value={attributeForm.data.name}
@@ -1109,7 +1109,7 @@ export default function AttributesIndex({ attributes }: Props) {
                             <Button
                                 type="submit"
                                 disabled={attributeForm.processing}
-                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                             >
                                 {editingAttribute ? 'Save' : 'Add attribute'}
                             </Button>

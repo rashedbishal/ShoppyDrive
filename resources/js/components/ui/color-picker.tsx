@@ -55,7 +55,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                     emptyMessage="No colors match that search."
                     maxResults={200}
                     optionsClassName="grid grid-cols-9 gap-1 sm:grid-cols-10"
-                    optionClassName="group relative flex items-center justify-center rounded-md p-0.5 outline-none cursor-pointer data-focus:ring-2 data-focus:ring-[#c8102e]/50"
+                    optionClassName="group relative flex items-center justify-center rounded-md p-0.5 outline-none cursor-pointer data-focus:ring-2 data-focus:ring-brand/50"
                     renderOption={(option, { selected }) => {
                         if (option.value === AUTO_VALUE) {
                             return (
@@ -63,7 +63,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                                     title={option.label}
                                     className={cn(
                                         'flex size-7 items-center justify-center rounded-md border border-dashed bg-white text-slate-600',
-                                        selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
+                                        selected ? 'border-brand text-brand' : 'border-slate-300',
                                     )}
                                 >
                                     <Shuffle className="size-3.5" />
@@ -77,7 +77,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                                     title={option.label}
                                     className={cn(
                                         'flex size-7 items-center justify-center rounded-md border bg-white text-slate-600',
-                                        selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
+                                        selected ? 'border-brand text-brand' : 'border-slate-300',
                                     )}
                                 >
                                     <Pipette className="size-3.5" />
@@ -92,7 +92,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                                 className={cn(
                                     'size-7 rounded-md border',
                                     selected
-                                        ? 'border-white ring-2 ring-[#c8102e] ring-offset-1'
+                                        ? 'border-white ring-2 ring-brand ring-offset-1'
                                         : 'border-black/5',
                                 )}
                             />

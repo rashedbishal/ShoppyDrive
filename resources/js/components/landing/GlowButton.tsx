@@ -31,7 +31,7 @@ export default function GlowButton({
         <a
             href={href}
             className={cn(
-                'lp-glow group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#ff3a55] to-[#c8102e] font-extrabold tracking-wide text-white ring-1 ring-white/25 transition-transform duration-200 ring-inset hover:scale-[1.04] active:scale-[0.98]',
+                'lp-glow group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-brand-bright to-brand font-extrabold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform duration-200 ring-inset hover:scale-[1.04] active:scale-[0.98]',
                 sizes[size],
                 className,
             )}

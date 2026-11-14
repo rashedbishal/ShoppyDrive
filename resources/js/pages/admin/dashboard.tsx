@@ -230,11 +230,11 @@ function RevenueChart({ data }: { data: ChartPoint[] }) {
                                     </div>
                                 )}
                                 <div
-                                    className={`w-full rounded-t-lg transition-all duration-300 ${isToday ? 'bg-[#c8102e]' : 'bg-slate-100 group-hover:bg-slate-200'}`}
+                                    className={`w-full rounded-t-lg transition-all duration-300 ${isToday ? 'bg-brand' : 'bg-slate-100 group-hover:bg-slate-200'}`}
                                     style={{ height: `${height}%` }}
                                 />
                                 <span
-                                    className={`text-[10px] font-medium ${isToday ? 'text-[#c8102e]' : 'text-slate-600'}`}
+                                    className={`text-[10px] font-medium ${isToday ? 'text-brand' : 'text-slate-600'}`}
                                 >
                                     {point.label}
                                 </span>
@@ -611,7 +611,7 @@ export default function Dashboard({
                         sub={`Yesterday: ${fmt(stats.yesterday_revenue)}`}
                         icon={ShoppingBag}
                         iconBg="bg-rose-50"
-                        iconColor="text-[#c8102e]"
+                        iconColor="text-brand"
                         trend={revenueChange}
                     />
                     <StatCard
@@ -692,7 +692,7 @@ export default function Dashboard({
                             </p>
                             <Link
                                 href={route('admin.orders.index')}
-                                className="flex items-center gap-1 text-xs font-medium text-[#c8102e] hover:underline"
+                                className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
                             >
                                 View all <ArrowRight className="size-3" />
                             </Link>
@@ -783,7 +783,7 @@ export default function Dashboard({
                             </div>
                             <Link
                                 href={route('admin.products.index')}
-                                className="flex items-center gap-1 text-xs font-medium text-[#c8102e] hover:underline"
+                                className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
                             >
                                 Manage <ArrowRight className="size-3" />
                             </Link>

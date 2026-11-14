@@ -242,7 +242,7 @@ export function CustomerErasureCard(): React.JSX.Element {
                                     setQuery(event.target.value)
                                 }
                                 placeholder="Name, email, phone or customer number"
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                             />
                         </div>
                         <ul className="max-h-64 divide-y divide-slate-100 overflow-auto rounded-lg border border-slate-200">
@@ -382,7 +382,7 @@ export function CustomerErasureCard(): React.JSX.Element {
                         onChange={(event) => setPassword(event.target.value)}
                         autoFocus
                         required
-                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                     />
                     {error && (
                         <p

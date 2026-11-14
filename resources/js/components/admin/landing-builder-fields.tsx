@@ -21,9 +21,9 @@ export type BuilderMedia = {
 };
 
 const inputClass =
-    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+    'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 const textareaClass =
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e] resize-none';
+    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand resize-none';
 const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 const hintClass = 'mt-1 text-[11px] text-slate-600';
 
@@ -365,7 +365,7 @@ export function HeroExtras({
                                                       ),
                                             })
                                         }
-                                        className={`relative size-16 overflow-hidden rounded-lg border-2 ${shown ? 'border-[#c8102e]' : 'border-slate-200 opacity-40'}`}
+                                        className={`relative size-16 overflow-hidden rounded-lg border-2 ${shown ? 'border-brand' : 'border-slate-200 opacity-40'}`}
                                         aria-pressed={shown}
                                         aria-label={
                                             shown
@@ -420,7 +420,7 @@ export function HeroExtras({
                             type="button"
                             disabled={uploading || extra.length >= 12}
                             onClick={() => fileRef.current?.click()}
-                            className="flex size-16 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
+                            className="flex size-16 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-brand hover:text-brand disabled:opacity-50"
                         >
                             <Upload className="size-4" />
                             {uploading ? 'Uploading…' : 'Add'}
@@ -729,7 +729,7 @@ export function CombosEditor({
                                         ],
                                     })
                                 }
-                                className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                                className="flex items-center gap-1 text-xs text-brand hover:underline"
                             >
                                 <Plus className="size-3.5" /> Add variant
                             </button>
@@ -776,7 +776,7 @@ export function CombosEditor({
                         },
                     ])
                 }
-                className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                className="flex items-center gap-1 text-xs text-brand hover:underline"
             >
                 <Plus className="size-3.5" /> Add combo
             </button>
@@ -969,7 +969,7 @@ export function DeliveryEditor({
                         type="button"
                         disabled={areas.length >= 30}
                         onClick={() => set({ areas: [...areas, ''] })}
-                        className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                        className="flex items-center gap-1 text-xs text-brand hover:underline"
                     >
                         <Plus className="size-3.5" /> Add area
                     </button>
@@ -1173,7 +1173,7 @@ export function TestimonialImagesEditor({
                             }
                             className={`h-9 rounded-lg border text-sm font-medium transition ${
                                 (testimonials.mode ?? 'text') === value
-                                    ? 'border-[#c8102e] bg-red-50 text-[#c8102e]'
+                                    ? 'border-brand bg-red-50 text-brand'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                         >
@@ -1274,7 +1274,7 @@ export function TestimonialImagesEditor({
                                 images.length >= TESTIMONIAL_IMAGE_LIMIT
                             }
                             onClick={() => fileRef.current?.click()}
-                            className="flex h-28 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
+                            className="flex h-28 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-brand hover:text-brand disabled:opacity-50"
                         >
                             <Upload className="size-4" />
                             {uploading ? 'Uploading…' : 'Add images'}

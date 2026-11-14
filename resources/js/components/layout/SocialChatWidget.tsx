@@ -49,11 +49,11 @@ function buildMessengerUrl(link: string): string {
 
 // Particles that burst outward when the widget opens
 const BURST_PARTICLES = [
-    { angle: 0, dist: 44, size: 7, color: '#c8102e' },
+    { angle: 0, dist: 44, size: 7, color: 'var(--brand)' },
     { angle: 52, dist: 36, size: 5, color: '#ff6b35' },
-    { angle: 108, dist: 46, size: 8, color: '#c8102e' },
+    { angle: 108, dist: 46, size: 8, color: 'var(--brand)' },
     { angle: 165, dist: 38, size: 5, color: '#e8305a' },
-    { angle: 220, dist: 44, size: 7, color: '#c8102e' },
+    { angle: 220, dist: 44, size: 7, color: 'var(--brand)' },
     { angle: 278, dist: 36, size: 5, color: '#ff6b35' },
     { angle: 330, dist: 42, size: 6, color: '#e8305a' },
 ];
@@ -103,8 +103,8 @@ export default function SocialChatWidget(): React.JSX.Element | null {
                 setAiPanelOpen(true);
             },
             bg: 'bg-[var(--color-primary)]',
-            glow: 'rgba(200,16,46,0.55)',
-            shadow: '0 0 28px 6px rgba(200,16,46,0.45)',
+            glow: 'rgb(var(--brand-rgb) / 0.55)',
+            shadow: '0 0 28px 6px rgb(var(--brand-rgb) / 0.45)',
             icon: <Bot className="size-6 text-white" />,
         });
     }

@@ -90,7 +90,7 @@ export default function AdminsIndex({ admins }: Props) {
                             href={route('admin.admins.create')}
                             className="w-full sm:w-auto"
                         >
-                            <Button className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto">
+                            <Button className="w-full bg-brand text-brand-foreground hover:bg-brand-hover sm:w-auto">
                                 <Plus className="size-4" />
                                 New Admin
                             </Button>

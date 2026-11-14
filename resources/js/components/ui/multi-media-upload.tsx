@@ -218,7 +218,7 @@ export function MultiMediaUpload({
                                     className={cn(
                                         'flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[10px] font-semibold transition-colors',
                                         index === hoverIndex
-                                            ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+                                            ? 'border-brand bg-brand/10 text-brand'
                                             : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                     )}
                                 >
@@ -233,7 +233,7 @@ export function MultiMediaUpload({
                             onChange={(e) =>
                                 onTagChange?.(index, e.target.value || null)
                             }
-                            className="w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand"
                         >
                             <option value="">General</option>
                             {tagOptions.map((option) => (

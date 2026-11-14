@@ -224,7 +224,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                         placeholder="Search products to add…"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                        className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                     />
                 </div>
 
@@ -376,7 +376,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
-                                                className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${priceError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                                className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${priceError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`}
                                                 value={item.sale_price}
                                                 onChange={(e) =>
                                                     updateItem(i, {

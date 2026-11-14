@@ -58,7 +58,7 @@ export default function ForgotPassword({
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
                     <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-red-50">
-                        <Lock className="size-6 text-[#c8102e]" />
+                        <Lock className="size-6 text-brand" />
                     </div>
 
                     <div className="mb-6 space-y-1.5">
@@ -106,7 +106,7 @@ export default function ForgotPassword({
                                         setData('email', e.target.value)
                                     }
                                     placeholder="you@example.com"
-                                    className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-4 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                    className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-4 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
                                     required
                                 />
                             </div>
@@ -116,7 +116,7 @@ export default function ForgotPassword({
                         <button
                             type="submit"
                             disabled={processing || secondsLeft > 0}
-                            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60"
+                            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:opacity-60"
                         >
                             {processing ? (
                                 <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -133,7 +133,7 @@ export default function ForgotPassword({
 
                     <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <ShieldCheck className="size-3.5 text-[#c8102e]" />
+                            <ShieldCheck className="size-3.5 text-brand" />
                             256-bit encrypted
                         </div>
                         <div className="h-4 w-px bg-gray-200" />

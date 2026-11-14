@@ -129,7 +129,7 @@ export default function CouponEdit({
     };
 
     const inputClass = (err?: string) =>
-        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
+        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`;
 
     return (
         <>
@@ -187,7 +187,7 @@ export default function CouponEdit({
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field label="Type *" error={errors.type}>
                                     <Select
-                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
                                         value={data.type}
                                         onChange={(e) =>
                                             setData(
@@ -337,7 +337,7 @@ export default function CouponEdit({
                                     onChange={(e) =>
                                         setData('is_active', e.target.checked)
                                     }
-                                    className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                    className="size-4 rounded border-slate-300 accent-brand"
                                 />
                                 Active
                             </label>
@@ -355,7 +355,7 @@ export default function CouponEdit({
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                 >
                                     {processing ? 'Saving…' : 'Save Changes'}
                                 </Button>

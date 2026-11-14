@@ -65,7 +65,7 @@ export default function VerifyEmail({
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
                     <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-red-50">
-                        <Mail className="size-8 text-[#c8102e]" />
+                        <Mail className="size-8 text-brand" />
                     </div>
 
                     <h1 className="mb-2 text-2xl font-bold text-gray-900">
@@ -110,7 +110,7 @@ export default function VerifyEmail({
                                 )
                             }
                             placeholder="123456"
-                            className="h-12 w-full rounded-xl border border-gray-200 text-center text-xl font-semibold tracking-[0.3em] text-gray-900 focus:border-[#c8102e] focus:outline-none"
+                            className="h-12 w-full rounded-xl border border-gray-200 text-center text-xl font-semibold tracking-[0.3em] text-gray-900 focus:border-brand focus:outline-none"
                         />
                         {errors.code && (
                             <p className="text-sm text-red-600">
@@ -121,7 +121,7 @@ export default function VerifyEmail({
                         <button
                             type="submit"
                             disabled={verifying || data.code.length !== 6}
-                            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60"
+                            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-foreground transition hover:bg-brand-hover disabled:opacity-60"
                         >
                             {verifying ? (
                                 <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

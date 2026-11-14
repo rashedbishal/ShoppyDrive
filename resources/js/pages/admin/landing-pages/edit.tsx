@@ -165,9 +165,9 @@ export default function LandingPageEdit({
     productVariants,
 }: Props) {
     const inputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
     const textareaClass =
-        'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e] resize-none';
+        'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand resize-none';
     const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
     const { data, setData, put, processing, errors, setError, clearErrors } =
@@ -198,7 +198,7 @@ export default function LandingPageEdit({
                     href={`/lp/${page.slug}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex w-fit items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                    className="flex w-fit items-center gap-1 text-xs text-brand hover:underline"
                 >
                     <ExternalLink className="size-3.5" /> Preview
                 </a>
@@ -263,7 +263,7 @@ export default function LandingPageEdit({
                             </div>
                             <div>
                                 <label className={labelClass}>URL Slug</label>
-                                <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
+                                <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-brand">
                                     <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-xs text-slate-600">
                                         /lp/
                                     </span>
@@ -831,7 +831,7 @@ export default function LandingPageEdit({
                                             },
                                         })
                                     }
-                                    className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                                    className="flex items-center gap-1 text-xs text-brand hover:underline"
                                 >
                                     <Plus className="size-3.5" /> Add review
                                 </button>
@@ -961,7 +961,7 @@ export default function LandingPageEdit({
                                     },
                                 })
                             }
-                            className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                            className="flex items-center gap-1 text-xs text-brand hover:underline"
                         >
                             <Plus className="size-3.5" /> Add Q&A
                         </button>
@@ -1010,7 +1010,7 @@ export default function LandingPageEdit({
                     <Button
                         type="submit"
                         disabled={processing}
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                         {processing ? 'Saving…' : 'Save All Changes'}
                     </Button>

@@ -16,12 +16,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Brand colour (owner decision 2026-11-14). These are the defaults (the
+ * original red); Admin › Settings › Brand Colour overrides them with an
+ * inline `html:root { … }` rule (App\Support\BrandColor::css()). The CMS and
+ * the hardcoded brand spots use them through Tailwind's `brand` colours below;
+ * the Classic storefront theme's primary tokens point at them too, while the
+ * Neomorphism/Glassmorphism/Aurora themes keep their own palettes. Error and
+ * delete reds (`red-*`, --ui-destructive) are deliberately separate.
+ */
+:root {
+    --brand: #c8102e;
+    --brand-hover: #a50d25;
+    --brand-light: #fff0f2;
+    --brand-foreground: #ffffff;
+    --brand-rgb: 200 16 46;
+    --brand-dark: #e8112a;
+    --brand-dark-rgb: 232 17 42;
+    --brand-bright: #ff3a55;
+    --brand-bright-rgb: 255 58 85;
+}
+
 /* ─── Light theme is the default ──────────────────────────────── */
 :root {
     /* Brand */
-    --color-primary: #c8102e;
-    --color-primary-hover: #a50d25;
-    --color-primary-light: #fff0f2;
+    --color-primary: var(--brand);
+    --color-primary-hover: var(--brand-hover);
+    --color-primary-light: var(--brand-light);
     --color-accent: #f5a623;
     --color-accent-light: rgba(245, 166, 35, 0.15);
 
@@ -52,7 +73,7 @@
     --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
     --shadow-dropdown: 0 4px 24px rgba(0, 0, 0, 0.12);
     --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.18);
-    --shadow-glow-red: 0 0 32px rgba(200, 16, 46, 0.15);
+    --shadow-glow-red: 0 0 32px rgb(var(--brand-rgb) / 0.15);
 
     /* UI tokens (used by Radix / shadcn components) */
     --ui-background: #ffffff;
@@ -62,10 +83,10 @@
     --ui-text-primary: #1a1a2e;
     --ui-text-secondary: #6b7280;
     --ui-text-muted: #9ca3af;
-    --ui-primary: #c8102e;
-    --ui-primary-hover: #a50d25;
-    --ui-primary-light: #fff0f2;
-    --ui-primary-foreground: #ffffff;
+    --ui-primary: var(--brand);
+    --ui-primary-hover: var(--brand-hover);
+    --ui-primary-light: var(--brand-light);
+    --ui-primary-foreground: var(--brand-foreground);
     --ui-accent: #f5a623;
     --ui-accent-light: rgba(245, 166, 35, 0.15);
     --ui-accent-foreground: #1a1a2e;
@@ -79,7 +100,7 @@
     --ui-popover-foreground: #1a1a2e;
     --ui-border: #e8e8f0;
     --ui-input: #e8e8f0;
-    --ui-ring: #c8102e;
+    --ui-ring: var(--brand);
     --ui-radius: 0.75rem;
     --ui-success: #16a34a;
     --ui-warning: #d97706;
@@ -100,9 +121,9 @@
 
 /* ─── Dark theme (opt-in via .dark class) ──────────────────────── */
 .dark {
-    --color-primary: #e8112a;
-    --color-primary-hover: #c8102e;
-    --color-primary-light: rgba(232, 17, 42, 0.14);
+    --color-primary: var(--brand-dark);
+    --color-primary-hover: var(--brand);
+    --color-primary-light: rgb(var(--brand-dark-rgb) / 0.14);
     --color-accent: #f5a623;
     --color-accent-light: rgba(245, 166, 35, 0.18);
     --color-surface: #0d0d14;
@@ -130,10 +151,10 @@
     --ui-text-primary: #f0f0f8;
     --ui-text-secondary: #8888aa;
     --ui-text-muted: #55556a;
-    --ui-primary: #e8112a;
-    --ui-primary-hover: #c8102e;
-    --ui-primary-light: rgba(232, 17, 42, 0.14);
-    --ui-primary-foreground: #ffffff;
+    --ui-primary: var(--brand-dark);
+    --ui-primary-hover: var(--brand);
+    --ui-primary-light: rgb(var(--brand-dark-rgb) / 0.14);
+    --ui-primary-foreground: var(--brand-foreground);
     --ui-accent: #f5a623;
     --ui-accent-light: rgba(245, 166, 35, 0.18);
     --ui-accent-foreground: #0d0d14;
@@ -147,7 +168,7 @@
     --ui-popover-foreground: #f0f0f8;
     --ui-border: #1e1e2e;
     --ui-input: #1e1e2e;
-    --ui-ring: #e8112a;
+    --ui-ring: var(--brand-dark);
     --ui-success: #22c55e;
     --ui-warning: #f59e0b;
     --ui-error: #ef4444;
@@ -685,6 +706,11 @@
     --color-popover-foreground: var(--ui-popover-foreground);
     --color-primary: var(--ui-primary);
     --color-primary-foreground: var(--ui-primary-foreground);
+    --color-brand: var(--brand);
+    --color-brand-hover: var(--brand-hover);
+    --color-brand-light: var(--brand-light);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-brand-bright: var(--brand-bright);
     --color-secondary: var(--ui-secondary);
     --color-secondary-foreground: var(--ui-secondary-foreground);
     --color-muted: var(--ui-muted);
@@ -732,7 +758,7 @@
     }
 
     ::selection {
-        background-color: rgba(200, 16, 46, 0.2);
+        background-color: rgb(var(--brand-rgb) / 0.2);
         color: #1a1a2e;
     }
 

@@ -327,7 +327,7 @@ function CronMonitoringCard({
         <Card className="shadow-sm">
             <CardHeader className="border-b border-slate-100">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    <Activity className="size-4 text-[#c8102e]" />
+                    <Activity className="size-4 text-brand" />
                     Cron &amp; queue monitoring
                     <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -364,7 +364,7 @@ function CronMonitoringCard({
                                 )
                             }
                             placeholder="https://hc-ping.com/your-unique-id"
-                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
+                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none"
                         />
                         <CharCount
                             value={form.data.heartbeat_ping_url}
@@ -384,7 +384,7 @@ function CronMonitoringCard({
                         <Button
                             type="submit"
                             disabled={form.processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="bg-brand text-brand-foreground hover:bg-brand-hover"
                         >
                             {form.processing
                                 ? 'Saving…'
@@ -498,7 +498,7 @@ function NumberBox({
             className={`${numberInputClass} ${
                 error
                     ? 'border-red-400 focus:ring-red-500/20'
-                    : 'border-slate-300 focus:border-[#c8102e] focus:ring-[#c8102e]/15'
+                    : 'border-slate-300 focus:border-brand focus:ring-brand/15'
             }`}
         />
     );
@@ -597,7 +597,7 @@ export default function SecuritySettings({
             <Head title="Security — Admin" />
             <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
                         <ShieldCheck className="size-5" />
                     </span>
                     <div>
@@ -677,7 +677,7 @@ export default function SecuritySettings({
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                             >
                                 {processing ? 'Saving…' : 'Save'}
                             </Button>

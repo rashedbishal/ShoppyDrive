@@ -27,7 +27,7 @@ export default function Manage(): React.JSX.Element {
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
                     <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-red-50">
-                        <Mail className="size-8 text-[#c8102e]" />
+                        <Mail className="size-8 text-brand" />
                     </div>
 
                     <h1 className="mb-2 text-2xl font-bold text-gray-900">
@@ -66,12 +66,12 @@ export default function Manage(): React.JSX.Element {
                                     onChange={(e) =>
                                         setData('email', e.target.value)
                                     }
-                                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:border-[#c8102e] focus:outline-none"
+                                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:border-brand focus:outline-none"
                                 />
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full rounded-xl bg-[#c8102e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#a60d26] disabled:opacity-60"
+                                    className="w-full rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-foreground transition hover:bg-[#a60d26] disabled:opacity-60"
                                 >
                                     {processing
                                         ? 'Sending…'

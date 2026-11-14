@@ -10,6 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <title>{{ $emailSubject }}</title>
+{{-- Admin › Settings › Brand Colour (App\Support\BrandColor); the default is the original red. --}}
+@php($brandPalette = \App\Support\BrandColor::palette())
 <style>
   body { margin: 0; padding: 0; background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
   .wrapper { width: 100%; background: #f4f5f7; padding: 40px 16px; }
@@ -26,7 +28,7 @@
   .product-brand { font-size: 12px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #9ca3af; margin: 0 0 16px; }
   .product-description { font-size: 15px; color: #4b5563; line-height: 1.75; margin: 0 0 24px; }
   .price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 28px; }
-  .price { font-size: 26px; font-weight: 800; color: #c8102e; }
+  .price { font-size: 26px; font-weight: 800; color: {{ $brandPalette['brand'] }}; }
   .compare-price { font-size: 16px; color: #9ca3af; text-decoration: line-through; }
   .discount-badge { font-size: 12px; font-weight: 700; background: #fef3c7; color: #92400e; border-radius: 6px; padding: 3px 8px; }
   .cta-btn { display: inline-block; background: #1a1a2e; color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 8px; letter-spacing: 0.06em; text-transform: uppercase; }

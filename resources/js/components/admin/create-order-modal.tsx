@@ -531,7 +531,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 {selectedCustomer ? (
                                     <AdminReveal key="customer-a">
                                         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/10 text-[#c8102e]">
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
                                                 <UserRound className="size-4" />
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -573,7 +573,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                                    className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                                                 />
                                             </div>
                                             <AnimatePresence initial={false}>
@@ -840,7 +840,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                         onChange={(e) =>
                                             setProductQuery(e.target.value)
                                         }
-                                        className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                        className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-brand focus:outline-none"
                                     />
                                 </div>
 
@@ -999,7 +999,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                                     },
                                                                 )
                                                             }
-                                                            className="mt-1 h-7 w-24 rounded border border-slate-200 px-1.5 text-xs focus:border-[#c8102e] focus:outline-none"
+                                                            className="mt-1 h-7 w-24 rounded border border-slate-200 px-1.5 text-xs focus:border-brand focus:outline-none"
                                                         />
                                                         {((line.calculated_price !==
                                                             null &&
@@ -1225,7 +1225,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <Button
                                 type="submit"
                                 disabled={submitting}
-                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                className="bg-brand text-brand-foreground hover:bg-brand-hover"
                             >
                                 {submitting ? 'Creating…' : 'Create Order'}
                             </Button>

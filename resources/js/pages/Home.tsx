@@ -623,7 +623,7 @@ function FlashSaleSlider({
                     type="button"
                     onClick={() => scroll('left')}
                     aria-label="Scroll left"
-                    className="absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#c8102e]/40 bg-[#c8102e]/90 text-white shadow-lg backdrop-blur-sm transition hover:bg-[#c8102e] sm:left-0 lg:-left-4 lg:size-10"
+                    className="absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-brand/40 bg-brand/90 text-white shadow-lg backdrop-blur-sm transition hover:bg-brand sm:left-0 lg:-left-4 lg:size-10"
                 >
                     <ChevronLeft className="size-4 lg:size-5" />
                 </button>
@@ -633,7 +633,7 @@ function FlashSaleSlider({
                     type="button"
                     onClick={() => scroll('right')}
                     aria-label="Scroll right"
-                    className="absolute top-1/2 right-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#c8102e]/40 bg-[#c8102e]/90 text-white shadow-lg backdrop-blur-sm transition hover:bg-[#c8102e] sm:right-0 lg:-right-4 lg:size-10"
+                    className="absolute top-1/2 right-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-brand/40 bg-brand/90 text-white shadow-lg backdrop-blur-sm transition hover:bg-brand sm:right-0 lg:-right-4 lg:size-10"
                 >
                     <ChevronRight className="size-4 lg:size-5" />
                 </button>

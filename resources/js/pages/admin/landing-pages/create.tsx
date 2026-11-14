@@ -27,7 +27,7 @@ export default function LandingPageCreate({ products }: Props) {
     const [slugTouched, setSlugTouched] = useState(false);
 
     const inputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand';
 
     const autoSlug = (title: string) =>
         title
@@ -116,7 +116,7 @@ export default function LandingPageCreate({ products }: Props) {
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     URL Slug
                                 </label>
-                                <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
+                                <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-brand">
                                     <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
                                         /lp/
                                     </span>
@@ -230,7 +230,7 @@ export default function LandingPageCreate({ products }: Props) {
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
                                 >
                                     {processing ? 'Creating…' : 'Create Page'}
                                 </Button>
