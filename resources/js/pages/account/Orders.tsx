@@ -14,6 +14,7 @@ import {
     PaymentStatusBadge,
 } from '@/components/shared/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { useLiveSearch } from '@/hooks/use-live-search';
@@ -53,19 +54,30 @@ export default function Orders({
     // Orders follow the search box as you type.
     useLiveSearch(search, filters.search || '', runSearch);
 
+    // The order number awaiting the customer's confirmation to cancel.
+    const [cancelTarget, setCancelTarget] = useState<string | null>(null);
+    const [cancelling, setCancelling] = useState(false);
+
     const handleCancel = (orderNumber: string) => {
-        if (
-            !confirm(
-                'Are you sure you want to cancel this order? This cannot be undone.',
-            )
-        ) {
+        setCancelTarget(orderNumber);
+    };
+
+    const confirmCancel = () => {
+        if (cancelTarget === null || cancelling) {
             return;
         }
 
         router.patch(
-            route('account.orders.cancel', orderNumber),
+            route('account.orders.cancel', cancelTarget),
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onStart: () => setCancelling(true),
+                onFinish: () => {
+                    setCancelling(false);
+                    setCancelTarget(null);
+                },
+            },
         );
     };
 
@@ -320,6 +332,24 @@ export default function Orders({
                     </div>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={cancelTarget !== null}
+                onOpenChange={(open) =>
+                    !open && !cancelling && setCancelTarget(null)
+                }
+                title="Cancel this order?"
+                description={
+                    cancelTarget
+                        ? `Are you sure you want to cancel order #${cancelTarget}? This cannot be undone.`
+                        : undefined
+                }
+                confirmLabel="Cancel Order"
+                processingLabel="Cancelling…"
+                cancelLabel="Keep Order"
+                onConfirm={confirmCancel}
+                processing={cancelling}
+            />
         </>
     );
 }
