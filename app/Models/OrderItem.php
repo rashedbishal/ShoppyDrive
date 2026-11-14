@@ -63,7 +63,9 @@ class OrderItem extends Model
     {
         // getAttribute(), not ->attributes: inside a model, PHP would read the
         // other model's protected $attributes array instead of the column.
-        $attributes = $this->product_snapshot['variant_attributes'] ?? $this->variant?->getAttribute('attributes');
+        // DISC-49: an empty saved list falls back to the live variant too.
+        $saved = $this->product_snapshot['variant_attributes'] ?? null;
+        $attributes = is_array($saved) && $saved !== [] ? $saved : $this->variant?->getAttribute('attributes');
 
         if (! is_array($attributes) || $attributes === []) {
             return null;

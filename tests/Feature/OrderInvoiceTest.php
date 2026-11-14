@@ -250,11 +250,14 @@ test('the Track Order invoice route refuses an unsigned or expired link', functi
 
 test('the account order list and detail use the shared invoice rule', function () {
     $list = (string) file_get_contents(resource_path('js/pages/account/Orders.tsx'));
-    $detail = (string) file_get_contents(resource_path('js/pages/account/OrderDetail.tsx'));
+    $detail = (string) preg_replace('/\s+/', ' ', (string) file_get_contents(resource_path('js/pages/account/OrderDetail.tsx')));
     $helper = (string) file_get_contents(resource_path('js/lib/order-invoice.ts'));
 
     expect($list)->toContain('orderHasInvoice(order) && (')->toContain("'account.orders.invoice'")
-        ->and($detail)->toContain('orderHasInvoice(order)')->not->toContain("order.payment_method === 'cod'")
+        ->and($detail)->toContain('const canDownloadInvoice = orderHasInvoice(order);')
+        // The old "COD only after delivery" rule is gone (DISC-49 uses the
+        // payment method elsewhere on the page, only for its label and icon).
+        ->not->toContain("if (order.payment_method === 'cod') { return order.status === 'delivered'")
         ->and($helper)->toContain("order.status !== 'cancelled'")->toContain("order.status !== 'refunded'");
 });
 

@@ -1,6 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    ShoppingBag,
     ArrowLeft,
     Package,
     Calendar,
@@ -11,6 +10,8 @@ import {
     Undo2,
     MessageSquare,
     XCircle,
+    Banknote,
+    Smartphone,
 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -210,6 +211,8 @@ function RequestReturnDialog({
 
 interface OrderDetailProps {
     order: Order;
+    /** DISC-49: product id → product page URL, only for products still public. */
+    productLinks: Record<number, string>;
 }
 
 /**
@@ -217,23 +220,46 @@ interface OrderDetailProps {
  * order was placed, so a later rename or removal never changes it; the live
  * variant only for older orders without that copy.
  */
-function orderedOptions(item: OrderItem): string | null {
-    const attributes =
-        (item.product_snapshot?.variant_attributes as
-            | Record<string, string>
-            | null
-            | undefined) ??
-        item.variant?.attributes ??
-        null;
-    const parts = Object.entries(attributes ?? {}).map(
-        ([name, value]) => `${name}: ${value}`,
-    );
+/**
+ * DISC-49: the real payment method (the old card showed "Cash on Delivery"
+ * for bKash/Nagad orders and a made-up transaction ID for online ones).
+ */
+function paymentMethodLabel(method: Order['payment_method']): string {
+    if (method === 'cod') {
+        return 'Cash on Delivery';
+    }
 
-    return parts.length > 0 ? parts.join(' | ') : null;
+    if (method === 'mobile_banking') {
+        return 'bKash / Nagad';
+    }
+
+    return 'Online payment';
+}
+
+/**
+ * The options bought on this line (Size, Color, …): the ones saved on the
+ * order, or — when none were saved — the live variant's (DISC-49; mirrors
+ * OrderItem::variantLabel()).
+ */
+function orderedOptions(item: OrderItem): [string, string][] {
+    const saved = item.product_snapshot?.variant_attributes as
+        | Record<string, string>
+        | null
+        | undefined;
+    const attributes =
+        saved && Object.keys(saved).length > 0
+            ? saved
+            : (item.variant?.attributes ?? {});
+
+    return Object.entries(attributes ?? {}).map(([name, value]) => [
+        name,
+        String(value),
+    ]);
 }
 
 export default function OrderDetail({
     order,
+    productLinks = {},
 }: OrderDetailProps): React.JSX.Element {
     const { props } = usePage<SharedPageProps>();
     const { flash } = props;
@@ -377,300 +403,343 @@ export default function OrderDetail({
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                    {/* Left: Timeline and Items */}
-                    <div className="space-y-8 lg:col-span-8">
+                <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+                    {/* Left: Timeline and Items (DISC-49: compact) */}
+                    <div className="space-y-5 lg:col-span-8">
                         {/* Status Timeline */}
-                        <div className="rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm md:p-10">
-                            <h2 className="mb-8 flex items-center gap-3 text-xl font-bold text-[var(--color-text-primary)]">
+                        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5">
+                            <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-[var(--color-text-primary)]">
                                 <ClockIcon
-                                    size={20}
+                                    size={18}
                                     className="text-[var(--color-primary)]"
                                 />
                                 Order Journey
                             </h2>
-                            <OrderTimeline histories={order.status_histories} />
+                            <OrderTimeline
+                                histories={order.status_histories}
+                                compact
+                            />
                         </div>
 
-                        {/* Items Table */}
-                        <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white shadow-sm">
-                            <div className="border-b border-[var(--color-border)] p-6 md:p-8">
-                                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
+                        {/* Items */}
+                        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3 sm:px-5">
+                                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                     Order Items
                                 </h2>
+                                <span className="rounded-full bg-[var(--color-surface-alt)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+                                    {order.items.length}{' '}
+                                    {order.items.length === 1
+                                        ? 'item'
+                                        : 'items'}
+                                </span>
                             </div>
-                            <div className="flex flex-col">
-                                {order.items.map((item, index) => (
-                                    <div
-                                        key={item.id}
-                                        className={`flex flex-col justify-between gap-4 p-6 transition-colors hover:bg-[var(--color-surface-alt)]/50 sm:flex-row sm:items-center md:p-8 ${index !== order.items.length - 1 ? 'border-b border-[var(--color-border)]' : ''}`}
-                                    >
-                                        <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
-                                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] sm:h-16 sm:w-16">
-                                                <img
-                                                    src={
-                                                        item.variant?.image ||
-                                                        (item.product_snapshot
-                                                            ?.image as
-                                                            | string
-                                                            | undefined) ||
-                                                        (item.product
-                                                            ? getPrimaryImagePath(
-                                                                  item.product,
-                                                              )
-                                                            : undefined) ||
-                                                        '/placeholder.webp'
-                                                    }
-                                                    alt={item.product_name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                            <div className="flex min-w-0 flex-col justify-center">
-                                                <p className="line-clamp-2 text-sm font-bold text-[var(--color-text-primary)]">
-                                                    {item.product_name}
-                                                </p>
-                                                {orderedOptions(item) && (
-                                                    <p className="mt-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                                                        {orderedOptions(item)}
+                            <ul className="divide-y divide-[var(--color-border)]">
+                                {order.items.map((item) => {
+                                    const productUrl = item.product_id
+                                        ? productLinks[item.product_id]
+                                        : undefined;
+                                    const options = orderedOptions(item);
+                                    const image = (
+                                        <img
+                                            src={
+                                                item.variant?.image ||
+                                                (item.product_snapshot
+                                                    ?.image as
+                                                    | string
+                                                    | undefined) ||
+                                                (item.product
+                                                    ? getPrimaryImagePath(
+                                                          item.product,
+                                                      )
+                                                    : undefined) ||
+                                                '/placeholder.webp'
+                                            }
+                                            alt={item.product_name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    );
+
+                                    return (
+                                        <li
+                                            key={item.id}
+                                            className="flex items-start gap-3 px-4 py-3 sm:items-center sm:px-5"
+                                        >
+                                            {productUrl ? (
+                                                <Link
+                                                    href={productUrl}
+                                                    className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] transition hover:border-[var(--color-primary)]"
+                                                    aria-label={`View ${item.product_name}`}
+                                                >
+                                                    {image}
+                                                </Link>
+                                            ) : (
+                                                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                                                    {image}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                {productUrl ? (
+                                                    <Link
+                                                        href={productUrl}
+                                                        className="line-clamp-2 text-sm font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-primary)] hover:underline"
+                                                    >
+                                                        {item.product_name}
+                                                    </Link>
+                                                ) : (
+                                                    <p className="line-clamp-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                                                        {item.product_name}
                                                     </p>
                                                 )}
-                                                <p className="mt-1.5 font-mono text-xs text-[var(--color-text-secondary)]">
-                                                    SKU: {item.sku || 'N/A'}
-                                                </p>
+                                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                    {options.map(
+                                                        ([name, value]) => (
+                                                            <span
+                                                                key={name}
+                                                                className="rounded-md bg-[var(--color-surface-alt)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]"
+                                                            >
+                                                                {name}:{' '}
+                                                                <span className="font-semibold text-[var(--color-text-primary)]">
+                                                                    {value}
+                                                                </span>
+                                                            </span>
+                                                        ),
+                                                    )}
+                                                    <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
+                                                        SKU: {item.sku || 'N/A'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div className="mt-2 flex items-center justify-between gap-4 rounded-xl bg-[var(--color-surface-alt)] p-4 sm:mt-0 sm:justify-end sm:gap-8 sm:rounded-none sm:bg-transparent sm:p-0">
-                                            <div className="text-left sm:text-right">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
-                                                    Price
-                                                </p>
-                                                <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                                                    {formatCurrency(item.price)}
-                                                </p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
-                                                    Qty
-                                                </p>
-                                                <p className="text-sm font-bold text-[var(--color-text-secondary)]">
-                                                    x{item.quantity}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
-                                                    Subtotal
-                                                </p>
+                                            <div className="shrink-0 text-right">
                                                 <p className="text-sm font-bold text-[var(--color-primary)]">
                                                     {formatCurrency(
                                                         item.subtotal,
                                                     )}
                                                 </p>
+                                                <p className="mt-0.5 text-xs whitespace-nowrap text-[var(--color-text-secondary)]">
+                                                    {formatCurrency(item.price)}{' '}
+                                                    × {item.quantity}
+                                                </p>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
 
-                            {/* Detailed Totals */}
-                            <div className="flex justify-end bg-[var(--color-surface-alt)]/50 p-8">
-                                <div className="w-full max-w-xs space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium text-[var(--color-text-secondary)]">
+                            {/* Totals */}
+                            <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)]/50 px-4 py-3 sm:px-5">
+                                <dl className="ml-auto w-full space-y-1.5 text-sm sm:max-w-xs">
+                                    <div className="flex justify-between">
+                                        <dt className="text-[var(--color-text-secondary)]">
                                             Subtotal
-                                        </span>
-                                        <span className="font-bold text-[var(--color-text-primary)]">
+                                        </dt>
+                                        <dd className="font-semibold text-[var(--color-text-primary)]">
                                             {formatCurrency(order.subtotal)}
-                                        </span>
+                                        </dd>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium text-[var(--color-text-secondary)]">
-                                            Shipping Cost
-                                        </span>
-                                        <span className="font-bold text-[var(--color-text-primary)]">
+                                    <div className="flex justify-between">
+                                        <dt className="text-[var(--color-text-secondary)]">
+                                            Shipping
+                                        </dt>
+                                        <dd className="font-semibold text-[var(--color-text-primary)]">
                                             {formatCurrency(
                                                 order.shipping_cost,
                                             )}
-                                        </span>
+                                        </dd>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium text-[var(--color-text-secondary)]">
-                                            Tax
-                                        </span>
-                                        <span className="font-bold text-[var(--color-text-primary)]">
-                                            {formatCurrency(order.tax)}
-                                        </span>
-                                    </div>
-                                    {order.discount > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="font-medium text-[var(--color-text-secondary)]">
-                                                Discount ({order.coupon_code})
-                                            </span>
-                                            <span className="font-bold text-[var(--color-success)]">
-                                                -
-                                                {formatCurrency(order.discount)}
-                                            </span>
+                                    {order.tax > 0 && (
+                                        <div className="flex justify-between">
+                                            <dt className="text-[var(--color-text-secondary)]">
+                                                Tax
+                                            </dt>
+                                            <dd className="font-semibold text-[var(--color-text-primary)]">
+                                                {formatCurrency(order.tax)}
+                                            </dd>
                                         </div>
                                     )}
-                                    <div className="my-4 h-px w-full bg-[var(--color-border)]" />
-                                    <div className="flex items-end justify-between">
-                                        <span className="text-lg font-bold text-[var(--color-text-primary)]">
+                                    {order.discount > 0 && (
+                                        <div className="flex justify-between">
+                                            <dt className="text-[var(--color-text-secondary)]">
+                                                Discount
+                                                {order.coupon_code
+                                                    ? ` (${order.coupon_code})`
+                                                    : ''}
+                                            </dt>
+                                            <dd className="font-semibold text-[var(--color-success)]">
+                                                -
+                                                {formatCurrency(order.discount)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    <div className="flex items-baseline justify-between border-t border-[var(--color-border)] pt-2">
+                                        <dt className="font-bold text-[var(--color-text-primary)]">
                                             Total
-                                        </span>
-                                        <span className="text-2xl font-bold text-[var(--color-primary)]">
+                                        </dt>
+                                        <dd className="text-lg font-bold text-[var(--color-primary)]">
                                             {formatCurrency(order.total)}
-                                        </span>
+                                        </dd>
                                     </div>
-                                </div>
+                                </dl>
                             </div>
                         </div>
                     </div>
 
                     {/* Right: Order Summary Details */}
-                    <div className="space-y-8 lg:col-span-4">
+                    <div className="space-y-5 lg:col-span-4">
                         {/* Tracking Info */}
                         {order.tracking_number && (
-                            <div className="rounded-3xl bg-gradient-to-br from-[var(--color-secondary)] to-[#2A2A4E] p-8 text-white shadow-lg shadow-blue-100/50">
-                                <div className="mb-6 flex items-center gap-3">
+                            <div className="rounded-2xl bg-gradient-to-br from-[var(--color-secondary)] to-[#2A2A4E] p-5 text-white shadow-lg shadow-blue-100/50">
+                                <div className="mb-3 flex items-center gap-2">
                                     <Truck
-                                        size={24}
+                                        size={18}
                                         className="text-blue-400"
                                     />
-                                    <h3 className="text-lg font-bold">
+                                    <h3 className="text-base font-bold">
                                         Track Shipment
                                     </h3>
                                 </div>
-                                <div className="mb-6 rounded-2xl border border-white/10 bg-white/10 p-4">
-                                    <p className="mb-1 text-[10px] font-bold tracking-widest text-blue-200 uppercase">
+                                <div className="mb-3 rounded-xl border border-white/10 bg-white/10 px-3 py-2.5">
+                                    <p className="text-[10px] font-bold tracking-widest text-blue-200 uppercase">
                                         Tracking ID
                                     </p>
-                                    <p className="font-mono text-xl font-bold tracking-tight">
+                                    <p className="font-mono text-base font-bold tracking-tight">
                                         {order.tracking_number}
                                     </p>
                                 </div>
-                                <Button className="h-12 w-full rounded-xl bg-white font-bold text-[var(--color-secondary)] hover:bg-gray-100">
+                                <Button className="h-10 w-full rounded-xl bg-white font-bold text-[var(--color-secondary)] hover:bg-gray-100">
                                     Track on Carrier Site
                                 </Button>
                             </div>
                         )}
 
-                        {/* Customer & Address Details */}
-                        <div className="space-y-8 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
-                            <div>
-                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                        {/* Delivery & payment (DISC-49) */}
+                        <div className="divide-y divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
+                            <section className="p-4 sm:p-5">
+                                <h3 className="mb-2.5 flex items-center gap-2 text-[11px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     <MapPin
-                                        size={16}
+                                        size={14}
                                         className="text-[var(--color-primary)]"
                                     />
                                     Shipping Address
                                 </h3>
-                                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                                    <p className="mb-1 text-sm font-bold text-[var(--color-text-primary)]">
-                                        {order.shipping_address.name}
-                                    </p>
-                                    <p className="mb-3 text-xs font-medium text-[var(--color-text-secondary)]">
+                                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                    {order.shipping_address.name}
+                                </p>
+                                {order.shipping_address.phone && (
+                                    <p className="text-xs text-[var(--color-text-secondary)]">
                                         {order.shipping_address.phone}
                                     </p>
-                                    <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
-                                        {order.shipping_address.address_line1}
-                                        <br />
-                                        {order.shipping_address
-                                            .address_line2 && (
-                                            <>
-                                                {
-                                                    order.shipping_address
-                                                        .address_line2
-                                                }
-                                                <br />
-                                            </>
-                                        )}
-                                        {order.shipping_address.city},{' '}
-                                        {order.shipping_address.state}{' '}
-                                        {order.shipping_address.postal_code}
-                                        <br />
-                                        {order.shipping_address.country}
-                                    </p>
-                                </div>
-                            </div>
+                                )}
+                                <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                                    {[
+                                        order.shipping_address.address_line1,
+                                        order.shipping_address.address_line2,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    <br />
+                                    {[
+                                        order.shipping_address.city,
+                                        [
+                                            order.shipping_address.state,
+                                            order.shipping_address.postal_code,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' '),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    {order.shipping_address.country && (
+                                        <>
+                                            <br />
+                                            {order.shipping_address.country}
+                                        </>
+                                    )}
+                                </p>
+                            </section>
 
-                            <div>
-                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                            <section className="p-4 sm:p-5">
+                                <h3 className="mb-2.5 flex items-center gap-2 text-[11px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     <CreditCard
-                                        size={16}
+                                        size={14}
                                         className="text-[var(--color-primary)]"
                                     />
-                                    Payment Method
+                                    Payment
                                 </h3>
-                                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <p className="text-sm font-bold text-[var(--color-text-primary)] uppercase">
-                                            {order.payment_method}
-                                        </p>
-                                        <PaymentStatusBadge
-                                            status={order.payment_status}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
-                                            {(order.payment_method as string) ===
-                                            'sslcommerz' ? (
-                                                <CreditCard size={20} />
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-2.5">
+                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                            {order.payment_method === 'cod' ? (
+                                                <Banknote size={16} />
+                                            ) : order.payment_method ===
+                                              'mobile_banking' ? (
+                                                <Smartphone size={16} />
                                             ) : (
-                                                <ShoppingBag size={20} />
+                                                <CreditCard size={16} />
                                             )}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-[var(--color-text-primary)]">
-                                                {(order.payment_method as string) ===
-                                                'sslcommerz'
-                                                    ? 'Paid via Online'
-                                                    : 'Cash on Delivery'}
-                                            </p>
-                                            <p className="text-[10px] font-medium text-[var(--color-text-secondary)]">
-                                                Transaction ID:{' '}
-                                                {(order.payment_method as string) ===
-                                                'sslcommerz'
-                                                    ? 'TXN-98234723'
-                                                    : 'N/A'}
-                                            </p>
-                                        </div>
+                                        </span>
+                                        <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                                            {paymentMethodLabel(
+                                                order.payment_method,
+                                            )}
+                                        </p>
                                     </div>
+                                    <PaymentStatusBadge
+                                        status={order.payment_status}
+                                    />
                                 </div>
-                            </div>
+                                <div className="mt-3 flex items-baseline justify-between rounded-lg bg-[var(--color-surface-alt)] px-3 py-2 text-sm">
+                                    <span className="text-[var(--color-text-secondary)]">
+                                        {order.payment_status === 'paid'
+                                            ? 'Paid'
+                                            : order.payment_status ===
+                                                'refunded'
+                                              ? 'Refunded'
+                                              : order.payment_method === 'cod'
+                                                ? 'To pay on delivery'
+                                                : 'Amount'}
+                                    </span>
+                                    <span className="font-bold text-[var(--color-text-primary)]">
+                                        {formatCurrency(order.total)}
+                                    </span>
+                                </div>
+                            </section>
 
-                            <div>
-                                <h3 className="mb-4 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                            <section className="p-4 sm:p-5">
+                                <h3 className="mb-2.5 text-[11px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Help & Support
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2">
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="w-full justify-start rounded-xl border-[var(--color-border)] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                                        size="sm"
+                                        className="justify-start rounded-lg border-[var(--color-border)] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                                     >
                                         <Link href={route('contact')}>
                                             <MessageSquare
-                                                size={16}
-                                                className="mr-3"
+                                                size={14}
+                                                className="mr-1.5"
                                             />
-                                            Contact Support
+                                            Support
                                         </Link>
                                     </Button>
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="w-full justify-start rounded-xl border-[var(--color-border)] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                                        size="sm"
+                                        className="justify-start rounded-lg border-[var(--color-border)] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                                     >
                                         <Link href={route('return-policy')}>
                                             <Package
-                                                size={16}
-                                                className="mr-3"
+                                                size={14}
+                                                className="mr-1.5"
                                             />
-                                            Return Policy
+                                            Returns
                                         </Link>
                                     </Button>
                                 </div>
-                            </div>
+                            </section>
                         </div>
                     </div>
                 </div>

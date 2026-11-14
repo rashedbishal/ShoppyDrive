@@ -9,6 +9,7 @@ use App\Http\Controllers\Settings\ConnectionsController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Address;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Wishlist;
 use App\Services\OrderCancellationService;
 use App\Support\OrderInvoice;
@@ -77,8 +78,18 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
         // variant, otherwise lazy-load per item during serialization.
         $order->load(['items.product.images', 'items.variant.media', 'statusHistories', 'latestReturnRequest']);
 
+        // DISC-49: link an item to its product page only while that page is
+        // public (same rule as ProductController::show()), so a customer never
+        // lands on a 404 for a product that was since hidden or removed.
+        $productLinks = Product::with(['category:id,is_active', 'subCategory:id,is_active', 'brand:id,is_active'])
+            ->whereIn('id', $order->items->pluck('product_id')->filter()->unique())
+            ->get()
+            ->filter(fn (Product $product): bool => $product->isPubliclyVisible())
+            ->mapWithKeys(fn (Product $product): array => [$product->id => route('product.show', $product->slug)]);
+
         return inertia('account/OrderDetail', [
             'order' => $order,
+            'productLinks' => $productLinks,
         ]);
     })->withTrashed()->name('account.orders.show');
 
