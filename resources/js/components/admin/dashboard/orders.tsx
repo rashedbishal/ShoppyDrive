@@ -65,6 +65,8 @@ export function Donut({
                                 ))}
                             </Pie>
                             <Tooltip
+                                // Above the centre label, which comes later in the DOM and would otherwise paint over the tooltip.
+                                wrapperStyle={{ zIndex: 20 }}
                                 content={({ active, payload }) => {
                                     if (!active || !payload?.length) {
                                         return null;
