@@ -120,7 +120,12 @@ return Application::configure(basePath: dirname(__DIR__))
             RedirectAdminToDashboard::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // DISC-51: capped. Uncapped, the redesigned admin dashboard's
+            // preload list (~100 files) made its response headers exceed
+            // Hostinger CDN's limit, so every full load returned an instant
+            // 504. The page's own <link rel="modulepreload"> tags still list
+            // every file, so nothing stops being preloaded.
+            AddLinkHeadersForPreloadedAssets::using(20),
             TrackDailyVisit::class,
             CheckCronHealth::class,
             CaptureTrafficSource::class,
