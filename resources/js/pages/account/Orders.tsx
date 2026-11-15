@@ -6,6 +6,8 @@ import {
     ArrowRight,
     XCircle,
     Download,
+    Eye,
+    Truck,
 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -28,6 +30,111 @@ interface OrdersProps {
         search?: string;
         status?: string;
     };
+}
+
+/** Status and payment pills at the slim list size (this page only). */
+const PILL_CLASS = 'px-1.5 py-0 text-[9px] leading-4';
+
+/** A 24px icon action in the order table. */
+const ICON_BUTTON_CLASS =
+    'size-6 rounded-md border-[var(--color-border)] p-0 hover:bg-[var(--color-surface-alt)]';
+
+/** The delivery line shown under each order (phones) or as the date's tooltip (table). */
+function deliveryNote(order: Order): string {
+    if (order.status === 'delivered') {
+        return order.delivered_at
+            ? `Delivered on ${formatDate(order.delivered_at)}`
+            : 'Delivered';
+    }
+
+    return 'Est. delivery 3–5 days';
+}
+
+/** Keeps an action's column when that action doesn't apply to the order, so the icons line up row to row. */
+function EmptyActionSlot(): React.JSX.Element {
+    return <span aria-hidden="true" className="size-6 shrink-0" />;
+}
+
+type OrderItemRow = Order['items'][number];
+
+/** The best image for an order line: variant, saved snapshot, product, else the placeholder. */
+function itemImageSrc(item: OrderItemRow): string {
+    return (
+        item.variant?.image ||
+        (item.product_snapshot?.image as string | undefined) ||
+        (item.product ? getPrimaryImagePath(item.product) : undefined) ||
+        '/placeholder.svg'
+    );
+}
+
+/** A missing product image shows the placeholder, not its alt text squeezed into the thumbnail. */
+function showPlaceholderOnError(
+    event: React.SyntheticEvent<HTMLImageElement>,
+): void {
+    const image = event.currentTarget;
+
+    if (!image.src.endsWith('/placeholder.svg')) {
+        image.src = '/placeholder.svg';
+    }
+}
+
+/** Phone card thumbnail: always 36px, the extra-item count as a corner badge, so the text column lines up card to card. */
+function CardThumbnail({ order }: { order: Order }): React.JSX.Element {
+    const first = order.items[0];
+    const more = order.items.length - 1;
+
+    return (
+        <div className="relative size-9">
+            <div className="size-9 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                {first && (
+                    <img
+                        src={itemImageSrc(first)}
+                        alt={first.product_name}
+                        className="h-full w-full object-cover"
+                        onError={showPlaceholderOnError}
+                    />
+                )}
+            </div>
+            {more > 0 && (
+                <span className="absolute -right-1.5 -bottom-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-[var(--color-primary)] px-1 text-[9px] leading-none font-bold text-white">
+                    +{more}
+                </span>
+            )}
+        </div>
+    );
+}
+
+/** Up to `max` overlapping item thumbnails, then a "+N" chip for the rest. */
+function OrderThumbnails({
+    order,
+    max,
+}: {
+    order: Order;
+    max: number;
+}): React.JSX.Element {
+    return (
+        <div className="flex shrink-0 -space-x-2">
+            {order.items.slice(0, max).map((item, idx) => (
+                <div
+                    key={idx}
+                    className="relative z-[10] size-7 overflow-hidden rounded-md border-[1.5px] border-white bg-[var(--color-surface-alt)] shadow-sm"
+                    style={{ zIndex: 10 - idx }}
+                >
+                    <img
+                        src={itemImageSrc(item)}
+                        alt={item.product_name}
+                        className="h-full w-full object-cover"
+                        onError={showPlaceholderOnError}
+                    />
+                </div>
+            ))}
+            {order.items.length > max && (
+                <div className="relative z-0 flex size-7 items-center justify-center rounded-md border-[1.5px] border-white bg-[var(--color-primary-light)] text-[10px] font-bold text-[var(--color-primary)] shadow-sm">
+                    +{order.items.length - max}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function Orders({
@@ -130,168 +237,314 @@ export default function Orders({
                     </form>
                 </div>
 
-                {/* Orders List */}
+                {/* Orders List: cards on phones, a one-row-per-order table from md (DISC-52, owner request). */}
                 {orders.data.length > 0 ? (
-                    <div className="space-y-3 md:space-y-0 md:divide-y md:divide-[var(--color-border)] md:overflow-hidden md:rounded-2xl md:border md:border-[var(--color-border)] md:bg-white md:shadow-sm">
-                        {orders.data.map((order) => (
-                            <div
-                                key={order.id}
-                                className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm transition-colors hover:bg-[var(--color-surface-alt)] md:rounded-none md:border-0 md:px-5 md:py-3 md:shadow-none"
-                            >
-                                {/* Full width on phones so the badges and total wrap below it. */}
-                                <div className="flex w-full min-w-0 items-center gap-3 md:w-auto md:flex-1 md:gap-4">
-                                    {/* Order Items Preview */}
-                                    <div className="flex shrink-0 -space-x-3">
-                                        {order.items
-                                            .slice(0, 3)
-                                            .map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="relative z-[10] h-10 w-10 overflow-hidden rounded-lg border-2 border-white bg-[var(--color-surface-alt)] shadow-sm"
-                                                    style={{
-                                                        zIndex: 10 - idx,
-                                                    }}
-                                                >
-                                                    <img
-                                                        src={
-                                                            item.variant
-                                                                ?.image ||
-                                                            (item
-                                                                .product_snapshot
-                                                                ?.image as
-                                                                | string
-                                                                | undefined) ||
-                                                            (item.product
-                                                                ? getPrimaryImagePath(
-                                                                      item.product,
-                                                                  )
-                                                                : undefined) ||
-                                                            '/placeholder.webp'
-                                                        }
-                                                        alt={item.product_name}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
-                                            ))}
-                                        {order.items.length > 3 && (
-                                            <div className="relative z-0 flex h-10 w-10 items-center justify-center rounded-lg border-2 border-white bg-[var(--color-primary-light)] text-xs font-bold text-[var(--color-primary)] shadow-sm">
-                                                +{order.items.length - 3}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Order ID, date and delivery note */}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-mono text-sm font-bold text-[var(--color-text-primary)]">
+                    <>
+                        {/*
+                         * Phones: one card per order on a grid, so every line
+                         * starts at the same place: a fixed thumbnail column,
+                         * then order number (total on the right), date and
+                         * delivery note, and the pills. Below a divider, the
+                         * actions fill the width (text buttons share it, icons
+                         * at the end), the same on every card.
+                         */}
+                        <div className="space-y-2 md:hidden">
+                            {orders.data.map((order) => (
+                                <div
+                                    key={order.id}
+                                    className="rounded-xl border border-[var(--color-border)] bg-white p-2.5 shadow-sm"
+                                >
+                                    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-1">
+                                        <div className="row-span-3">
+                                            <CardThumbnail order={order} />
+                                        </div>
+                                        <p className="truncate font-mono text-xs leading-5 font-bold text-[var(--color-text-primary)]">
                                             #{order.order_number}
                                         </p>
-                                        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-[var(--color-text-secondary)]">
+                                        <p className="text-right text-xs leading-5 font-bold whitespace-nowrap text-[var(--color-primary)]">
+                                            {formatCurrency(order.total)}
+                                        </p>
+                                        <p className="col-span-2 col-start-2 flex flex-wrap items-center gap-x-1 text-[11px] leading-4 text-[var(--color-text-secondary)]">
                                             <Calendar
-                                                size={12}
+                                                size={11}
                                                 className="text-[var(--color-text-muted)]"
                                             />
                                             <span className="whitespace-nowrap">
                                                 {formatDate(order.created_at)}
                                             </span>
                                             <span aria-hidden="true">·</span>
-                                            <span className="italic">
-                                                {order.status === 'delivered'
-                                                    ? order.delivered_at
-                                                        ? `Delivered on ${formatDate(order.delivered_at)}`
-                                                        : 'Delivered'
-                                                    : 'Estimated Delivery: 3-5 business days'}
+                                            <span className="whitespace-nowrap italic">
+                                                {deliveryNote(order)}
                                             </span>
                                         </p>
+                                        <div className="col-span-2 col-start-2 flex items-center gap-1">
+                                            <OrderStatusBadge
+                                                className={PILL_CLASS}
+                                                status={order.status}
+                                            />
+                                            <PaymentStatusBadge
+                                                className={PILL_CLASS}
+                                                status={order.payment_status}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="flex flex-1 items-center gap-2 md:flex-none">
-                                    <OrderStatusBadge status={order.status} />
-                                    <PaymentStatusBadge
-                                        status={order.payment_status}
-                                    />
-                                </div>
-
-                                <p className="min-w-20 text-right text-base font-bold text-[var(--color-primary)]">
-                                    {formatCurrency(order.total)}
-                                </p>
-
-                                <div className="flex w-full flex-wrap justify-end gap-2 border-t border-[var(--color-border)] pt-3 md:w-auto md:border-0 md:pt-0">
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 rounded-lg border-[var(--color-border)] font-bold hover:bg-[var(--color-surface-alt)] md:flex-none"
-                                    >
-                                        <Link
-                                            href={route(
-                                                'account.orders.show',
-                                                order.order_number,
-                                            )}
-                                        >
-                                            View Details
-                                        </Link>
-                                    </Button>
-                                    {order.status !== 'cancelled' && (
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            className="flex-1 rounded-lg bg-[var(--color-secondary)] font-bold text-white hover:bg-[#2A2A4E] md:flex-none"
-                                        >
-                                            <Link
-                                                href={route('order.track', {
-                                                    order: order.order_number,
-                                                })}
-                                            >
-                                                Track Order
-                                                <ArrowRight
-                                                    size={14}
-                                                    className="ml-1"
-                                                />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {orderHasInvoice(order) && (
+                                    <div className="mt-2 flex items-center gap-1.5 border-t border-[var(--color-border)] pt-2">
                                         <Button
                                             asChild
                                             variant="outline"
                                             size="sm"
-                                            className="flex-1 rounded-lg border-[var(--color-border)] font-bold hover:bg-[var(--color-surface-alt)] md:flex-none"
+                                            className="h-6 flex-1 gap-1 rounded-md border-[var(--color-border)] px-2 text-[11px] font-bold hover:bg-[var(--color-surface-alt)]"
                                         >
-                                            <a
+                                            <Link
                                                 href={route(
-                                                    'account.orders.invoice',
+                                                    'account.orders.show',
                                                     order.order_number,
                                                 )}
                                             >
-                                                <Download
-                                                    size={14}
-                                                    className="mr-1"
-                                                />
-                                                Invoice
-                                            </a>
+                                                View Details
+                                            </Link>
                                         </Button>
-                                    )}
-                                    {order.status === 'pending' && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex-1 rounded-lg border-red-200 font-bold text-red-600 hover:border-red-300 hover:bg-red-50 md:flex-none"
-                                            onClick={() =>
-                                                handleCancel(order.order_number)
-                                            }
-                                        >
-                                            <XCircle
-                                                size={14}
-                                                className="mr-1"
-                                            />
-                                            Cancel Order
-                                        </Button>
-                                    )}
+                                        {order.status !== 'cancelled' && (
+                                            <Button
+                                                asChild
+                                                size="sm"
+                                                className="h-6 flex-1 gap-1 rounded-md bg-[var(--color-secondary)] px-2 text-[11px] font-bold text-white hover:bg-[#2A2A4E]"
+                                            >
+                                                <Link
+                                                    href={route('order.track', {
+                                                        order: order.order_number,
+                                                    })}
+                                                >
+                                                    Track Order
+                                                    <ArrowRight size={11} />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {orderHasInvoice(order) && (
+                                            <Button
+                                                asChild
+                                                variant="outline"
+                                                size="sm"
+                                                className={`${ICON_BUTTON_CLASS} shrink-0`}
+                                            >
+                                                <a
+                                                    href={route(
+                                                        'account.orders.invoice',
+                                                        order.order_number,
+                                                    )}
+                                                    aria-label="Download invoice"
+                                                    title="Download invoice"
+                                                >
+                                                    <Download size={12} />
+                                                </a>
+                                            </Button>
+                                        )}
+                                        {order.status === 'pending' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="size-6 shrink-0 rounded-md border-red-200 p-0 text-red-600 hover:border-red-300 hover:bg-red-50"
+                                                aria-label="Cancel order"
+                                                title="Cancel order"
+                                                onClick={() =>
+                                                    handleCancel(
+                                                        order.order_number,
+                                                    )
+                                                }
+                                            >
+                                                <XCircle size={12} />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+
+                        {/*
+                         * md and up: one row per order, dividing lines between
+                         * them. Sized for the narrowest case (~685px at lg with
+                         * the account menu beside it): ~660px of columns. The
+                         * actions are 24px icons in fixed slots, so View,
+                         * Track, Invoice and Cancel line up from row to row.
+                         * If a very long total ever overflows, the table
+                         * scrolls sideways instead of squeezing.
+                         */}
+                        <div className="hidden overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-white shadow-sm md:block">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-alt)] text-[10px] font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase">
+                                    <tr>
+                                        <th scope="col" className="px-2.5 py-2">
+                                            Order
+                                        </th>
+                                        <th scope="col" className="px-2.5 py-2">
+                                            Date
+                                        </th>
+                                        <th scope="col" className="px-2.5 py-2">
+                                            Status
+                                        </th>
+                                        <th scope="col" className="px-2.5 py-2">
+                                            Payment
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-2.5 py-2 text-right"
+                                        >
+                                            Total
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-2.5 py-2 text-right"
+                                        >
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--color-border)]">
+                                    {orders.data.map((order) => (
+                                        <tr
+                                            key={order.id}
+                                            className="whitespace-nowrap transition-colors hover:bg-[var(--color-surface-alt)]"
+                                        >
+                                            <td className="px-2.5 py-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <OrderThumbnails
+                                                        order={order}
+                                                        max={1}
+                                                    />
+                                                    <span className="font-mono font-bold text-[var(--color-text-primary)]">
+                                                        #{order.order_number}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            {/* The delivery note has no column of its own: it's the date's tooltip (and read out by screen readers). */}
+                                            <td
+                                                className="px-2.5 py-1.5 text-[11px] text-[var(--color-text-secondary)]"
+                                                title={deliveryNote(order)}
+                                            >
+                                                {formatDate(order.created_at)}
+                                                <span className="sr-only">
+                                                    , {deliveryNote(order)}
+                                                </span>
+                                            </td>
+                                            <td className="px-2.5 py-1.5">
+                                                <OrderStatusBadge
+                                                    className={PILL_CLASS}
+                                                    status={order.status}
+                                                />
+                                            </td>
+                                            <td className="px-2.5 py-1.5">
+                                                <PaymentStatusBadge
+                                                    className={PILL_CLASS}
+                                                    status={
+                                                        order.payment_status
+                                                    }
+                                                />
+                                            </td>
+                                            <td className="px-2.5 py-1.5 text-right font-bold text-[var(--color-primary)]">
+                                                {formatCurrency(order.total)}
+                                            </td>
+                                            <td className="px-2.5 py-1.5">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className={
+                                                            ICON_BUTTON_CLASS
+                                                        }
+                                                    >
+                                                        <Link
+                                                            href={route(
+                                                                'account.orders.show',
+                                                                order.order_number,
+                                                            )}
+                                                            aria-label="View details"
+                                                            title="View details"
+                                                        >
+                                                            <Eye size={13} />
+                                                        </Link>
+                                                    </Button>
+                                                    {order.status !==
+                                                    'cancelled' ? (
+                                                        <Button
+                                                            asChild
+                                                            size="sm"
+                                                            className="size-6 rounded-md bg-[var(--color-secondary)] p-0 text-white hover:bg-[#2A2A4E]"
+                                                        >
+                                                            <Link
+                                                                href={route(
+                                                                    'order.track',
+                                                                    {
+                                                                        order: order.order_number,
+                                                                    },
+                                                                )}
+                                                                aria-label="Track order"
+                                                                title="Track order"
+                                                            >
+                                                                <Truck
+                                                                    size={13}
+                                                                />
+                                                            </Link>
+                                                        </Button>
+                                                    ) : (
+                                                        <EmptyActionSlot />
+                                                    )}
+                                                    {orderHasInvoice(order) && (
+                                                        <Button
+                                                            asChild
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className={
+                                                                ICON_BUTTON_CLASS
+                                                            }
+                                                        >
+                                                            <a
+                                                                href={route(
+                                                                    'account.orders.invoice',
+                                                                    order.order_number,
+                                                                )}
+                                                                aria-label="Download invoice"
+                                                                title="Download invoice"
+                                                            >
+                                                                <Download
+                                                                    size={13}
+                                                                />
+                                                            </a>
+                                                        </Button>
+                                                    )}
+                                                    {!orderHasInvoice(
+                                                        order,
+                                                    ) && <EmptyActionSlot />}
+                                                    {order.status ===
+                                                    'pending' ? (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="size-6 rounded-md border-red-200 p-0 text-red-600 hover:border-red-300 hover:bg-red-50"
+                                                            aria-label="Cancel order"
+                                                            title="Cancel order"
+                                                            onClick={() =>
+                                                                handleCancel(
+                                                                    order.order_number,
+                                                                )
+                                                            }
+                                                        >
+                                                            <XCircle
+                                                                size={13}
+                                                            />
+                                                        </Button>
+                                                    ) : (
+                                                        <EmptyActionSlot />
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 ) : (
                     <div className="rounded-2xl border border-[var(--color-border)] bg-white p-10 text-center">
                         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]">
