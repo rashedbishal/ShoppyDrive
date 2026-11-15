@@ -6,7 +6,10 @@ import {
     BadgeCheck,
     ChevronLeft,
     ChevronRight,
+    Headphones,
+    PackageCheck,
     PackagePlus,
+    Shield,
     ShoppingBag,
     Sparkles,
     Star,
@@ -1010,6 +1013,7 @@ function Home(): React.JSX.Element {
 
     // Helper to get section data safely
     const getSection = (key: string) => homepage_settings?.[key];
+    const freeDeliveryThreshold = Number(settings.free_delivery_threshold ?? 0);
 
     // Helper to render section heading
     const renderHeading = (
@@ -1349,14 +1353,21 @@ function Home(): React.JSX.Element {
                     <NewsletterForm />
                 </section>
 
+                {/*
+                 * The site's trust points in one card. Also holds what the
+                 * footer's badge strip used to say (removed site-wide, owner
+                 * request 2026-11-15), keeping BIZ-032: the free-delivery
+                 * threshold and support hours come from the real settings.
+                 * Text wraps rather than truncating, so nothing is cut off.
+                 */}
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <Card className="border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
-                        <CardContent className="grid gap-4 px-6 py-6 sm:items-center sm:px-8 md:grid-cols-3">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+                        <CardContent className="grid gap-5 px-6 py-6 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-light)] text-[var(--color-primary)]">
                                     <BadgeCheck className="size-5" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                                         Trusted commerce for{' '}
                                         {settings.site_name}
@@ -1368,32 +1379,73 @@ function Home(): React.JSX.Element {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
-                                <div className="flex size-10 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                            <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
                                     <Truck className="size-4" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="font-medium text-[var(--color-text-primary)]">
                                         Delivery coverage
                                     </p>
                                     <p>
-                                        Nationwide with supportive order
-                                        tracking.
+                                        Nationwide to all 64 districts, with
+                                        supportive order tracking.
+                                        {freeDeliveryThreshold > 0 &&
+                                            ` Free delivery on orders over ${settings.currency_symbol}${Math.round(freeDeliveryThreshold).toLocaleString('en-US')}.`}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
-                                <div className="flex size-10 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)]">
+                            <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)]">
                                     <Star className="size-4 fill-current" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="font-medium text-[var(--color-text-primary)]">
                                         Confidence signals
                                     </p>
                                     <p>
                                         Ratings, flash-sale pricing, and
                                         wishlist persistence.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                    <Shield className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-medium text-[var(--color-text-primary)]">
+                                        Secure payment
+                                    </p>
+                                    <p>SSL encrypted checkout.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                    <PackageCheck className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-medium text-[var(--color-text-primary)]">
+                                        Verified products
+                                    </p>
+                                    <p>Quality assured.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                    <Headphones className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-medium text-[var(--color-text-primary)]">
+                                        Customer support
+                                    </p>
+                                    <p>
+                                        {settings.support_hours ??
+                                            'Every day, 9 AM–9 PM'}
                                     </p>
                                 </div>
                             </div>
