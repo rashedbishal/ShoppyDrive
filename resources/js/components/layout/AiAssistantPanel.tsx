@@ -202,6 +202,7 @@ export default function AiAssistantPanel({
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const listRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -278,6 +279,9 @@ export default function AiAssistantPanel({
             ]);
         } finally {
             setSending(false);
+            // Keep the caret in the chat field after sending; disabling the
+            // input mid-request is what used to blur it.
+            inputRef.current?.focus();
         }
     };
 
@@ -355,11 +359,11 @@ export default function AiAssistantPanel({
                         className="flex items-center gap-2 border-t border-slate-200 bg-white p-3"
                     >
                         <input
+                            ref={inputRef}
                             maxLength={1000}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask about a product or order…"
-                            disabled={sending}
                             className="h-10 flex-1 rounded-full border border-slate-200 px-4 text-sm focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
                         />
                         <button
