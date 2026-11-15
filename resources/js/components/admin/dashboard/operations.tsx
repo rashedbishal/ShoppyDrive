@@ -53,7 +53,9 @@ const TONES: Record<ActionItem['tone'], string> = {
 export function ActionNeededPanel({
     data,
     fallback,
+    className = '',
 }: {
+    className?: string;
     data: ActionNeeded | undefined;
     fallback: {
         pending_orders: number;
@@ -162,8 +164,8 @@ export function ActionNeededPanel({
             title="Needs action now"
             subtitle="Always up to date"
             icon={BellRing}
-            className="h-full"
-            bodyClassName="p-3"
+            className={`h-full ${className}`}
+            bodyClassName="overflow-y-auto p-3"
         >
             {cod && cod.orders > 0 && (
                 <div className="mb-2 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5">
@@ -185,7 +187,7 @@ export function ActionNeededPanel({
                 </div>
             )}
             {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
                     <span className="flex size-11 items-center justify-center rounded-2xl bg-emerald-50">
                         <CheckCircle2 className="size-5 text-emerald-500" />
                     </span>
@@ -197,7 +199,8 @@ export function ActionNeededPanel({
                     </p>
                 </div>
             ) : (
-                <ul className="space-y-1">
+                // Two columns while the panel is full width (below xl), one beside the chart.
+                <ul className="grid gap-1 md:grid-cols-2 xl:grid-cols-1">
                     {items.map((item) => {
                         const Icon = item.icon;
 
@@ -343,7 +346,7 @@ export function LiveOrders({ initial }: { initial: LiveFeed }) {
             }
         >
             {feed.orders.length === 0 ? (
-                <p className="py-14 text-center text-sm text-slate-400">
+                <p className="flex flex-1 items-center justify-center px-4 py-8 text-center text-sm text-slate-400">
                     New orders will appear here the moment they're placed
                 </p>
             ) : (
