@@ -14,16 +14,6 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react';
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
 import { Donut } from './orders';
 import type { CustomerInsights, Marketing, ReviewInsights } from './types';
 import {
@@ -40,7 +30,6 @@ import {
     SOURCE_LABELS,
     timeAgo,
     titleCase,
-    TooltipBox,
 } from './ui';
 
 // ── Customers ─────────────────────────────────────────────────────────────────
@@ -252,6 +241,7 @@ export function MarketingPanels({ data }: { data: Marketing }) {
         label: SOURCE_LABELS[row.source] ?? titleCase(row.source),
         color: SERIES[index % SERIES.length],
     }));
+    const maxSourceOrders = Math.max(...sources.map((row) => row.orders), 0);
     // Every panel here except Devices depends on permissions. Traffic
     // sources pairs with Devices; the rest share a grid sized to how many
     // are visible, so a hidden one never leaves a hole.
@@ -312,102 +302,18 @@ export function MarketingPanels({ data }: { data: Marketing }) {
                         {sources.length === 0 ? (
                             <Empty>No orders in this period yet</Empty>
                         ) : (
-                            // Sized to the number of sources, so two sources don't become two giant bars.
-                            <div
-                                className="my-auto"
-                                style={{
-                                    height: Math.max(
-                                        sources.length * 34 + 28,
-                                        120,
-                                    ),
-                                }}
-                            >
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart
-                                        data={sources}
-                                        layout="vertical"
-                                        margin={{
-                                            top: 0,
-                                            right: 16,
-                                            bottom: 0,
-                                            left: 0,
-                                        }}
-                                        barCategoryGap={8}
-                                    >
-                                        <CartesianGrid
-                                            stroke="#f1f5f9"
-                                            horizontal={false}
-                                        />
-                                        <XAxis
-                                            type="number"
-                                            tick={{
-                                                fontSize: 11,
-                                                fill: '#64748b',
-                                            }}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            allowDecimals={false}
-                                        />
-                                        <YAxis
-                                            type="category"
-                                            dataKey="label"
-                                            width={110}
-                                            tick={{
-                                                fontSize: 11,
-                                                fill: '#334155',
-                                            }}
-                                            tickLine={false}
-                                            axisLine={false}
-                                        />
-                                        <Tooltip
-                                            cursor={{ fill: '#f8fafc' }}
-                                            content={({ active, payload }) => {
-                                                if (
-                                                    !active ||
-                                                    !payload?.length
-                                                ) {
-                                                    return null;
-                                                }
-
-                                                const row = payload[0]
-                                                    .payload as (typeof sources)[number];
-
-                                                return (
-                                                    <TooltipBox
-                                                        title={row.label}
-                                                        rows={[
-                                                            {
-                                                                label: 'Orders',
-                                                                value: number(
-                                                                    row.orders,
-                                                                ),
-                                                                color: row.color,
-                                                            },
-                                                            {
-                                                                label: 'Collected',
-                                                                value: money(
-                                                                    row.revenue,
-                                                                ),
-                                                            },
-                                                        ]}
-                                                    />
-                                                );
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="orders"
-                                            radius={[0, 4, 4, 0]}
-                                            animationDuration={900}
-                                        >
-                                            {sources.map((row) => (
-                                                <Cell
-                                                    key={row.source}
-                                                    fill={row.color}
-                                                />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                            // The same thin ranked bars as Best sellers and Top districts: slim with any number of sources, money shown without hovering.
+                            <div className="space-y-2">
+                                {sources.map((row) => (
+                                    <BarRow
+                                        key={row.source}
+                                        label={row.label}
+                                        value={row.orders}
+                                        max={maxSourceOrders}
+                                        display={`${number(row.orders)} order${row.orders === 1 ? '' : 's'} · ${money(row.revenue)}`}
+                                        color={row.color}
+                                    />
+                                ))}
                             </div>
                         )}
                     </Panel>
