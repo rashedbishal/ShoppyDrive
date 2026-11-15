@@ -964,7 +964,8 @@ function ProductListingPage({
                                 className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-80 -translate-x-1/2 rounded-full bg-white opacity-10 blur-3xl"
                             />
 
-                            <div className="mx-auto flex max-w-3xl flex-col items-center">
+                            {/* Full banner width (owner request 2026-11-15): the old max-w-3xl/2xl text block left the sides of a wide banner empty. */}
+                            <div className="flex flex-col items-center">
                                 <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">
                                     <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
                                         <SlidersHorizontal className="size-3" />
@@ -982,7 +983,7 @@ function ProductListingPage({
                                     {title}
                                 </h1>
                                 {description ? (
-                                    <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">
+                                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/85 sm:text-base">
                                         {description}
                                     </p>
                                 ) : null}

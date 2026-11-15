@@ -136,11 +136,12 @@ export default function Page({ page }: PageProps): React.JSX.Element {
     );
 
     return (
-        <div className="min-h-screen bg-[var(--color-surface)]">
+        // No min-h-screen: a short policy page used to be stretched to a full screen, leaving a white block above the footer.
+        <div className="bg-[var(--color-surface)]">
             <Head title={page.meta_title || page.title} />
 
             {/* Hero */}
-            <div className="pt-6 lg:pt-8">
+            <div className="pt-4 lg:pt-6">
                 <PageHero
                     badge={{ icon: FileText, label: 'Legal' }}
                     eyebrow="ShoppyDrive policies"
@@ -154,21 +155,21 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                 />
             </div>
 
-            {/* Body */}
-            <div className="mx-auto max-w-7xl px-4 pt-8 pb-14 sm:px-6 lg:px-8 lg:pt-10 lg:pb-20">
-                <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 xl:grid-cols-[300px_1fr]">
+            {/* Body: compact spacing (owner request 2026-11-15) */}
+            <div className="mx-auto max-w-7xl px-4 pt-5 pb-10 sm:px-6 lg:px-8 lg:pt-6 lg:pb-12">
+                <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 xl:grid-cols-[260px_1fr]">
                     {/* Sticky sidebar */}
                     {sections.length > 0 && (
                         <aside
                             className="hidden lg:sticky lg:block lg:self-start"
                             style={{ top: sidebarTop }}
                         >
-                            <p className="mb-4 text-[10px] font-bold tracking-[0.25em] text-[var(--color-text-secondary)] uppercase">
+                            <p className="mb-2 px-2.5 text-[10px] font-bold tracking-[0.25em] text-[var(--color-text-secondary)] uppercase">
                                 Contents
                             </p>
 
                             <nav>
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     {sections.map(({ id, heading, number }) => {
                                         const active = activeId === id;
 
@@ -176,14 +177,14 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                             <button
                                                 key={id}
                                                 onClick={() => scrollTo(id)}
-                                                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all ${
+                                                className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-all ${
                                                     active
                                                         ? 'bg-[var(--color-primary)]/8 font-semibold text-[var(--color-primary)]'
                                                         : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]'
                                                 }`}
                                             >
                                                 <span
-                                                    className={`inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold transition-all ${
+                                                    className={`inline-flex size-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-all ${
                                                         active
                                                             ? 'bg-[var(--color-primary)] text-white shadow-[var(--color-primary)]/30 shadow-sm'
                                                             : 'bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] group-hover:bg-[var(--color-border)]'
@@ -199,20 +200,22 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                     })}
                                 </div>
 
-                                <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                                    <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                                        <MessageCircle className="size-4 text-[var(--color-primary)]" />
+                                <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary)]/10">
+                                            <MessageCircle className="size-4 text-[var(--color-primary)]" />
+                                        </span>
+                                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                            Have a question?
+                                        </p>
                                     </div>
-                                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                        Have a question?
-                                    </p>
-                                    <p className="mt-1 text-xs leading-5 text-[var(--color-text-secondary)]">
+                                    <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
                                         Our support team can clarify anything in
                                         this document.
                                     </p>
                                     <Link
                                         href="/contact"
-                                        className="mt-4 flex h-9 items-center justify-center rounded-xl bg-[var(--color-primary)] text-xs font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+                                        className="mt-3 flex h-8 items-center justify-center rounded-lg bg-[var(--color-primary)] text-xs font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
                                     >
                                         Contact us
                                     </Link>
@@ -221,27 +224,27 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                         </aside>
                     )}
 
-                    {/* Sections */}
-                    <div className="min-w-0">
-                        {sections.map((section, i) => (
+                    {/* Sections: 24px + divider + 24px between them (was 64 + 64); the body lines up under the heading text. */}
+                    <div className="min-w-0 divide-y divide-[var(--color-border)]">
+                        {sections.map((section) => (
                             <div
                                 key={section.id}
                                 id={section.id}
-                                className={`${i < sections.length - 1 ? 'mb-16 border-b border-[var(--color-border)] pb-16' : ''}`}
+                                className="py-6 first:pt-0 last:pb-0"
                             >
                                 {/* Section heading row */}
-                                <div className="mb-8 flex items-center gap-4">
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-bold text-white shadow-[var(--color-primary)]/20 shadow-sm">
+                                <div className="mb-2.5 flex items-center gap-3">
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary)] text-xs font-bold text-white shadow-[var(--color-primary)]/20 shadow-sm">
                                         {section.number}
                                     </span>
-                                    <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-2xl">
+                                    <h2 className="text-lg font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
                                         {section.heading}
                                     </h2>
                                 </div>
 
-                                {/* Section body */}
+                                {/* Section body: no extra space after its last block, so the gap to the next section stays even. */}
                                 <div
-                                    className="prose prose-base max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-[var(--color-text-primary)] prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-base prose-h3:font-semibold prose-p:mt-0 prose-p:mb-5 prose-p:leading-8 prose-p:text-[var(--color-text-secondary)] prose-a:font-semibold prose-a:text-[var(--color-primary)] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[var(--color-text-primary)] prose-ul:mt-4 prose-ul:mb-5 prose-ul:space-y-2 prose-li:leading-7 prose-li:text-[var(--color-text-secondary)] [&_li::marker]:text-[var(--color-primary)]"
+                                    className="prose prose-base max-w-none sm:pl-10 prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-[var(--color-text-primary)] prose-h3:mt-5 prose-h3:mb-2 prose-h3:text-base prose-h3:font-semibold prose-p:mt-0 prose-p:mb-3 prose-p:leading-7 prose-p:text-[var(--color-text-secondary)] prose-a:font-semibold prose-a:text-[var(--color-primary)] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[var(--color-text-primary)] prose-ul:mt-2 prose-ul:mb-3 prose-ul:space-y-1 prose-li:my-0 prose-li:leading-7 prose-li:text-[var(--color-text-secondary)] [&_li::marker]:text-[var(--color-primary)] [&>*:last-child]:mb-0"
                                     dangerouslySetInnerHTML={{
                                         __html: section.bodyHtml,
                                     }}
