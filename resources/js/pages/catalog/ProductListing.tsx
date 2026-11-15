@@ -172,9 +172,9 @@ function PriceRangeFilter({
         '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
     return (
-        <div className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/60 p-4">
-            <div className="flex items-end gap-2.5">
-                <div className="flex-1 space-y-1.5">
+        <div className="space-y-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/60 p-3">
+            <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-1">
                     <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-secondary)] uppercase">
                         Min
                     </label>
@@ -197,14 +197,14 @@ function PriceRangeFilter({
                                 );
                             }}
                             className={cn(
-                                'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
+                                'h-8 w-full rounded-lg border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-[13px] font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
                                 noSpinnerClass,
                             )}
                         />
                     </div>
                 </div>
-                <div className="mb-[18px] h-px w-3 shrink-0 bg-[var(--color-border-strong)]" />
-                <div className="flex-1 space-y-1.5">
+                <div className="mb-4 h-px w-2.5 shrink-0 bg-[var(--color-border-strong)]" />
+                <div className="flex-1 space-y-1">
                     <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-secondary)] uppercase">
                         Max
                     </label>
@@ -227,7 +227,7 @@ function PriceRangeFilter({
                                 );
                             }}
                             className={cn(
-                                'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
+                                'h-8 w-full rounded-lg border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-[13px] font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
                                 noSpinnerClass,
                             )}
                         />
@@ -240,8 +240,8 @@ function PriceRangeFilter({
                 draggable where it is. While a handle is held only the numbers
                 move; the filter applies once, on release (usePriceRangeCommit),
                 so a slow drag can't flood the server with requests. */}
-            <div className="px-1 pt-1">
-                <div className="relative mx-2.5 h-6">
+            <div className="px-1">
+                <div className="relative mx-2.5 h-5">
                     <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-border)]" />
                     <div
                         className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]"
@@ -305,7 +305,7 @@ function PriceRangeFilter({
                         style={{ left: `${hiPercent}%` }}
                     />
                 </div>
-                <div className="mt-2 flex justify-between text-[11px] font-semibold text-[var(--color-text-secondary)]">
+                <div className="mt-1 flex justify-between text-[11px] font-semibold text-[var(--color-text-secondary)]">
                     <span>৳0</span>
                     <span>৳{cap.toLocaleString('en-BD')}</span>
                 </div>
@@ -327,11 +327,11 @@ function FilterSection({
     const [open, setOpen] = useState(defaultOpen);
 
     return (
-        <div className="border-b border-[var(--color-border)] py-5 first:pt-0 last:border-b-0 last:pb-0">
+        <div className="border-b border-[var(--color-border)] py-3 first:pt-0 last:border-b-0 last:pb-0">
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className="flex w-full items-center justify-between text-sm font-semibold text-[var(--color-text-primary)]"
+                className="flex w-full items-center justify-between text-[13px] font-semibold text-[var(--color-text-primary)]"
                 aria-expanded={open}
             >
                 {title}
@@ -342,7 +342,7 @@ function FilterSection({
                     )}
                 />
             </button>
-            {open ? <div className="mt-4">{children}</div> : null}
+            {open ? <div className="mt-2">{children}</div> : null}
         </div>
     );
 }
@@ -360,13 +360,13 @@ function FilterCheckboxRow({
     onChange: () => void;
 }): React.JSX.Element {
     return (
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-1.5 py-1.5 text-sm transition hover:bg-[var(--color-surface-alt)]">
-            <span className="flex min-w-0 items-center gap-2.5 text-[var(--color-text-secondary)]">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-1 py-1 text-[13px] transition hover:bg-[var(--color-surface-alt)]">
+            <span className="flex min-w-0 items-center gap-2 text-[var(--color-text-secondary)]">
                 <input
                     type="checkbox"
                     checked={checked}
                     onChange={onChange}
-                    className="size-4 shrink-0 rounded border-[var(--color-border)] text-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                    className="size-3.5 shrink-0 rounded border-[var(--color-border)] text-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                 />
                 <span className="min-w-0 break-words">{label}</span>
             </span>
@@ -397,16 +397,16 @@ function CategoryRow({
             type="button"
             onClick={onClick}
             className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-lg py-1.5 text-left text-sm transition hover:bg-[var(--color-surface-alt)]',
-                indent ? 'pl-5' : '',
+                'flex w-full items-center justify-between gap-3 rounded-md py-1 text-left text-[13px] transition hover:bg-[var(--color-surface-alt)]',
+                indent ? 'pl-4' : '',
                 active
                     ? 'font-semibold text-[var(--color-primary)]'
                     : 'text-[var(--color-text-secondary)]',
             )}
         >
-            <span className="min-w-0 px-1.5 break-words">{label}</span>
+            <span className="min-w-0 px-1 break-words">{label}</span>
             {typeof count === 'number' ? (
-                <span className="shrink-0 px-1.5 text-xs text-[var(--color-text-secondary)]">
+                <span className="shrink-0 px-1 text-xs text-[var(--color-text-secondary)]">
                     {count}
                 </span>
             ) : null}
@@ -655,7 +655,7 @@ function ProductListingPage({
                             <button
                                 type="button"
                                 onClick={clearCategory}
-                                className="mb-2 inline-flex items-center gap-1 px-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                                className="mb-1 inline-flex items-center gap-1 px-1 text-xs font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
                             >
                                 <ChevronLeft className="size-3.5" />
                                 All categories
@@ -786,7 +786,7 @@ function ProductListingPage({
                                 onClick={() =>
                                     setShowAllBrands((current) => !current)
                                 }
-                                className="mt-1 inline-flex items-center gap-1 px-1.5 text-sm font-semibold text-[var(--color-primary)] hover:underline"
+                                className="mt-0.5 inline-flex items-center gap-1 px-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
                             >
                                 {showAllBrands
                                     ? 'Show less'
@@ -806,7 +806,7 @@ function ProductListingPage({
             {attributes.map((attribute) => (
                 <FilterSection key={attribute.id} title={attribute.name}>
                     {attribute.type === 'color' ? (
-                        <div className="flex flex-wrap gap-2.5">
+                        <div className="flex flex-wrap gap-1">
                             {attribute.values.map((value) => {
                                 const activeValues =
                                     draftFilters.attributes[
@@ -831,14 +831,14 @@ function ProductListingPage({
                                             );
                                         }}
                                         className={cn(
-                                            'relative flex size-10 items-center justify-center rounded-full border-2 transition',
+                                            'relative flex size-8 items-center justify-center rounded-full border-2 transition',
                                             checked
                                                 ? 'border-[var(--color-primary)]'
                                                 : 'border-transparent hover:border-[var(--color-border)]',
                                         )}
                                     >
                                         <span
-                                            className="size-8 rounded-full border border-black/10 shadow-sm"
+                                            className="size-6 rounded-full border border-black/10 shadow-sm"
                                             style={{
                                                 backgroundColor:
                                                     value.color_hex ??
@@ -847,7 +847,7 @@ function ProductListingPage({
                                         />
                                         {checked ? (
                                             <span className="absolute inset-0 flex items-center justify-center">
-                                                <Check className="size-4 text-white mix-blend-difference" />
+                                                <Check className="size-3.5 text-white mix-blend-difference" />
                                             </span>
                                         ) : null}
                                     </button>
@@ -1000,9 +1000,9 @@ function ProductListingPage({
                 >
                     <aside className="hidden lg:block">
                         {/* Sticks below the header and scrolls on its own, independent of the page. */}
-                        <div className="sticky top-28 flex max-h-[calc(100dvh-8.5rem)] flex-col rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] py-5 pr-2 pl-5 shadow-[var(--shadow-card)]">
-                            <div className="mr-3 mb-4 flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
-                                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+                        <div className="sticky top-28 flex max-h-[calc(100dvh-8.5rem)] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 pr-1.5 pl-4 shadow-[var(--shadow-card)]">
+                            <div className="mr-2.5 mb-3 flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] pb-2.5">
+                                <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
                                     Filters
                                     {activeFilterCount > 0 ? (
                                         <span className="ml-1.5 text-xs font-normal text-[var(--color-text-secondary)]">
@@ -1020,7 +1020,7 @@ function ProductListingPage({
                                     </button>
                                 ) : null}
                             </div>
-                            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]">
+                            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pr-2.5 [scrollbar-width:thin]">
                                 {sidebarControls}
                             </div>
                         </div>
