@@ -909,7 +909,7 @@ function ProductListingPage({
                             {title}
                         </h1>
                         {description ? (
-                            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base">
+                            <p className="mt-1.5 text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base">
                                 {description}
                             </p>
                         ) : null}
