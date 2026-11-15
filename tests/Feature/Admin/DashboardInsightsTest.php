@@ -6,6 +6,7 @@ use App\Models\DailyVisit;
 use App\Models\Order;
 use App\Models\OrderRefund;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Review;
 use App\Models\SearchLog;
 use App\Models\Setting;
@@ -15,6 +16,7 @@ use App\Support\Dashboard\DashboardRange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -262,3 +264,133 @@ test('a new visitor is counted by device type', function (string $userAgent, str
     'ipad' => ['Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) Mobile/15E148', 'tablet_visitors'],
     'desktop' => ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36', 'desktop_visitors'],
 ]);
+
+test('DISC-50: the deferred-panel requests skip the card queries, which a normal visit still runs', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    $order = insightsOrder(['total' => 560, 'payment_status' => 'paid', 'status' => 'processing']);
+
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+    $ranCardQueries = fn (array $queries): bool => collect($queries)->contains(fn (string $sql): bool => str_contains($sql, 'failed_jobs')
+        || str_contains($sql, 'order by "created_at" desc limit 8')
+        || str_contains($sql, 'order by "id" desc limit 8'));
+
+    $response = $this->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('stats.today_revenue', 560)
+            ->has('chartData', 7)
+            ->has('visitorChartData', 7)
+            ->where('recentOrders.0.order_number', $order->order_number)
+            ->has('lowStockProducts')
+            ->where('liveFeed.orders.0.order_number', $order->order_number));
+
+    expect($ranCardQueries($queries))->toBeTrue();
+    $queries = [];
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->reloadOnly(['overview', 'actionNeeded'], fn (Assert $reload) => $reload
+            ->has('overview')
+            ->has('actionNeeded')
+            ->missing('stats')
+            ->missing('recentOrders')
+            ->missing('liveFeed')));
+
+    expect($queries)->not->toBeEmpty()
+        ->and($ranCardQueries($queries))->toBeFalse();
+});
+
+test('DISC-50: all deferred panels load in one follow-up request', function () {
+    actingAs(createMotherAdmin(), 'admin');
+
+    $response = $this->get(route('admin.dashboard'))->assertOk();
+
+    expect($response->viewData('page')['deferredProps'])->toBe([
+        'panels' => ['overview', 'actionNeeded', 'orderHealth', 'couriers', 'productInsights', 'promotions', 'customerInsights', 'marketing', 'reviewInsights'],
+    ]);
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->loadDeferredProps('panels', fn (Assert $reload) => $reload
+            ->has('overview')
+            ->has('actionNeeded')
+            ->has('orderHealth')
+            ->has('couriers')
+            ->has('productInsights')
+            ->has('promotions')
+            ->has('customerInsights')
+            ->has('marketing')
+            ->has('reviewInsights')));
+});
+
+test('DISC-50: slow movers are old, active, unsold products with stock, most stock first (variant-aware)', function () {
+    Carbon::setTestNow(Carbon::parse('2026-11-14 10:00', 'Asia/Dhaka'));
+    $old = now()->subDays(DashboardAnalytics::SLOW_MOVER_DAYS + 10);
+    $product = function (string $name, int $stock, array $overrides = []) use ($old): Product {
+        $product = Product::factory()->create(array_merge(['name' => $name, 'stock_quantity' => $stock], $overrides));
+        $product->forceFill(['created_at' => $overrides['created_at'] ?? $old])->save();
+
+        return $product;
+    };
+
+    $plain = $product('Plain', 5);
+    $withVariants = $product('With variants', 0);
+    ProductVariant::factory()->create(['product_id' => $withVariants->id, 'stock_quantity' => 3, 'is_default' => true]);
+    ProductVariant::factory()->create(['product_id' => $withVariants->id, 'stock_quantity' => 4, 'is_default' => false]);
+    // Its own stock_quantity is ignored once it has variants, all empty.
+    $soldOutVariants = $product('Sold-out variants', 50);
+    ProductVariant::factory()->create(['product_id' => $soldOutVariants->id, 'stock_quantity' => 0]);
+    $product('No stock', 0);
+    $product('Inactive', 9, ['is_active' => false]);
+    $product('New', 9, ['created_at' => now()->subDays(5)]);
+    $recentlySold = $product('Recently sold', 9);
+    insightsOrder(['status' => 'delivered', 'created_at' => now()->subDays(3)])->items()->create(['product_id' => $recentlySold->id, 'product_name' => 'Recently sold', 'price' => 10, 'quantity' => 1, 'subtotal' => 10, 'product_snapshot' => []]);
+
+    $slowMovers = app(DashboardAnalytics::class)->products(insightsRange(), false)['slow_movers'];
+
+    expect($slowMovers)->toBe([
+        ['id' => $withVariants->id, 'name' => 'With variants', 'stock' => 7, 'days_listed' => DashboardAnalytics::SLOW_MOVER_DAYS + 10],
+        ['id' => $plain->id, 'name' => 'Plain', 'stock' => 5, 'days_listed' => DashboardAnalytics::SLOW_MOVER_DAYS + 10],
+    ]);
+});
+
+test('DISC-50: repeat rate and average lifetime spend cover every non-cancelled order, not just the range', function () {
+    Carbon::setTestNow(Carbon::parse('2026-11-14 10:00', 'Asia/Dhaka'));
+    [$repeater, $oneOrder, $neverPaid] = User::factory()->count(3)->create();
+    insightsOrder(['user_id' => $repeater->id, 'total' => 100, 'payment_status' => 'paid', 'status' => 'delivered', 'created_at' => now()->subYears(2)]);
+    insightsOrder(['user_id' => $repeater->id, 'total' => 200, 'payment_status' => 'paid', 'status' => 'delivered', 'created_at' => now()->subDay()]);
+    insightsOrder(['user_id' => $oneOrder->id, 'total' => 600, 'payment_status' => 'paid', 'status' => 'delivered', 'created_at' => now()->subDays(400)]);
+    insightsOrder(['user_id' => $oneOrder->id, 'total' => 5000, 'payment_status' => 'paid', 'status' => 'cancelled', 'created_at' => now()->subDay()]);
+    insightsOrder(['user_id' => $neverPaid->id, 'total' => 900, 'payment_status' => 'unpaid', 'status' => 'pending', 'created_at' => now()->subDay()]);
+    insightsOrder(['total' => 700, 'payment_status' => 'paid', 'status' => 'delivered', 'created_at' => now()->subDay()]);
+
+    $customers = app(DashboardAnalytics::class)->customers(insightsRange(['range' => '7d']), fn (): bool => true);
+
+    // 3 buyers, 1 with more than one order; spend averages the two who paid (300, 600).
+    expect($customers['repeat_rate'])->toBe(33.3)
+        ->and($customers['average_lifetime_spend'])->toBe(450.0);
+});
+
+test('DISC-50: top searches include the first and last day of the range and nothing outside it', function () {
+    Carbon::setTestNow(Carbon::parse('2026-11-14 10:00', 'Asia/Dhaka'));
+    SearchLog::create(['date' => '2026-11-07', 'term' => 'before range', 'searches' => 50, 'results_count' => 1]);
+    SearchLog::create(['date' => '2026-11-08', 'term' => 'first day', 'searches' => 2, 'results_count' => 1]);
+    SearchLog::create(['date' => '2026-11-14', 'term' => 'last day', 'searches' => 3, 'results_count' => 0]);
+    SearchLog::create(['date' => '2026-11-14', 'term' => 'first day', 'searches' => 2, 'results_count' => 1]);
+
+    $marketing = app(DashboardAnalytics::class)->marketing(insightsRange(['range' => '7d']), fn (): bool => true);
+
+    expect($marketing['top_searches'])->toBe([
+        ['term' => 'first day', 'searches' => 4, 'results' => 1],
+        ['term' => 'last day', 'searches' => 3, 'results' => 0],
+    ])
+        ->and(array_column($marketing['no_result_searches'], 'term'))->toBe(['last day']);
+});
+
+test('DISC-50: the live order feed polls every 20 seconds, not every 5', function () {
+    // Source-level check (this project has no JavaScript test runner).
+    expect((string) file_get_contents(resource_path('js/components/admin/dashboard/operations.tsx')))
+        ->toContain('const POLL_MS = 20_000;')
+        ->not->toContain('const POLL_MS = 5000;');
+});

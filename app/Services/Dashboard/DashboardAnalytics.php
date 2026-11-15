@@ -469,23 +469,33 @@ class DashboardAnalytics
             ->whereNotNull('order_items.product_id')
             ->select('order_items.product_id');
 
-        return Product::query()
+        // DISC-50: stock is worked out, filtered, sorted and limited in SQL,
+        // so only six rows reach PHP however large the catalogue is.
+        $candidates = Product::query()
             ->where('is_active', true)
             ->where('created_at', '<', $since)
             ->whereNotIn('id', $recentlySold)
+            ->select(['id', 'name', 'stock_quantity', 'created_at'])
             ->withSum('variants', 'stock_quantity')
             ->withCount('variants')
-            ->get(['id', 'name', 'stock_quantity', 'created_at'])
-            ->map(fn (Product $product): array => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'stock' => (int) ($product->variants_count > 0 ? $product->variants_sum_stock_quantity : $product->stock_quantity),
-                'days_listed' => (int) $product->created_at->diffInDays(now()),
+            ->toBase();
+        $stock = 'CASE WHEN variants_count > 0 THEN COALESCE(variants_sum_stock_quantity, 0) ELSE stock_quantity END';
+
+        return DB::query()
+            ->fromSub($candidates, 'candidates')
+            ->select(['id', 'name', 'created_at'])
+            ->selectRaw("{$stock} as stock")
+            ->whereRaw("{$stock} > 0")
+            ->orderByRaw("{$stock} desc")
+            ->orderBy('id')
+            ->limit(6)
+            ->get()
+            ->map(fn (object $row): array => [
+                'id' => (int) $row->id,
+                'name' => (string) $row->name,
+                'stock' => (int) $row->stock,
+                'days_listed' => (int) Carbon::parse($row->created_at)->diffInDays(now()),
             ])
-            ->filter(fn (array $row): bool => $row['stock'] > 0)
-            ->sortByDesc('stock')
-            ->take(6)
-            ->values()
             ->all();
     }
 
@@ -629,23 +639,18 @@ class DashboardAnalytics
                     ->pluck('user_id')
             );
 
+            // DISC-50: one pass over all orders instead of two. `spent` is
+            // NULL for a buyer with no paid order, and AVG() skips NULLs, so
+            // the average still covers only customers who have paid.
             $lifetime = Order::query()
                 ->whereNotNull('user_id')
                 ->where('status', '!=', OrderStatus::CANCELLED)
-                ->selectRaw('user_id, COUNT(*) as orders')
+                ->selectRaw('user_id, COUNT(*) as orders, SUM(CASE WHEN payment_status = ? THEN total END) as spent', [PaymentStatus::PAID->value])
                 ->groupBy('user_id');
             $buyers = DB::query()->fromSub($lifetime, 'buyers')
-                ->selectRaw('COUNT(*) as customers, SUM(CASE WHEN orders > 1 THEN 1 ELSE 0 END) as repeaters')
+                ->selectRaw('COUNT(*) as customers, SUM(CASE WHEN orders > 1 THEN 1 ELSE 0 END) as repeaters, AVG(spent) as average_spend')
                 ->first();
-            $lifetimeSpend = DB::query()->fromSub(
-                Order::query()
-                    ->whereNotNull('user_id')
-                    ->where('payment_status', PaymentStatus::PAID)
-                    ->where('status', '!=', OrderStatus::CANCELLED)
-                    ->selectRaw('user_id, SUM(total) as spent')
-                    ->groupBy('user_id'),
-                'spend'
-            )->selectRaw('AVG(spent) as average')->value('average');
+            $lifetimeSpend = $buyers->average_spend ?? 0;
 
             $refunds = $this->refundsFor($registered);
             $topCustomers = $registered->filter(fn (object $order): bool => $this->isCollected($order))
@@ -759,9 +764,11 @@ class DashboardAnalytics
             $landingIds = $orders->whereNotNull('landing_page_id')->pluck('landing_page_id')->unique()->values();
             $landingTitles = $landingIds->isEmpty() ? collect() : DB::table('landing_pages')->whereIn('id', $landingIds->all())->pluck('title', 'id');
 
+            // DISC-50: a plain range (not whereDate's DATE() wrapper) so the
+            // (date, term) index can be used.
             $searches = SearchLog::query()
-                ->whereDate('date', '>=', $range->start->toDateString())
-                ->whereDate('date', '<=', $range->end->toDateString())
+                ->where('date', '>=', $range->start->toDateString())
+                ->where('date', '<', $range->end->copy()->addDay()->toDateString())
                 ->selectRaw('term, SUM(searches) as searches, MIN(results_count) as results_count')
                 ->groupBy('term');
 

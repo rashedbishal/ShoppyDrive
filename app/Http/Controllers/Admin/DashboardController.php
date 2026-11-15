@@ -36,7 +36,37 @@ class DashboardController extends Controller
         private readonly DashboardAnalytics $analytics,
     ) {}
 
+    /**
+     * DISC-50: every prop is a closure, so the three deferred-panel requests
+     * the page sends right after it opens (same URL, partial reload) skip the
+     * card queries instead of recalculating and then discarding them. A
+     * normal visit still resolves all of them, once, from one cards() call.
+     */
     public function __invoke(Request $request): Response
+    {
+        $cards = null;
+        $card = function (string $key) use (&$cards): mixed {
+            $cards ??= $this->cards();
+
+            return $cards[$key];
+        };
+
+        return Inertia::render('admin/dashboard', [
+            'stats' => fn (): array => $card('stats'),
+            'chartData' => fn (): Collection => $card('chartData'),
+            'visitorChartData' => fn (): Collection => $card('visitorChartData'),
+            'recentOrders' => fn (): Collection => $card('recentOrders'),
+            'lowStockProducts' => fn (): Collection => $card('lowStockProducts'),
+            ...$this->insights($request),
+        ]);
+    }
+
+    /**
+     * The original dashboard cards and charts.
+     *
+     * @return array{stats: array<string, mixed>, chartData: Collection<int, array<string, mixed>>, visitorChartData: Collection<int, array<string, mixed>>, recentOrders: Collection<int, Order>, lowStockProducts: Collection<int, Product>}
+     */
+    private function cards(): array
     {
         // BE-09: "today" means the Dhaka calendar day, not the UTC one the
         // server clock runs on — a 3am Dhaka order is still "today" here,
@@ -109,7 +139,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get(['id', 'name', 'sku', 'stock_quantity', 'low_stock_threshold']);
 
-        return Inertia::render('admin/dashboard', [
+        return [
             'stats' => [
                 'today_revenue' => (float) $todayRevenue,
                 'yesterday_revenue' => (float) $yesterdayRevenue,
@@ -149,8 +179,7 @@ class DashboardController extends Controller
             'visitorChartData' => $visitorChartData,
             'recentOrders' => $recentOrders,
             'lowStockProducts' => $lowStockProducts,
-            ...$this->insights($request),
-        ]);
+        ];
     }
 
     /**
@@ -159,6 +188,10 @@ class DashboardController extends Controller
      * sees everything) and loads just after the page, so the dashboard
      * itself opens as fast as before. The original props above are
      * unchanged and still shown to every admin.
+     *
+     * DISC-50: every deferred panel is in the one `panels` group, so the
+     * page loads them in a single follow-up request rather than three
+     * concurrent ones competing for shared hosting's few PHP processes.
      *
      * @return array<string, mixed>
      */
@@ -179,26 +212,26 @@ class DashboardController extends Controller
                 'promotions' => $can('flash_sales') || $can('bundles') || $can('coupons'),
                 'edit_target' => (bool) $admin->is_mother,
             ],
-            'overview' => $orders ? Inertia::defer(fn (): array => $this->analytics->overview($range, $can('customers')), 'overview') : null,
-            'actionNeeded' => Inertia::defer(fn (): array => $this->analytics->actionNeeded($can), 'overview'),
-            'orderHealth' => $orders ? Inertia::defer(fn (): array => $this->analytics->orderHealth($range), 'insights') : null,
-            'couriers' => $orders ? Inertia::defer(fn (): array => $this->analytics->couriers($range), 'insights') : null,
+            'overview' => $orders ? Inertia::defer(fn (): array => $this->analytics->overview($range, $can('customers')), 'panels') : null,
+            'actionNeeded' => Inertia::defer(fn (): array => $this->analytics->actionNeeded($can), 'panels'),
+            'orderHealth' => $orders ? Inertia::defer(fn (): array => $this->analytics->orderHealth($range), 'panels') : null,
+            'couriers' => $orders ? Inertia::defer(fn (): array => $this->analytics->couriers($range), 'panels') : null,
             'productInsights' => $can('products')
-                ? Inertia::defer(fn (): array => $this->analytics->products($range, $can('stock')), 'insights')
+                ? Inertia::defer(fn (): array => $this->analytics->products($range, $can('stock')), 'panels')
                 : null,
             'promotions' => $can('flash_sales') || $can('bundles') || $can('coupons')
-                ? Inertia::defer(fn (): array => $this->analytics->promotions($range, $can), 'insights')
+                ? Inertia::defer(fn (): array => $this->analytics->promotions($range, $can), 'panels')
                 : null,
             'customerInsights' => $can('customers') && $orders
-                ? Inertia::defer(fn (): array => $this->analytics->customers($range, $can), 'people')
+                ? Inertia::defer(fn (): array => $this->analytics->customers($range, $can), 'panels')
                 : null,
-            'marketing' => Inertia::defer(fn (): array => $this->analytics->marketing($range, $can), 'people'),
-            'reviewInsights' => $can('reviews') ? Inertia::defer(fn (): array => $this->analytics->reviews($range), 'people') : null,
-            'liveFeed' => $orders ? $this->analytics->liveOrders() : null,
+            'marketing' => Inertia::defer(fn (): array => $this->analytics->marketing($range, $can), 'panels'),
+            'reviewInsights' => $can('reviews') ? Inertia::defer(fn (): array => $this->analytics->reviews($range), 'panels') : null,
+            'liveFeed' => fn (): ?array => $orders ? $this->analytics->liveOrders() : null,
         ];
     }
 
-    /** The live order feed the dashboard polls every few seconds. */
+    /** The live order feed the dashboard polls every 20 seconds (DISC-50). */
     public function live(): JsonResponse
     {
         return response()->json($this->analytics->liveOrders());

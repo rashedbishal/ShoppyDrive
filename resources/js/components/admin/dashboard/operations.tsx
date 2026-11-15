@@ -238,9 +238,11 @@ export function ActionNeededPanel({
 
 // ── Live orders ───────────────────────────────────────────────────────────────
 
-const POLL_MS = 5000;
+// DISC-50: 20 s, not 5 s, so open dashboards send a quarter of the requests
+// to shared hosting's few PHP processes.
+const POLL_MS = 20_000;
 
-/** Polls the live feed every 5 seconds while the tab is visible. */
+/** Polls the live feed every 20 seconds while the tab is visible. */
 export function LiveOrders({ initial }: { initial: LiveFeed }) {
     const [feed, setFeed] = useState(initial);
     const [fresh, setFresh] = useState<Set<number>>(new Set());
