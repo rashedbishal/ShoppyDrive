@@ -1,7 +1,8 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CheckCircle, Mail, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import EmailVerificationCodeController from '@/actions/App/Http/Controllers/Auth/EmailVerificationCodeController';
+import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 
 type Props = {
@@ -22,6 +23,7 @@ export default function VerifyEmail({
         [resendAvailableAt],
     );
     const [now, setNow] = useState(() => Date.now());
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
     useEffect(() => {
         if (!targetMs) {
@@ -152,14 +154,19 @@ export default function VerifyEmail({
                         Check spam/junk if you don't see it.
                     </p>
 
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
+                    <button
+                        type="button"
+                        onClick={() => setLogoutConfirmOpen(true)}
                         className="mt-4 block text-sm text-gray-600 transition hover:text-gray-800"
                     >
                         Sign out and use a different account
-                    </Link>
+                    </button>
+
+                    <LogoutConfirmDialog
+                        open={logoutConfirmOpen}
+                        onOpenChange={setLogoutConfirmOpen}
+                        onConfirm={() => router.post(route('logout'))}
+                    />
                 </div>
             </div>
         </div>

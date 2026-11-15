@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import MegaMenu from '@/components/layout/MegaMenu';
 import MobileMenu from '@/components/layout/MobileMenu';
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher';
+import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -78,6 +79,7 @@ export default function Header(): React.JSX.Element {
     const [isNavHidden, setIsNavHidden] = useState(false);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const [hoveredNavKey, setHoveredNavKey] = useState<string | null>(null);
     // The sliding hover pill follows the cursor; while the mega menu is open it
     // rests on "All Categories" so the open trigger stays highlighted.
@@ -559,7 +561,7 @@ export default function Header(): React.JSX.Element {
                                         <DropdownMenuItem
                                             onSelect={(e) => {
                                                 e.preventDefault();
-                                                router.post(route('logout'));
+                                                setLogoutConfirmOpen(true);
                                             }}
                                             className="cursor-pointer rounded-xl px-3 py-2.5 text-[var(--color-primary)]"
                                         >
@@ -691,6 +693,12 @@ export default function Header(): React.JSX.Element {
             </header>
 
             <MobileMenu isOpen={mobileMenuOpen} onClose={closeMobileMenu} />
+
+            <LogoutConfirmDialog
+                open={logoutConfirmOpen}
+                onOpenChange={setLogoutConfirmOpen}
+                onConfirm={() => router.post(route('logout'))}
+            />
         </>
     );
 }

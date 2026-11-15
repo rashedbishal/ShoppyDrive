@@ -1,5 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { useState } from 'react';
+import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -17,13 +19,15 @@ type Props = {
 
 export function UserMenuContent({ user, isAdmin = false }: Props) {
     const cleanup = useMobileNavigation();
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+    const logoutHref = isAdmin ? route('admin.logout') : route('logout');
 
     const handleLogout = () => {
         cleanup();
         router.flushAll();
+        router.post(logoutHref);
     };
-
-    const logoutHref = isAdmin ? route('admin.logout') : route('logout');
 
     return (
         <>
@@ -58,19 +62,25 @@ export function UserMenuContent({ user, isAdmin = false }: Props) {
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-                <Link
-                    className="flex w-full cursor-pointer items-center"
-                    href={logoutHref}
-                    method="post"
-                    as="button"
-                    onClick={handleLogout}
-                    data-test="logout-button"
-                >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                </Link>
+            <DropdownMenuItem
+                // Keep the dropdown mounted while the dialog is open; otherwise
+                // Radix unmounts it (and the dialog) the moment this is chosen.
+                onSelect={(e) => {
+                    e.preventDefault();
+                    setLogoutConfirmOpen(true);
+                }}
+                className="flex w-full cursor-pointer items-center"
+                data-test="logout-button"
+            >
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
             </DropdownMenuItem>
+
+            <LogoutConfirmDialog
+                open={logoutConfirmOpen}
+                onOpenChange={setLogoutConfirmOpen}
+                onConfirm={handleLogout}
+            />
         </>
     );
 }

@@ -55,6 +55,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useWebPushSms } from '@/hooks/useWebPushSms';
 import type { SmsToast } from '@/hooks/useWebPushSms';
@@ -950,6 +951,7 @@ export default function AdminLayout({
         (page.props.settings as AppSettings)?.logo ??
         null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() =>
         readStored(SIDEBAR_COLLAPSED_KEY, false),
     );
@@ -987,7 +989,8 @@ export default function AdminLayout({
         [],
     );
 
-    const handleLogout = () => router.post(route('admin.logout'));
+    const handleLogout = () => setLogoutConfirmOpen(true);
+    const confirmLogout = () => router.post(route('admin.logout'));
 
     const toggleSidebarCollapsed = () => {
         setSidebarCollapsed((previous) => {
@@ -1161,6 +1164,12 @@ export default function AdminLayout({
                     ))}
                 </AnimatePresence>
             </div>
+
+            <LogoutConfirmDialog
+                open={logoutConfirmOpen}
+                onOpenChange={setLogoutConfirmOpen}
+                onConfirm={confirmLogout}
+            />
         </div>
     );
 }
