@@ -54,6 +54,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useWebPushSms } from '@/hooks/useWebPushSms';
 import type { SmsToast } from '@/hooks/useWebPushSms';
@@ -531,6 +532,33 @@ function writeStored(key: string, value: unknown): void {
     }
 }
 
+/**
+ * The CMS logo with a continuous light sweep (DISC-52). The sweep is masked
+ * to the logo image itself, so it shines on the artwork, not the empty box.
+ */
+function ShimmeringLogo({
+    logoUrl,
+    className,
+}: {
+    logoUrl?: string | null;
+    className: string;
+}) {
+    return (
+        <span
+            className="admin-logo-shimmer"
+            style={
+                logoUrl
+                    ? ({
+                          '--admin-logo-mask': `url(${JSON.stringify(logoUrl)})`,
+                      } as CSSProperties)
+                    : undefined
+            }
+        >
+            <SiteLogo src={logoUrl} name="ShoppyDrive" className={className} />
+        </span>
+    );
+}
+
 function SidebarContent({
     currentUrl,
     logoUrl,
@@ -605,13 +633,12 @@ function SidebarContent({
                     onClick={onClose}
                     title={collapsed ? 'ShoppyDrive — Admin Panel' : undefined}
                 >
-                    <SiteLogo
-                        src={logoUrl}
-                        name="ShoppyDrive"
-                        className={collapsed ? 'h-auto w-12' : 'h-9'}
+                    <ShimmeringLogo
+                        logoUrl={logoUrl}
+                        className={collapsed ? 'h-auto w-14' : 'h-11'}
                     />
                     {!collapsed && (
-                        <p className="text-[11px] text-slate-600">
+                        <p className="text-sm font-semibold whitespace-nowrap text-slate-700">
                             Admin Panel
                         </p>
                     )}
@@ -916,7 +943,12 @@ export default function AdminLayout({
     const unmatchedCount = page.props.unmatched_sms_count ?? 0;
     const forwarderSeemsDown = !page.props.mobile_banking_available;
     const currentUrl = page.url;
-    const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
+    // `brand` first: settings pages send their own `settings` prop (form
+    // values, no logo), which replaces the shared one (DISC-52).
+    const logoUrl =
+        page.props.brand?.logo ??
+        (page.props.settings as AppSettings)?.logo ??
+        null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() =>
         readStored(SIDEBAR_COLLAPSED_KEY, false),
@@ -1043,11 +1075,7 @@ export default function AdminLayout({
                         aria-label="Admin dashboard home"
                         className="absolute left-1/2 flex -translate-x-1/2 items-center"
                     >
-                        <SiteLogo
-                            src={logoUrl}
-                            name="ShoppyDrive"
-                            className="h-8"
-                        />
+                        <ShimmeringLogo logoUrl={logoUrl} className="h-9" />
                     </Link>
 
                     <div className="flex-1" />
