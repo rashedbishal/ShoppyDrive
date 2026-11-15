@@ -1,7 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Package, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowRight, Package, ShoppingCart, Trash2, Truck } from 'lucide-react';
 import { useMemo } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -37,6 +36,7 @@ export default function CartDrawer(): React.JSX.Element {
     } = usePage<SharedPageProps>().props;
     const isEmpty = items.length === 0;
     const isEstimate = cartBaseRate === null || cartBaseRate === undefined;
+    const freeDeliveryThreshold = settings.free_delivery_threshold ?? 0;
 
     const summary = useMemo(() => {
         const subtotal = items.reduce(
@@ -82,9 +82,38 @@ export default function CartDrawer(): React.JSX.Element {
             side="right"
             size="lg"
             footer={
-                <div className="space-y-4">
+                <div className="space-y-3">
+                    {/* Free-delivery nudge: same comparison as isDeliveryFree (pre-discount subtotal vs. the threshold), so it can never disagree with the shipping line. */}
+                    {!isEmpty &&
+                    !summary.deliveryFree &&
+                    freeDeliveryThreshold > 0 ? (
+                        <div className="space-y-1.5 rounded-xl bg-[var(--color-primary-light)] px-3 py-2.5">
+                            <p className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-primary)]">
+                                <Truck className="size-3.5 shrink-0 text-[var(--color-primary)]" />
+                                <span>
+                                    Add{' '}
+                                    <span className="font-bold text-[var(--color-primary)]">
+                                        {formatCurrency(
+                                            freeDeliveryThreshold -
+                                                summary.subtotal,
+                                        )}
+                                    </span>{' '}
+                                    more for free delivery
+                                </span>
+                            </p>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-white">
+                                <div
+                                    className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+                                    style={{
+                                        width: `${Math.min(100, (summary.subtotal / freeDeliveryThreshold) * 100)}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
+
                     {!isEmpty && (
-                        <div className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-surface p-4">
+                        <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-surface p-3.5">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-[var(--color-text-secondary)]">
                                     Subtotal
@@ -93,14 +122,17 @@ export default function CartDrawer(): React.JSX.Element {
                                     {formatCurrency(summary.subtotal)}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">
-                                    Discount
-                                </span>
-                                <span className="font-semibold text-[var(--color-success)]">
-                                    -{formatCurrency(summary.discount)}
-                                </span>
-                            </div>
+                            {/* Discount and tax only when they apply (tax is currently always 0). */}
+                            {summary.discount > 0 ? (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[var(--color-text-secondary)]">
+                                        Discount
+                                    </span>
+                                    <span className="font-semibold text-[var(--color-success)]">
+                                        -{formatCurrency(summary.discount)}
+                                    </span>
+                                </div>
+                            ) : null}
                             <div className="flex items-start justify-between gap-2 text-sm">
                                 <div>
                                     <span className="text-[var(--color-text-secondary)]">
@@ -129,32 +161,34 @@ export default function CartDrawer(): React.JSX.Element {
                                     )}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">
-                                    Tax
-                                </span>
-                                <span className="font-semibold text-[var(--color-text-primary)]">
-                                    {formatCurrency(tax)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+                            {tax > 0 ? (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[var(--color-text-secondary)]">
+                                        Tax
+                                    </span>
+                                    <span className="font-semibold text-[var(--color-text-primary)]">
+                                        {formatCurrency(tax)}
+                                    </span>
+                                </div>
+                            ) : null}
+                            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2.5">
                                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                                     Total
                                 </span>
-                                <span className="font-mono text-lg font-semibold text-[var(--color-secondary)]">
+                                <span className="text-lg font-bold text-[var(--color-secondary)]">
                                     {formatCurrency(summary.total)}
                                 </span>
                             </div>
                         </div>
                     )}
 
-                    <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-2.5 sm:grid-cols-2">
                         {isEmpty ? (
                             <Button
                                 variant="outline"
                                 fullWidth
                                 disabled
-                                className="h-12 cursor-not-allowed rounded-xl font-semibold opacity-40"
+                                className="h-11 cursor-not-allowed rounded-xl font-semibold opacity-40"
                             >
                                 View cart
                             </Button>
@@ -168,7 +202,7 @@ export default function CartDrawer(): React.JSX.Element {
                                 <Button
                                     variant="outline"
                                     fullWidth
-                                    className="h-12 rounded-xl border border-[var(--color-border)] bg-white font-semibold text-[var(--color-text-primary)] shadow-sm transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                    className="h-11 rounded-xl border border-[var(--color-border)] bg-white font-semibold text-[var(--color-text-primary)] shadow-sm transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
                                 >
                                     View cart
                                 </Button>
@@ -179,7 +213,7 @@ export default function CartDrawer(): React.JSX.Element {
                                 fullWidth
                                 variant="primary"
                                 disabled
-                                className="h-12 cursor-not-allowed rounded-xl font-bold opacity-40"
+                                className="h-11 cursor-not-allowed rounded-xl font-bold opacity-40"
                             >
                                 Checkout
                             </Button>
@@ -195,7 +229,7 @@ export default function CartDrawer(): React.JSX.Element {
                                     rightIcon={
                                         <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                                     }
-                                    className="group h-12 rounded-xl font-bold transition-all hover:-translate-y-0.5"
+                                    className="group h-11 rounded-xl font-bold transition-all hover:-translate-y-0.5"
                                 >
                                     Checkout
                                 </Button>
@@ -226,7 +260,8 @@ export default function CartDrawer(): React.JSX.Element {
                     }}
                 />
             ) : (
-                <div className="space-y-3">
+                // One divided list, like the /cart page (owner request 2026-11-15), instead of a bordered card per item.
+                <div className="-mt-1 divide-y divide-[var(--color-border)]">
                     {groupCartItems(items).map((group) =>
                         group.bundleId === null ? (
                             <DrawerCartRow
@@ -246,52 +281,62 @@ export default function CartDrawer(): React.JSX.Element {
                         ) : (
                             <div
                                 key={`bundle-${group.bundleId}`}
-                                className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/40 p-3 shadow-[var(--shadow-card)]"
+                                className="py-3"
                             >
-                                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-[var(--color-primary)] uppercase">
-                                        <Package size={14} />
-                                        {group.bundleName} (bundle)
+                                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/40 px-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)]/60 py-2.5">
+                                        <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold tracking-widest text-[var(--color-primary)] uppercase">
+                                            <Package
+                                                size={14}
+                                                className="shrink-0"
+                                            />
+                                            <span className="truncate">
+                                                {group.bundleName} (bundle)
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <QuantityStepper
+                                                size="sm"
+                                                value={
+                                                    group.items[0]
+                                                        .bundle_unit_quantity
+                                                        ? group.items[0]
+                                                              .quantity /
+                                                          group.items[0]
+                                                              .bundle_unit_quantity!
+                                                        : 1
+                                                }
+                                                onChange={(value) =>
+                                                    updateBundleQuantity(
+                                                        group.bundleId!,
+                                                        value,
+                                                    )
+                                                }
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeBundle(
+                                                        group.bundleId!,
+                                                    )
+                                                }
+                                                aria-label={`Remove ${group.bundleName} bundle from cart`}
+                                                className="flex items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
+                                            >
+                                                <Trash2 size={13} />
+                                                Remove
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <QuantityStepper
-                                            value={
-                                                group.items[0]
-                                                    .bundle_unit_quantity
-                                                    ? group.items[0].quantity /
-                                                      group.items[0]
-                                                          .bundle_unit_quantity!
-                                                    : 1
-                                            }
-                                            onChange={(value) =>
-                                                updateBundleQuantity(
-                                                    group.bundleId!,
-                                                    value,
-                                                )
-                                            }
-                                            className="scale-90 rounded-lg"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                removeBundle(group.bundleId!)
-                                            }
-                                            aria-label={`Remove ${group.bundleName} bundle from cart`}
-                                            className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-error)]"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                    <div className="divide-y divide-[var(--color-border)]/60">
+                                        {group.items.map((item) => (
+                                            <DrawerCartRow
+                                                key={item.item_key}
+                                                item={item}
+                                                onNavigate={closeCart}
+                                            />
+                                        ))}
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    {group.items.map((item) => (
-                                        <DrawerCartRow
-                                            key={item.item_key}
-                                            item={item}
-                                            onNavigate={closeCart}
-                                            compact
-                                        />
-                                    ))}
                                 </div>
                             </div>
                         ),
@@ -309,82 +354,93 @@ type DrawerCartRowProps = {
     /** Omitted for a bundle's sub-rows — quantity/remove live on the bundle group header instead. */
     onQuantityChange?: (value: number) => void;
     onRemove?: () => void;
-    /** Tighter padding/sizing for a bundle's sub-rows nested under the group header. */
-    compact?: boolean;
 };
 
+/**
+ * One cart line in the side panel, in the /cart page row's style: 64px
+ * bordered image, bold two-line name, variant, a "Remove" link under the
+ * name, the quantity, and the line total with the unit price under it.
+ * The row reads the panel's own width (container query): wide enough
+ * (≥ 28rem), the quantity sits in its own column; narrower (phones), it
+ * moves under the name so nothing is squeezed.
+ */
 function DrawerCartRow({
     item,
     onNavigate,
     onQuantityChange,
     onRemove,
-    compact = false,
 }: DrawerCartRowProps): React.JSX.Element {
     // Same order as the cart page: a cart from the server has no primary_image_url.
     const imageUrl =
         item.variant?.image ||
         item.product.primary_image_url ||
         getPrimaryImagePath(item.product);
+    const stock = item.variant?.stock_quantity ?? item.product.stock_quantity;
 
     return (
-        <div
-            className={
-                compact
-                    ? 'flex gap-3 rounded-xl bg-surface p-3'
-                    : 'flex gap-4 rounded-2xl border border-[var(--color-border)] bg-surface p-4 shadow-[var(--shadow-card)]'
-            }
-        >
-            <Link
-                href={route('product.show', item.product.slug)}
-                onClick={onNavigate}
-                className={
-                    compact
-                        ? 'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-surface-alt)]'
-                        : 'flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-surface-alt)]'
-                }
-            >
-                {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt={item.product.name}
-                        className="size-full object-cover"
-                        loading="lazy"
-                    />
-                ) : (
-                    <ShoppingCart className="size-6 text-[var(--color-text-muted)]" />
-                )}
-            </Link>
-
-            <div className="min-w-0 flex-1 space-y-2">
-                <div className="space-y-1">
+        <div className="@container py-3">
+            {/* One row like the /cart page: product | quantity | total. A phone-width panel just shrinks the image and gaps. */}
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 @md:gap-x-3">
+                <div className="flex min-w-0 gap-2.5 @md:gap-3">
                     <Link
                         href={route('product.show', item.product.slug)}
                         onClick={onNavigate}
-                        className="block truncate text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
+                        className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] @md:size-16"
                     >
-                        {item.product.name}
+                        {imageUrl ? (
+                            <img
+                                src={imageUrl}
+                                alt={item.product.name}
+                                className="size-full object-cover"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <ShoppingCart className="size-5 text-[var(--color-text-muted)]" />
+                        )}
                     </Link>
-                    {item.variant && (
-                        <p className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
-                            {Object.entries(item.variant.attributes)
-                                .map(([key, value]) => `${key}: ${value}`)
-                                .join(' | ')}
-                        </p>
-                    )}
+                    <div className="flex min-w-0 flex-col justify-center">
+                        <Link
+                            href={route('product.show', item.product.slug)}
+                            onClick={onNavigate}
+                            className="line-clamp-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
+                        >
+                            {item.product.name}
+                        </Link>
+                        {item.variant && (
+                            <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                                {Object.entries(item.variant.attributes).map(
+                                    ([key, value]) => (
+                                        <span
+                                            key={key}
+                                            className="text-[11px] font-bold tracking-wider text-[var(--color-text-secondary)] uppercase"
+                                        >
+                                            {key}: {value}
+                                        </span>
+                                    ),
+                                )}
+                            </div>
+                        )}
+                        {onRemove && (
+                            <button
+                                type="button"
+                                onClick={onRemove}
+                                aria-label={`Remove ${item.product.name} from cart`}
+                                className="mt-1.5 flex w-fit items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
+                            >
+                                <Trash2 size={13} />
+                                Remove
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
+                <div>
                     {onQuantityChange ? (
                         <QuantityStepper
+                            size="sm"
                             value={item.quantity}
                             min={1}
-                            max={
-                                (item.variant?.stock_quantity ??
-                                    item.product.stock_quantity) > 0
-                                    ? (item.variant?.stock_quantity ??
-                                      item.product.stock_quantity)
-                                    : 99
-                            }
+                            max={stock > 0 ? stock : 99}
                             onChange={onQuantityChange}
                         />
                     ) : (
@@ -392,26 +448,15 @@ function DrawerCartRow({
                             × {item.quantity}
                         </span>
                     )}
-
-                    {onRemove && (
-                        <button
-                            type="button"
-                            onClick={onRemove}
-                            aria-label={`Remove ${item.product.name} from cart`}
-                            className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-                        >
-                            <Trash2 className="size-4" />
-                        </button>
-                    )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <Badge variant="secondary" size="sm">
-                        {formatCurrency(item.price)}
-                    </Badge>
-                    <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
+                <div className="text-right">
+                    <p className="text-sm font-bold whitespace-nowrap text-[var(--color-primary)]">
                         {formatCurrency(item.subtotal)}
-                    </span>
+                    </p>
+                    <p className="text-[11px] whitespace-nowrap text-[var(--color-text-secondary)]">
+                        {formatCurrency(item.price)} each
+                    </p>
                 </div>
             </div>
         </div>
