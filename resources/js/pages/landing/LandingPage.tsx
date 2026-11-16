@@ -451,68 +451,6 @@ function OptionCard({
             ? option.compare - option.price
             : 0;
 
-    const body = (
-        <>
-            {option.image ? (
-                <img
-                    src={option.image}
-                    alt=""
-                    className="size-14 shrink-0 rounded-2xl bg-slate-100 object-cover"
-                />
-            ) : (
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <ShoppingBag className="size-5" />
-                </div>
-            )}
-            <div className="min-w-0 flex-1 text-left">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="text-sm font-semibold text-slate-900">
-                        {option.name}
-                    </p>
-                    {option.badge && (
-                        <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase">
-                            {option.badge}
-                        </span>
-                    )}
-                    {option.kind === 'combo' && !option.badge && (
-                        <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-brand uppercase">
-                            Combo
-                        </span>
-                    )}
-                </div>
-                {option.detail && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">
-                        {option.detail}
-                    </p>
-                )}
-                <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <span className="font-bold text-brand">
-                        {formatCurrency(option.price)}
-                    </span>
-                    {option.compare && option.compare > option.price && (
-                        <span className="text-xs text-slate-400 line-through">
-                            {formatCurrency(option.compare)}
-                        </span>
-                    )}
-                    {savings > 0 && (
-                        <span className="text-xs font-semibold text-emerald-600">
-                            Save {formatCurrency(savings)}
-                        </span>
-                    )}
-                    {soldOut ? (
-                        <span className="text-xs font-semibold text-red-500">
-                            Out of stock
-                        </span>
-                    ) : option.stock <= 5 ? (
-                        <span className="text-xs font-semibold text-amber-600">
-                            Only {option.stock} left
-                        </span>
-                    ) : null}
-                </p>
-            </div>
-        </>
-    );
-
     if (mode === 'pick') {
         return (
             <button
@@ -600,42 +538,101 @@ function OptionCard({
         <div
             onClick={onFocus}
             className={cn(
-                'flex flex-col gap-2.5 rounded-2xl border-2 bg-white p-2.5 transition-all duration-200 sm:flex-row sm:items-center',
+                'group flex flex-col overflow-hidden rounded-2xl border-2 bg-white transition-all duration-200',
                 selected
                     ? 'border-brand shadow-[0_10px_30px_-12px_rgb(var(--brand-rgb)/0.5)]'
                     : 'border-slate-200',
                 soldOut && 'opacity-50',
             )}
         >
-            {body}
-            <div className="flex items-center gap-1 self-end rounded-full bg-slate-100 p-1 sm:self-auto">
-                <button
-                    type="button"
-                    disabled={qty === 0}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onChange(qty - 1);
-                    }}
-                    aria-label={`Decrease ${option.name}`}
-                    className="flex size-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
-                >
-                    <Minus className="size-4" />
-                </button>
-                <span className="w-8 text-center text-sm font-extrabold text-slate-900">
-                    {qty}
-                </span>
-                <button
-                    type="button"
-                    disabled={soldOut || qty >= ceiling}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onChange(qty + 1);
-                    }}
-                    aria-label={`Increase ${option.name}`}
-                    className="flex size-9 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
-                >
-                    <Plus className="size-4" />
-                </button>
+            <div className="relative aspect-square w-full bg-slate-100">
+                {option.image ? (
+                    <img
+                        src={option.image}
+                        alt={option.name}
+                        className="size-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                ) : (
+                    <div className="flex size-full items-center justify-center text-slate-300">
+                        <ShoppingBag className="size-10" />
+                    </div>
+                )}
+                {(option.badge || option.kind === 'combo') && (
+                    <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase shadow">
+                        {option.badge || 'Combo'}
+                    </span>
+                )}
+                {selected && (
+                    <span className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border-2 border-brand bg-brand text-[11px] font-bold text-brand-foreground shadow">
+                        {qty}
+                    </span>
+                )}
+                {soldOut && (
+                    <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-bold text-white">
+                        Out of stock
+                    </span>
+                )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-2.5">
+                <div className="space-y-0.5">
+                    <p className="truncate text-sm font-bold text-slate-900">
+                        {option.name}
+                    </p>
+                    {option.detail && (
+                        <p className="line-clamp-2 text-[11px] text-slate-600">
+                            {option.detail}
+                        </p>
+                    )}
+                    <p className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-sm font-bold text-brand">
+                            {formatCurrency(option.price)}
+                        </span>
+                        {option.compare && option.compare > option.price && (
+                            <span className="text-[11px] text-slate-400 line-through">
+                                {formatCurrency(option.compare)}
+                            </span>
+                        )}
+                    </p>
+                    {savings > 0 && (
+                        <p className="text-[11px] font-semibold text-emerald-600">
+                            Save {formatCurrency(savings)}
+                        </p>
+                    )}
+                    {!soldOut && option.stock <= 5 && (
+                        <p className="text-[11px] font-semibold text-amber-600">
+                            Only {option.stock} left
+                        </p>
+                    )}
+                </div>
+                <div className="mt-auto flex items-center justify-between rounded-full bg-slate-100 p-1">
+                    <button
+                        type="button"
+                        disabled={qty === 0}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(qty - 1);
+                        }}
+                        aria-label={`Decrease ${option.name}`}
+                        className="flex size-8 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                    >
+                        <Minus className="size-4" />
+                    </button>
+                    <span className="min-w-6 text-center text-sm font-extrabold text-slate-900">
+                        {qty}
+                    </span>
+                    <button
+                        type="button"
+                        disabled={soldOut || qty >= ceiling}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(qty + 1);
+                        }}
+                        aria-label={`Increase ${option.name}`}
+                        className="flex size-8 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
+                    >
+                        <Plus className="size-4" />
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -884,7 +881,7 @@ function OrderSection({
                             </div>
 
                             {hasVariants ? (
-                                <div className="space-y-2.5">
+                                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                                     {options.map((option) => (
                                         <OptionCard
                                             key={option.key}
