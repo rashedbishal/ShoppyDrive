@@ -358,8 +358,8 @@ type DrawerCartRowProps = {
 
 /**
  * One cart line in the side panel, in the /cart page row's style: 64px
- * bordered image, bold two-line name, variant, a "Remove" link under the
- * name, the quantity, and the line total with the unit price under it.
+ * bordered image, bold two-line name, variant, the quantity, and the line
+ * total with the unit price and a "Remove" link under it.
  * The row reads the panel's own width (container query): wide enough
  * (≥ 28rem), the quantity sits in its own column; narrower (phones), it
  * moves under the name so nothing is squeezed.
@@ -420,17 +420,6 @@ function DrawerCartRow({
                                 )}
                             </div>
                         )}
-                        {onRemove && (
-                            <button
-                                type="button"
-                                onClick={onRemove}
-                                aria-label={`Remove ${item.product.name} from cart`}
-                                className="mt-1.5 flex w-fit items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
-                            >
-                                <Trash2 size={13} />
-                                Remove
-                            </button>
-                        )}
                     </div>
                 </div>
 
@@ -450,13 +439,24 @@ function DrawerCartRow({
                     )}
                 </div>
 
-                <div className="text-right">
+                <div className="flex flex-col items-end text-right">
                     <p className="text-sm font-bold whitespace-nowrap text-[var(--color-primary)]">
                         {formatCurrency(item.subtotal)}
                     </p>
                     <p className="text-[11px] whitespace-nowrap text-[var(--color-text-secondary)]">
                         {formatCurrency(item.price)} each
                     </p>
+                    {onRemove && (
+                        <button
+                            type="button"
+                            onClick={onRemove}
+                            aria-label={`Remove ${item.product.name} from cart`}
+                            className="mt-1.5 flex w-fit items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
+                        >
+                            <Trash2 size={13} />
+                            Remove
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
