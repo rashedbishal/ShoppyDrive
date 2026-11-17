@@ -152,12 +152,8 @@ function Sparkline({
     dataKey: keyof TrendPoint;
     id: string;
 }) {
-    if (data.length < 2) {
-        return null;
-    }
-
     return (
-        <div className="h-10" aria-hidden>
+        <div className="h-full" aria-hidden>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={data}
@@ -192,6 +188,41 @@ function Sparkline({
     );
 }
 
+/**
+ * This period against the previous one as two thin bars: fills the slot a
+ * sparkline takes on the other cards, so every card in the row matches.
+ */
+function CompareBars({ value, previous }: { value: number; previous: number }) {
+    const max = Math.max(value, previous, 0);
+    const rows = [
+        { label: 'Now', amount: value, bar: 'bg-brand' },
+        { label: 'Before', amount: previous, bar: 'bg-slate-300' },
+    ];
+
+    return (
+        <div
+            className="flex h-full flex-col justify-center gap-1.5 px-1"
+            aria-hidden
+        >
+            {rows.map((row) => (
+                <div key={row.label} className="flex items-center gap-2">
+                    <span className="w-9 shrink-0 text-[10px] text-slate-400">
+                        {row.label}
+                    </span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <span
+                            className={`dash-grow block h-full rounded-full ${row.bar}`}
+                            style={{
+                                width: `${max > 0 && row.amount > 0 ? Math.max((row.amount / max) * 100, 2) : 0}%`,
+                            }}
+                        />
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export function KpiCard({
     label,
     icon: Icon,
@@ -201,7 +232,9 @@ export function KpiCard({
     trend,
     trendKey,
     hint,
+    className = '',
 }: {
+    className?: string;
     label: string;
     icon: React.ElementType;
     compare: Compare;
@@ -212,7 +245,9 @@ export function KpiCard({
     hint?: string;
 }) {
     return (
-        <div className="dash-rise group relative min-w-0 overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div
+            className={`dash-rise group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${className}`}
+        >
             <div className="flex items-center justify-between gap-2">
                 <span className="flex size-8 items-center justify-center rounded-xl bg-brand-light text-brand">
                     <Icon className="size-4" />
@@ -232,15 +267,20 @@ export function KpiCard({
             <p className="truncate text-[11px] text-slate-400">
                 {hint ?? `Before: ${format(compare.previous)}`}
             </p>
-            {trend && trendKey && (
-                <div className="-mx-1 mt-2">
+            <div className="-mx-1 mt-auto h-12 pt-2">
+                {trend && trendKey && trend.length >= 2 ? (
                     <Sparkline
                         data={trend}
                         dataKey={trendKey}
                         id={`spark-${String(trendKey)}`}
                     />
-                </div>
-            )}
+                ) : (
+                    <CompareBars
+                        value={compare.value}
+                        previous={compare.previous}
+                    />
+                )}
+            </div>
         </div>
     );
 }
@@ -250,9 +290,11 @@ export function KpiCard({
 export function TargetRing({
     target,
     canEdit,
+    className = '',
 }: {
     target: MonthlyTarget;
     canEdit: boolean;
+    className?: string;
 }) {
     const [editing, setEditing] = useState(false);
     const progress =
@@ -264,7 +306,9 @@ export function TargetRing({
     const onTrack = target.target !== null && target.projected >= target.target;
 
     return (
-        <div className="dash-rise flex h-full min-w-0 flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div
+            className={`dash-rise flex h-full min-w-0 flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm ${className}`}
+        >
             <div className="flex items-center justify-between">
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                     <Target className="size-4 text-brand" /> Monthly target
@@ -305,67 +349,73 @@ export function TargetRing({
                     )}
                 </div>
             ) : (
-                <div className="flex flex-1 items-center gap-4 pt-2">
-                    <div className="relative size-28 shrink-0">
-                        <svg
-                            viewBox="0 0 112 112"
-                            className="size-full -rotate-90"
-                        >
-                            <circle
-                                cx="56"
-                                cy="56"
-                                r={radius}
-                                fill="none"
-                                stroke="var(--brand-light)"
-                                strokeWidth="10"
-                            />
-                            <circle
-                                cx="56"
-                                cy="56"
-                                r={radius}
-                                fill="none"
-                                stroke="var(--brand)"
-                                strokeWidth="10"
-                                strokeLinecap="round"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={
-                                    circumference * (1 - progress)
-                                }
-                                style={{
-                                    transition:
-                                        'stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)',
-                                }}
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-xl font-bold text-slate-900 tabular-nums">
-                                <CountUp
-                                    value={progress * 100}
-                                    format={(n) => `${Math.round(n)}%`}
+                // One KPI card wide: a 72px ring beside the figures, stacked when the card is narrower (phones).
+                <div className="@container flex flex-1 items-center pt-2">
+                    <div className="flex w-full flex-col items-center gap-2 @[13rem]:flex-row @[13rem]:gap-3">
+                        <div className="relative size-[4.5rem] shrink-0">
+                            <svg
+                                viewBox="0 0 112 112"
+                                className="size-full -rotate-90"
+                            >
+                                <circle
+                                    cx="56"
+                                    cy="56"
+                                    r={radius}
+                                    fill="none"
+                                    stroke="var(--brand-light)"
+                                    strokeWidth="10"
                                 />
-                            </span>
-                            <span className="text-[10px] text-slate-500">
-                                reached
-                            </span>
+                                <circle
+                                    cx="56"
+                                    cy="56"
+                                    r={radius}
+                                    fill="none"
+                                    stroke="var(--brand)"
+                                    strokeWidth="10"
+                                    strokeLinecap="round"
+                                    strokeDasharray={circumference}
+                                    strokeDashoffset={
+                                        circumference * (1 - progress)
+                                    }
+                                    style={{
+                                        transition:
+                                            'stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)',
+                                    }}
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-sm leading-none font-bold text-slate-900 tabular-nums">
+                                    <CountUp
+                                        value={progress * 100}
+                                        format={(n) => `${Math.round(n)}%`}
+                                    />
+                                </span>
+                                <span className="text-[9px] text-slate-500">
+                                    reached
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="min-w-0 space-y-1 text-xs">
-                        <p className="text-slate-500">{target.month_label}</p>
-                        <p className="font-semibold text-slate-900 tabular-nums">
-                            {money(target.month_revenue)}{' '}
-                            <span className="font-normal text-slate-400">
+                        <div className="min-w-0 space-y-0.5 text-center text-[11px] @[13rem]:text-left">
+                            <p className="text-slate-500">
+                                {target.month_label}
+                            </p>
+                            <p className="text-sm font-semibold text-slate-900 tabular-nums">
+                                {money(target.month_revenue)}
+                            </p>
+                            <p className="text-slate-400 tabular-nums">
                                 of {money(target.target)}
-                            </span>
-                        </p>
-                        <p className="text-slate-500">
-                            Day {target.day_of_month} of {target.days_in_month}
-                        </p>
-                        <p
-                            className={`font-semibold ${onTrack ? 'text-emerald-600' : 'text-amber-600'}`}
-                        >
-                            {onTrack ? 'On track' : 'Behind pace'} · heading for{' '}
-                            {compactMoney(target.projected)}
-                        </p>
+                            </p>
+                            <p className="text-slate-500">
+                                Day {target.day_of_month} of{' '}
+                                {target.days_in_month}
+                            </p>
+                            <p
+                                className={`font-semibold ${onTrack ? 'text-emerald-600' : 'text-amber-600'}`}
+                            >
+                                {onTrack ? 'On track' : 'Behind pace'} · heading
+                                for {compactMoney(target.projected)}
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}

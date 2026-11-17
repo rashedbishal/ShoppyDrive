@@ -41,94 +41,102 @@ export function Donut({
         return <Empty>No data for this period yet</Empty>;
     }
 
+    // Laid out by the panel's own width (container query), not the
+    // viewport's: in a narrow three-column panel the legend still fits.
     return (
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-            <div className="relative size-36 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={slices}
-                            dataKey="value"
-                            nameKey="label"
-                            innerRadius="66%"
-                            outerRadius="100%"
-                            paddingAngle={slices.length > 1 ? 2 : 0}
-                            stroke="#fff"
-                            strokeWidth={2}
-                            animationDuration={900}
-                        >
-                            {slices.map((slice) => (
-                                <Cell key={slice.key} fill={slice.color} />
-                            ))}
-                        </Pie>
-                        <Tooltip
-                            content={({ active, payload }) => {
-                                if (!active || !payload?.length) {
-                                    return null;
-                                }
+        <div className="@container my-auto w-full">
+            <div className="flex flex-col items-center gap-4 @[18rem]:flex-row">
+                <div className="relative size-28 shrink-0 @md:size-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={slices}
+                                dataKey="value"
+                                nameKey="label"
+                                innerRadius="66%"
+                                outerRadius="100%"
+                                paddingAngle={slices.length > 1 ? 2 : 0}
+                                stroke="#fff"
+                                strokeWidth={2}
+                                animationDuration={900}
+                            >
+                                {slices.map((slice) => (
+                                    <Cell key={slice.key} fill={slice.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip
+                                // Above the centre label, which comes later in the DOM and would otherwise paint over the tooltip.
+                                wrapperStyle={{ zIndex: 20 }}
+                                content={({ active, payload }) => {
+                                    if (!active || !payload?.length) {
+                                        return null;
+                                    }
 
-                                const slice = payload[0].payload as DonutSlice;
+                                    const slice = payload[0]
+                                        .payload as DonutSlice;
 
-                                return (
-                                    <TooltipBox
-                                        title={slice.label}
-                                        rows={[
-                                            {
-                                                label: 'Count',
-                                                value: format(slice.value),
-                                                color: slice.color,
-                                            },
-                                            {
-                                                label: 'Share',
-                                                value: percent(
-                                                    (slice.value / total) * 100,
-                                                ),
-                                            },
-                                        ]}
-                                    />
-                                );
-                            }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold text-slate-900 tabular-nums">
-                        <CountUp value={total} format={format} />
-                    </span>
-                    <span className="text-[10px] text-slate-500">
-                        {centerLabel}
-                    </span>
-                </div>
-            </div>
-            <ul className="w-full min-w-0 space-y-1.5">
-                {slices.map((slice) => (
-                    <li
-                        key={slice.key}
-                        className="flex items-center justify-between gap-2 text-xs"
-                    >
-                        <span className="flex min-w-0 items-center gap-2 text-slate-600">
-                            <span
-                                className="size-2.5 shrink-0 rounded-sm"
-                                style={{ backgroundColor: slice.color }}
+                                    return (
+                                        <TooltipBox
+                                            title={slice.label}
+                                            rows={[
+                                                {
+                                                    label: 'Count',
+                                                    value: format(slice.value),
+                                                    color: slice.color,
+                                                },
+                                                {
+                                                    label: 'Share',
+                                                    value: percent(
+                                                        (slice.value / total) *
+                                                            100,
+                                                    ),
+                                                },
+                                            ]}
+                                        />
+                                    );
+                                }}
                             />
-                            <span className="truncate">{slice.label}</span>
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-lg font-bold text-slate-900 tabular-nums">
+                            <CountUp value={total} format={format} />
                         </span>
-                        <span className="shrink-0 text-slate-900 tabular-nums">
-                            <span className="font-semibold">
-                                {format(slice.value)}
+                        <span className="text-[10px] text-slate-500">
+                            {centerLabel}
+                        </span>
+                    </div>
+                </div>
+                <ul className="w-full min-w-0 space-y-1.5">
+                    {slices.map((slice) => (
+                        <li
+                            key={slice.key}
+                            className="flex items-center justify-between gap-2 text-xs"
+                        >
+                            <span className="flex min-w-0 items-center gap-2 text-slate-600">
+                                <span
+                                    className="size-2.5 shrink-0 rounded-sm"
+                                    style={{ backgroundColor: slice.color }}
+                                />
+                                <span className="truncate">{slice.label}</span>
                             </span>
-                            <span className="ml-1.5 text-slate-400">
-                                {percent((slice.value / total) * 100)}
-                            </span>
-                            {slice.detail && (
-                                <span className="block text-right text-[10px] text-slate-400">
-                                    {slice.detail}
+                            <span className="shrink-0 text-slate-900 tabular-nums">
+                                <span className="font-semibold">
+                                    {format(slice.value)}
                                 </span>
-                            )}
-                        </span>
-                    </li>
-                ))}
-            </ul>
+                                <span className="ml-1.5 text-slate-400">
+                                    {percent((slice.value / total) * 100)}
+                                </span>
+                                {slice.detail && (
+                                    <span className="block text-right text-[10px] text-slate-400">
+                                        {slice.detail}
+                                    </span>
+                                )}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }
@@ -156,7 +164,7 @@ export function OrderHealthPanels({ data }: { data: OrderHealth }) {
     const ordersPlaced = Math.max(data.funnel[1]?.count ?? 0, 1);
 
     return (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Panel
                 title="Order status"
                 subtitle="Orders placed in this period"
@@ -179,7 +187,7 @@ export function OrderHealthPanels({ data }: { data: OrderHealth }) {
                 icon={Filter}
                 className="md:col-span-2 xl:col-span-1"
             >
-                <div className="space-y-2.5">
+                <div className="my-auto space-y-2">
                     {data.funnel.map((step, index) => {
                         const base =
                             index === 0
@@ -212,7 +220,7 @@ export function OrderHealthPanels({ data }: { data: OrderHealth }) {
                                         )}
                                     </span>
                                 </div>
-                                <div className="mt-1 h-6 overflow-hidden rounded-lg bg-slate-50">
+                                <div className="mt-1 h-5 overflow-hidden rounded-lg bg-slate-50">
                                     <div
                                         className="dash-grow h-full rounded-lg"
                                         style={{
@@ -227,7 +235,16 @@ export function OrderHealthPanels({ data }: { data: OrderHealth }) {
                         );
                     })}
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
+            </Panel>
+
+            {/* Moved out of the funnel panel so it no longer outgrows the two donuts beside it. */}
+            <Panel
+                title="Cancellations, returns & discounts"
+                subtitle="Orders placed in this period"
+                icon={Activity}
+                className="md:col-span-2 xl:col-span-3"
+            >
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <MiniStat
                         label="Cancelled"
                         value={percent(data.cancellation_rate)}
@@ -278,86 +295,90 @@ export function CourierPanel({ rows }: { rows: CourierRow[] }) {
                     No parcels were booked with a courier in this period
                 </Empty>
             ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {rows.map((row) => (
-                        <div
-                            key={row.courier}
-                            className="rounded-xl border border-slate-100 p-4"
-                        >
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-semibold text-slate-800">
-                                    {COURIER_NAMES[row.courier]}
+                <div className="@container my-auto">
+                    <div className="grid grid-cols-1 gap-3 @md:grid-cols-2">
+                        {rows.map((row) => (
+                            <div
+                                key={row.courier}
+                                className="rounded-xl border border-slate-100 p-3"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        {COURIER_NAMES[row.courier]}
+                                    </p>
+                                    <span className="text-xs text-slate-500">
+                                        {number(row.sent)} sent
+                                    </span>
+                                </div>
+                                <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-slate-100">
+                                    {row.sent > 0 && (
+                                        <>
+                                            <div
+                                                className="dash-grow h-full"
+                                                style={{
+                                                    width: `${(row.delivered / row.sent) * 100}%`,
+                                                    backgroundColor: '#1baf7a',
+                                                }}
+                                                title="Delivered"
+                                            />
+                                            <div
+                                                className="h-full"
+                                                style={{
+                                                    width: `${(row.in_transit / row.sent) * 100}%`,
+                                                    backgroundColor: '#2a78d6',
+                                                    marginLeft:
+                                                        row.delivered > 0
+                                                            ? 2
+                                                            : 0,
+                                                }}
+                                                title="In transit"
+                                            />
+                                            <div
+                                                className="h-full"
+                                                style={{
+                                                    width: `${(row.cancelled / row.sent) * 100}%`,
+                                                    backgroundColor: '#e34948',
+                                                    marginLeft: 2,
+                                                }}
+                                                title="Cancelled or returned"
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                                <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <dt className="text-[10px] text-slate-500">
+                                            Delivered
+                                        </dt>
+                                        <dd className="text-sm font-bold text-emerald-700 tabular-nums">
+                                            {percent(row.delivered_rate)}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] text-slate-500">
+                                            Cancelled
+                                        </dt>
+                                        <dd className="text-sm font-bold text-red-600 tabular-nums">
+                                            {percent(row.cancelled_rate)}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] text-slate-500">
+                                            Avg. days
+                                        </dt>
+                                        <dd className="text-sm font-bold text-slate-800 tabular-nums">
+                                            {row.average_days === null
+                                                ? '—'
+                                                : row.average_days}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                <p className="mt-2 text-[11px] text-slate-400">
+                                    {number(row.in_transit)} still on the way
                                 </p>
-                                <span className="text-xs text-slate-500">
-                                    {number(row.sent)} sent
-                                </span>
                             </div>
-                            <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-slate-100">
-                                {row.sent > 0 && (
-                                    <>
-                                        <div
-                                            className="dash-grow h-full"
-                                            style={{
-                                                width: `${(row.delivered / row.sent) * 100}%`,
-                                                backgroundColor: '#1baf7a',
-                                            }}
-                                            title="Delivered"
-                                        />
-                                        <div
-                                            className="h-full"
-                                            style={{
-                                                width: `${(row.in_transit / row.sent) * 100}%`,
-                                                backgroundColor: '#2a78d6',
-                                                marginLeft:
-                                                    row.delivered > 0 ? 2 : 0,
-                                            }}
-                                            title="In transit"
-                                        />
-                                        <div
-                                            className="h-full"
-                                            style={{
-                                                width: `${(row.cancelled / row.sent) * 100}%`,
-                                                backgroundColor: '#e34948',
-                                                marginLeft: 2,
-                                            }}
-                                            title="Cancelled or returned"
-                                        />
-                                    </>
-                                )}
-                            </div>
-                            <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
-                                <div>
-                                    <dt className="text-[10px] text-slate-500">
-                                        Delivered
-                                    </dt>
-                                    <dd className="text-sm font-bold text-emerald-700 tabular-nums">
-                                        {percent(row.delivered_rate)}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="text-[10px] text-slate-500">
-                                        Cancelled
-                                    </dt>
-                                    <dd className="text-sm font-bold text-red-600 tabular-nums">
-                                        {percent(row.cancelled_rate)}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="text-[10px] text-slate-500">
-                                        Avg. days
-                                    </dt>
-                                    <dd className="text-sm font-bold text-slate-800 tabular-nums">
-                                        {row.average_days === null
-                                            ? '—'
-                                            : row.average_days}
-                                    </dd>
-                                </div>
-                            </dl>
-                            <p className="mt-2 text-[11px] text-slate-400">
-                                {number(row.in_transit)} still on the way
-                            </p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
             {anything && (
@@ -413,8 +434,9 @@ export function Heatmap({ grid }: { grid: number[][] }) {
             {max === 0 ? (
                 <Empty>No orders in this period yet</Empty>
             ) : (
-                <div className="overflow-x-auto">
-                    <div className="min-w-[520px]">
+                // 400px fits a half-width panel at every desktop size; only phones scroll.
+                <div className="my-auto overflow-x-auto">
+                    <div className="min-w-[400px]">
                         <div className="grid grid-cols-[36px_repeat(24,minmax(0,1fr))] gap-[3px]">
                             <span />
                             {Array.from({ length: 24 }, (_, hour) => (

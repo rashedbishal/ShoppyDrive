@@ -9,9 +9,9 @@ type Props = {
 };
 
 const sizes = {
-    md: 'h-11 gap-2 px-6 text-sm',
-    lg: 'h-14 gap-2.5 px-8 text-base',
-    xl: 'h-16 gap-3 px-10 text-lg sm:h-[4.5rem] sm:px-12 sm:text-xl',
+    md: 'h-9 gap-1.5 px-4 text-xs',
+    lg: 'h-11 gap-2 px-6 text-sm',
+    xl: 'h-12 gap-2 px-8 text-base sm:h-14 sm:px-10 sm:text-lg',
 } as const;
 
 /**
@@ -31,7 +31,7 @@ export default function GlowButton({
         <a
             href={href}
             className={cn(
-                'lp-glow group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-brand-bright to-brand font-extrabold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform duration-200 ring-inset hover:scale-[1.04] active:scale-[0.98]',
+                'lp-glow group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-brand-bright to-brand font-bold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform duration-200 ring-inset hover:scale-[1.04] active:scale-[0.98]',
                 sizes[size],
                 className,
             )}

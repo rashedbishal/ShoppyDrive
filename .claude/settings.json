@@ -76,7 +76,12 @@
       "mcp__laravel-boost__database-schema",
       "Bash(grep -n \"customer.name$\" -B3 -A8 resources/js/pages/admin/customers/index.tsx)",
       "Bash(grep -v \"data-form-error$\")",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(node -e \"console.log\\(require\\('tailwind-merge/package.json'\\).version\\)\")",
+      "Bash(node -e \"const {twMerge}=require\\('tailwind-merge'\\);console.log\\(twMerge\\('h-9 px-3 text-sm','size-6 rounded-md p-0'\\)\\)\")",
+      "Bash(grep -n \"Phones: the slim two-line card\\\\|md and up: one row per order\\\\|function OrderThumbnails\\\\|^}$\" resources/js/pages/account/Orders.tsx)",
+      "Bash(python3 -I /tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/ed0fc1f7-c5b6-4748-bc2a-93e335dce395/scratchpad/cart_drawer.py)",
+      "Bash(echo \"exit $?\")"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

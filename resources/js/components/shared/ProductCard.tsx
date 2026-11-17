@@ -29,6 +29,93 @@ type ProductCardProps = {
     openCartOnAdd?: boolean;
 };
 
+type VariantOption = [name: string, values: string[]];
+
+/** Each variant attribute with its distinct values, in first-seen order, e.g. [["Color", ["Red", "Blue"]]]. */
+function variantOptions(product: Product): VariantOption[] {
+    const options = new Map<string, string[]>();
+
+    for (const variant of product.variants ?? []) {
+        for (const [name, value] of Object.entries(variant.attributes ?? {})) {
+            const values = options.get(name) ?? [];
+
+            if (value && !values.includes(value)) {
+                values.push(value);
+            }
+
+            options.set(name, values);
+        }
+    }
+
+    return [...options.entries()].filter(([, values]) => values.length > 0);
+}
+
+/** "Color: Red, Blue +2 · Size: L, XL" — the list card's detail line when a product has no description. */
+function optionsSummary(options: VariantOption[]): string {
+    return options
+        .map(([name, values]) => {
+            const shown = values.slice(0, 2).join(', ');
+            const more = values.length > 2 ? ` +${values.length - 2}` : '';
+
+            return `${name}: ${shown}${more}`;
+        })
+        .join(' · ');
+}
+
+type Highlight = { label: string; tone: 'sale' | 'delivery' | 'neutral' };
+
+const HIGHLIGHT_TONES: Record<Highlight['tone'], string> = {
+    sale: 'bg-[var(--color-accent)]/15 text-[var(--color-secondary)]',
+    delivery: 'bg-emerald-50 text-emerald-700',
+    neutral: 'bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)]',
+};
+
+/**
+ * The chips under the list card's image, from data the card already has.
+ * The sale end is a fixed Dhaka date, not "ends in 5h": these pages are
+ * server-rendered, and a relative time would differ between server and
+ * browser and break hydration.
+ */
+function listHighlights(
+    product: Product,
+    options: VariantOption[],
+    isFlashPriced: boolean,
+): Highlight[] {
+    const highlights: Highlight[] = [];
+
+    if (isFlashPriced && product.flash_sale_ends_at) {
+        const ends = new Date(product.flash_sale_ends_at).toLocaleDateString(
+            'en-GB',
+            { day: 'numeric', month: 'short', timeZone: 'Asia/Dhaka' },
+        );
+        highlights.push({ label: `Sale ends ${ends}`, tone: 'sale' });
+    }
+
+    if (product.free_delivery) {
+        const minQty = product.free_delivery_min_qty ?? 1;
+        highlights.push({
+            label: minQty > 1 ? `Free delivery on ${minQty}+` : 'Free delivery',
+            tone: 'delivery',
+        });
+    }
+
+    for (const [name, values] of options) {
+        const noun = name.toLowerCase();
+        const plural =
+            values.length === 1 || noun.endsWith('s') ? noun : `${noun}s`;
+        highlights.push({
+            label: `${values.length} ${plural}`,
+            tone: 'neutral',
+        });
+    }
+
+    if (product.category?.name) {
+        highlights.push({ label: product.category.name, tone: 'neutral' });
+    }
+
+    return highlights;
+}
+
 /**
  * The single storefront product card used everywhere products are listed.
  * The grid view has a fixed height per device tier (PRODUCT_CARD_HEIGHT):
@@ -331,25 +418,60 @@ export function ProductCard({
           : 'text-[var(--color-text-secondary)]';
 
     if (view === 'list') {
+        // From sm the list card has one fixed height (DISC-57): every text
+        // slot is reserved, and the space under the 4:3 image holds the
+        // product's highlights, so no card has a gap under its image and no
+        // card is shorter than another. Phones keep the stacked layout.
+        const options = variantOptions(product);
+        const detailFallback =
+            optionsSummary(options) ||
+            [product.category?.name, product.sku ? `SKU ${product.sku}` : null]
+                .filter(Boolean)
+                .join(' · ');
+        const highlights = listHighlights(product, options, isFlashPriced);
+
         return (
             <article
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={handleCardClick}
                 className={cn(
-                    'group grid cursor-pointer grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] sm:grid-cols-[200px_minmax(0,1fr)]',
+                    'group grid cursor-pointer grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] sm:h-56 sm:grid-cols-[200px_minmax(0,1fr)]',
                     className,
                 )}
             >
-                <Link
-                    href={productUrl}
-                    prefetch
-                    className="block aspect-[4/3] overflow-hidden rounded-xl"
-                >
-                    {media}
-                </Link>
+                <div className="flex min-h-0 flex-col gap-2">
+                    <Link
+                        href={productUrl}
+                        prefetch
+                        className="block aspect-[4/3] shrink-0 overflow-hidden rounded-xl"
+                    >
+                        {media}
+                    </Link>
 
-                <div className="flex min-w-0 flex-col gap-2.5">
+                    {/* Under the image (sm+): the rating, which every product has, then one row of chips (150 + 8 + 16 + 8 + 18 = the 200px inner height). Chips that don't fit the row are clipped whole. */}
+                    <div className="hidden sm:block">{rating}</div>
+                    {highlights.length > 0 ? (
+                        <ul
+                            aria-label="Product highlights"
+                            className="hidden h-[18px] shrink-0 flex-wrap content-start gap-1 overflow-hidden sm:flex"
+                        >
+                            {highlights.map((highlight) => (
+                                <li
+                                    key={highlight.label}
+                                    className={cn(
+                                        'block h-[18px] max-w-full truncate rounded-full px-1.5 text-[10px] leading-[18px] font-semibold',
+                                        HIGHLIGHT_TONES[highlight.tone],
+                                    )}
+                                >
+                                    {highlight.label}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : null}
+                </div>
+
+                <div className="flex min-w-0 flex-col gap-2.5 sm:gap-2">
                     <div className="space-y-1">
                         <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                             {brandName}
@@ -357,20 +479,25 @@ export function ProductCard({
                         <Link
                             href={productUrl}
                             prefetch
-                            className="line-clamp-2 text-base font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
+                            className="line-clamp-2 text-base font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)] sm:h-12"
                         >
                             {product.name}
                         </Link>
                         {product.short_description ? (
-                            <p className="line-clamp-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                            <p className="line-clamp-2 text-sm leading-6 text-[var(--color-text-secondary)] sm:h-10 sm:leading-5">
                                 {product.short_description}
                             </p>
-                        ) : null}
+                        ) : (
+                            // No description: the product's options (or category and SKU) fill the same two lines, from sm only.
+                            <p className="hidden text-sm leading-5 text-[var(--color-text-secondary)] sm:line-clamp-2 sm:h-10">
+                                {detailFallback}
+                            </p>
+                        )}
                     </div>
 
-                    {rating}
+                    <div className="sm:hidden">{rating}</div>
 
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:h-7 sm:flex-nowrap sm:items-center">
                         <p className="text-xl font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)]">
                             {formatCurrency(currentPrice)}
                         </p>
@@ -380,7 +507,12 @@ export function ProductCard({
                             </p>
                         ) : null}
                         {stockLabel ? (
-                            <span className={cn('text-xs', stockClassName)}>
+                            <span
+                                className={cn(
+                                    'text-xs sm:min-w-0 sm:truncate',
+                                    stockClassName,
+                                )}
+                            >
                                 {stockLabel}
                             </span>
                         ) : null}
@@ -523,7 +655,7 @@ export function ProductCardSkeleton({
 }): React.JSX.Element {
     if (view === 'list') {
         return (
-            <Card className="grid grid-cols-1 gap-4 overflow-hidden rounded-2xl border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:grid-cols-[200px_minmax(0,1fr)]">
+            <Card className="grid grid-cols-1 gap-4 overflow-hidden rounded-2xl border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:h-56 sm:grid-cols-[200px_minmax(0,1fr)]">
                 <Skeleton className="aspect-[4/3] w-full rounded-xl" />
                 <div className="space-y-2.5">
                     <Skeleton className="h-4 w-24" />

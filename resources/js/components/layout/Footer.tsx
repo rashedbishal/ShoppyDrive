@@ -6,11 +6,7 @@ import {
     Mail,
     MapPin,
     Phone,
-    Shield,
-    Star,
-    Truck,
     Youtube,
-    Zap,
 } from 'lucide-react';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
@@ -22,35 +18,12 @@ import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useNewsletterSubscribe } from '@/hooks/use-newsletter-subscribe';
 import type { SharedPageProps } from '@/types';
 
-/**
- * BIZ-032: the delivery and support badges come from the real settings
- * (Admin free-delivery threshold and Contact Page support hours) instead of
- * hard-coded claims that could contradict them.
+/*
+ * The trust-badge strip (delivery, secure payment, verified products,
+ * support) was removed from the footer on every page (owner request
+ * 2026-11-15); its points now live in the home page's trust card
+ * (Home.tsx), which keeps BIZ-032's settings-driven delivery and support text.
  */
-function trustBadgesFor(settings: SharedPageProps['settings']) {
-    const threshold = Number(settings.free_delivery_threshold ?? 0);
-
-    return [
-        threshold > 0
-            ? {
-                  icon: Truck,
-                  label: 'Free Delivery',
-                  sub: `Orders over ${settings.currency_symbol}${Math.round(threshold).toLocaleString('en-US')}`,
-              }
-            : {
-                  icon: Truck,
-                  label: 'Nationwide Delivery',
-                  sub: 'All 64 districts',
-              },
-        { icon: Shield, label: 'Secure Payment', sub: 'SSL Encrypted' },
-        { icon: Star, label: 'Verified Products', sub: 'Quality Assured' },
-        {
-            icon: Zap,
-            label: 'Customer Support',
-            sub: settings.support_hours ?? 'Every day, 9 AM–9 PM',
-        },
-    ];
-}
 
 const policyLinks = [
     { label: 'Privacy Policy', href: '/privacy-policy' },
@@ -96,34 +69,6 @@ export default function Footer(): React.JSX.Element {
 
     return (
         <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-            {/* Trust badges strip */}
-            <div className="border-b border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                        {trustBadgesFor(settings).map(
-                            ({ icon: Icon, label, sub }) => (
-                                <div
-                                    key={label}
-                                    className="flex items-center gap-3"
-                                >
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-light)]">
-                                        <Icon className="size-5 text-[var(--color-primary)]" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                                            {label}
-                                        </p>
-                                        <p className="truncate text-xs text-[var(--color-text-secondary)]">
-                                            {sub}
-                                        </p>
-                                    </div>
-                                </div>
-                            ),
-                        )}
-                    </div>
-                </div>
-            </div>
-
             {/* Main footer */}
             <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
                 <div className="grid gap-10 lg:grid-cols-[1.4fr_0.9fr_0.9fr_1.1fr]">

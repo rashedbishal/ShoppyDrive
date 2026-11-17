@@ -14,16 +14,6 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react';
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
 import { Donut } from './orders';
 import type { CustomerInsights, Marketing, ReviewInsights } from './types';
 import {
@@ -34,12 +24,12 @@ import {
     money,
     number,
     Panel,
+    panelGrid,
     percent,
     SERIES,
     SOURCE_LABELS,
     timeAgo,
     titleCase,
-    TooltipBox,
 } from './ui';
 
 // ── Customers ─────────────────────────────────────────────────────────────────
@@ -48,7 +38,7 @@ export function CustomerPanels({ data }: { data: CustomerInsights }) {
     const maxDistrict = Math.max(...data.districts.map((row) => row.orders), 0);
 
     return (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             <Panel
                 title="Customer mix"
                 subtitle="Who ordered in this period"
@@ -71,7 +61,7 @@ export function CustomerPanels({ data }: { data: CustomerInsights }) {
                         },
                     ]}
                 />
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2">
                     <MiniStat
                         label="Repeat buyers"
                         value={percent(data.repeat_rate)}
@@ -182,7 +172,10 @@ export function CustomerPanels({ data }: { data: CustomerInsights }) {
                 icon={Gift}
                 className="lg:col-span-2 xl:col-span-3"
             >
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                {/* Four tiles without the newsletter, so no empty slots. */}
+                <div
+                    className={`grid grid-cols-2 gap-2 ${data.newsletter ? 'sm:grid-cols-3 lg:grid-cols-6' : 'sm:grid-cols-4'}`}
+                >
                     <MiniStat
                         label="Points held"
                         value={
@@ -248,263 +241,227 @@ export function MarketingPanels({ data }: { data: Marketing }) {
         label: SOURCE_LABELS[row.source] ?? titleCase(row.source),
         color: SERIES[index % SERIES.length],
     }));
+    const maxSourceOrders = Math.max(...sources.map((row) => row.orders), 0);
+    // Every panel here except Devices depends on permissions. Traffic
+    // sources pairs with Devices; the rest share a grid sized to how many
+    // are visible, so a hidden one never leaves a hole.
+    const otherPanels = [
+        data.abandoned,
+        data.landing_pages,
+        data.top_searches,
+        data.no_result_searches,
+    ].filter(Boolean).length;
+    const restCount = otherPanels + (data.traffic_sources ? 0 : 1);
+
+    const devicesPanel = (
+        <Panel
+            title="Visitor devices"
+            subtitle="Counted since this dashboard update"
+            icon={MonitorSmartphone}
+        >
+            {deviceTotal === 0 ? (
+                <Empty>Device data starts collecting from today</Empty>
+            ) : (
+                <Donut
+                    centerLabel="visitors"
+                    slices={[
+                        {
+                            key: 'mobile',
+                            label: 'Mobile',
+                            value: devices.mobile,
+                            color: SERIES[0],
+                        },
+                        {
+                            key: 'desktop',
+                            label: 'Desktop',
+                            value: devices.desktop,
+                            color: SERIES[1],
+                        },
+                        {
+                            key: 'tablet',
+                            label: 'Tablet',
+                            value: devices.tablet,
+                            color: SERIES[2],
+                        },
+                    ].filter((slice) => slice.value > 0)}
+                />
+            )}
+        </Panel>
+    );
 
     return (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-4">
             {data.traffic_sources && (
-                <Panel
-                    title="Sales by traffic source"
-                    subtitle="Where ordering customers came from"
-                    icon={Megaphone}
-                    className="lg:col-span-2 xl:col-span-2"
-                >
-                    {sources.length === 0 ? (
-                        <Empty>No orders in this period yet</Empty>
-                    ) : (
-                        <div className="h-60">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={sources}
-                                    layout="vertical"
-                                    margin={{
-                                        top: 0,
-                                        right: 16,
-                                        bottom: 0,
-                                        left: 0,
-                                    }}
-                                    barCategoryGap={8}
-                                >
-                                    <CartesianGrid
-                                        stroke="#f1f5f9"
-                                        horizontal={false}
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Panel
+                        title="Sales by traffic source"
+                        subtitle="Where ordering customers came from"
+                        icon={Megaphone}
+                        className="lg:col-span-2"
+                    >
+                        {sources.length === 0 ? (
+                            <Empty>No orders in this period yet</Empty>
+                        ) : (
+                            // The same thin ranked bars as Best sellers and Top districts: slim with any number of sources, money shown without hovering.
+                            <div className="space-y-2">
+                                {sources.map((row) => (
+                                    <BarRow
+                                        key={row.source}
+                                        label={row.label}
+                                        value={row.orders}
+                                        max={maxSourceOrders}
+                                        display={`${number(row.orders)} order${row.orders === 1 ? '' : 's'} · ${money(row.revenue)}`}
+                                        color={row.color}
                                     />
-                                    <XAxis
-                                        type="number"
-                                        tick={{ fontSize: 11, fill: '#64748b' }}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        allowDecimals={false}
-                                    />
-                                    <YAxis
-                                        type="category"
-                                        dataKey="label"
-                                        width={110}
-                                        tick={{ fontSize: 11, fill: '#334155' }}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: '#f8fafc' }}
-                                        content={({ active, payload }) => {
-                                            if (!active || !payload?.length) {
-                                                return null;
-                                            }
-
-                                            const row = payload[0]
-                                                .payload as (typeof sources)[number];
-
-                                            return (
-                                                <TooltipBox
-                                                    title={row.label}
-                                                    rows={[
-                                                        {
-                                                            label: 'Orders',
-                                                            value: number(
-                                                                row.orders,
-                                                            ),
-                                                            color: row.color,
-                                                        },
-                                                        {
-                                                            label: 'Collected',
-                                                            value: money(
-                                                                row.revenue,
-                                                            ),
-                                                        },
-                                                    ]}
-                                                />
-                                            );
-                                        }}
-                                    />
-                                    <Bar
-                                        dataKey="orders"
-                                        radius={[0, 4, 4, 0]}
-                                        animationDuration={900}
-                                    >
-                                        {sources.map((row) => (
-                                            <Cell
-                                                key={row.source}
-                                                fill={row.color}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    )}
-                </Panel>
+                                ))}
+                            </div>
+                        )}
+                    </Panel>
+                    {devicesPanel}
+                </div>
             )}
 
-            <Panel
-                title="Visitor devices"
-                subtitle="Counted since this dashboard update"
-                icon={MonitorSmartphone}
-            >
-                {deviceTotal === 0 ? (
-                    <Empty>Device data starts collecting from today</Empty>
-                ) : (
-                    <Donut
-                        centerLabel="visitors"
-                        slices={[
-                            {
-                                key: 'mobile',
-                                label: 'Mobile',
-                                value: devices.mobile,
-                                color: SERIES[0],
-                            },
-                            {
-                                key: 'desktop',
-                                label: 'Desktop',
-                                value: devices.desktop,
-                                color: SERIES[1],
-                            },
-                            {
-                                key: 'tablet',
-                                label: 'Tablet',
-                                value: devices.tablet,
-                                color: SERIES[2],
-                            },
-                        ].filter((slice) => slice.value > 0)}
-                    />
-                )}
-            </Panel>
+            {restCount > 0 && (
+                <div className={panelGrid(restCount)}>
+                    {!data.traffic_sources && devicesPanel}
 
-            {data.abandoned && (
-                <Panel
-                    title="Abandoned checkouts"
-                    subtitle="Started checkout, didn't order"
-                    icon={ShoppingCart}
-                >
-                    <div className="grid grid-cols-2 gap-2">
-                        <MiniStat
-                            label="Checkouts left"
-                            value={<CountUp value={data.abandoned.count} />}
-                            sub="still not ordered"
-                            tone="amber"
-                        />
-                        <MiniStat
-                            label="Cart value"
-                            value={money(data.abandoned.value)}
-                            sub="left behind"
-                            tone="red"
-                        />
-                        <MiniStat
-                            label="Reminded"
-                            value={<CountUp value={data.abandoned.reminded} />}
-                            sub="got a reminder email"
-                            tone="blue"
-                        />
-                        <MiniStat
-                            label="Reminder reach"
-                            value={percent(
-                                data.abandoned.count > 0
-                                    ? (data.abandoned.reminded /
-                                          data.abandoned.count) *
-                                          100
-                                    : 0,
-                            )}
-                            sub="only customers with accounts"
-                        />
-                    </div>
-                    <p className="mt-3 text-[11px] text-slate-400">
-                        A checkout leaves this list once that phone number
-                        places an order.
-                    </p>
-                </Panel>
-            )}
-
-            {data.landing_pages && (
-                <Panel
-                    title="Landing pages"
-                    subtitle="Orders from landing pages"
-                    icon={Link2}
-                >
-                    {data.landing_pages.length === 0 ? (
-                        <Empty>No landing page orders in this period</Empty>
-                    ) : (
-                        <div className="space-y-2">
-                            {data.landing_pages.map((page) => (
-                                <BarRow
-                                    key={page.id}
-                                    label={page.title}
-                                    sub={money(page.amount)}
-                                    value={page.orders}
-                                    max={data.landing_pages![0].orders}
-                                    display={`${number(page.orders)} orders`}
-                                    color={SERIES[6]}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </Panel>
-            )}
-
-            {data.top_searches && (
-                <Panel
-                    title="Top searches"
-                    subtitle="What shoppers type in the search bar"
-                    icon={Search}
-                >
-                    {data.top_searches.length === 0 ? (
-                        <Empty>
-                            Searches are counted from this dashboard update
-                            onward
-                        </Empty>
-                    ) : (
-                        <div className="space-y-2">
-                            {data.top_searches.map((row) => (
-                                <BarRow
-                                    key={row.term}
-                                    label={row.term}
-                                    sub={
-                                        row.results === 0
-                                            ? 'no results'
-                                            : `${number(row.results)} results`
+                    {data.abandoned && (
+                        <Panel
+                            title="Abandoned checkouts"
+                            subtitle="Started checkout, didn't order"
+                            icon={ShoppingCart}
+                        >
+                            <div className="grid grid-cols-2 gap-2">
+                                <MiniStat
+                                    label="Checkouts left"
+                                    value={
+                                        <CountUp value={data.abandoned.count} />
                                     }
-                                    value={row.searches}
-                                    max={data.top_searches![0].searches}
-                                    display={number(row.searches)}
-                                    color={SERIES[0]}
+                                    sub="still not ordered"
+                                    tone="amber"
                                 />
-                            ))}
-                        </div>
+                                <MiniStat
+                                    label="Cart value"
+                                    value={money(data.abandoned.value)}
+                                    sub="left behind"
+                                    tone="red"
+                                />
+                                <MiniStat
+                                    label="Reminded"
+                                    value={
+                                        <CountUp
+                                            value={data.abandoned.reminded}
+                                        />
+                                    }
+                                    sub="got a reminder email"
+                                    tone="blue"
+                                />
+                                <MiniStat
+                                    label="Reminder reach"
+                                    value={percent(
+                                        data.abandoned.count > 0
+                                            ? (data.abandoned.reminded /
+                                                  data.abandoned.count) *
+                                                  100
+                                            : 0,
+                                    )}
+                                    sub="only customers with accounts"
+                                />
+                            </div>
+                            <p className="mt-3 text-[11px] text-slate-400">
+                                A checkout leaves this list once that phone
+                                number places an order.
+                            </p>
+                        </Panel>
                     )}
-                </Panel>
-            )}
 
-            {data.no_result_searches && (
-                <Panel
-                    title="Searches with no results"
-                    subtitle="Products shoppers wanted but didn't find"
-                    icon={SearchX}
-                >
-                    {data.no_result_searches.length === 0 ? (
-                        <Empty>Every search found something</Empty>
-                    ) : (
-                        <ul className="flex flex-wrap gap-2">
-                            {data.no_result_searches.map((row) => (
-                                <li
-                                    key={row.term}
-                                    className="rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
-                                >
-                                    {row.term}
-                                    <span className="ml-1.5 text-red-400 tabular-nums">
-                                        ×{row.searches}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
+                    {data.landing_pages && (
+                        <Panel
+                            title="Landing pages"
+                            subtitle="Orders from landing pages"
+                            icon={Link2}
+                        >
+                            {data.landing_pages.length === 0 ? (
+                                <Empty>
+                                    No landing page orders in this period
+                                </Empty>
+                            ) : (
+                                <div className="space-y-2">
+                                    {data.landing_pages.map((page) => (
+                                        <BarRow
+                                            key={page.id}
+                                            label={page.title}
+                                            sub={money(page.amount)}
+                                            value={page.orders}
+                                            max={data.landing_pages![0].orders}
+                                            display={`${number(page.orders)} orders`}
+                                            color={SERIES[6]}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </Panel>
                     )}
-                </Panel>
+
+                    {data.top_searches && (
+                        <Panel
+                            title="Top searches"
+                            subtitle="What shoppers type in the search bar"
+                            icon={Search}
+                        >
+                            {data.top_searches.length === 0 ? (
+                                <Empty>
+                                    Searches are counted from this dashboard
+                                    update onward
+                                </Empty>
+                            ) : (
+                                <div className="space-y-2">
+                                    {data.top_searches.map((row) => (
+                                        <BarRow
+                                            key={row.term}
+                                            label={row.term}
+                                            sub={
+                                                row.results === 0
+                                                    ? 'no results'
+                                                    : `${number(row.results)} results`
+                                            }
+                                            value={row.searches}
+                                            max={data.top_searches![0].searches}
+                                            display={number(row.searches)}
+                                            color={SERIES[0]}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </Panel>
+                    )}
+
+                    {data.no_result_searches && (
+                        <Panel
+                            title="Searches with no results"
+                            subtitle="Products shoppers wanted but didn't find"
+                            icon={SearchX}
+                        >
+                            {data.no_result_searches.length === 0 ? (
+                                <Empty>Every search found something</Empty>
+                            ) : (
+                                <ul className="flex flex-wrap gap-2">
+                                    {data.no_result_searches.map((row) => (
+                                        <li
+                                            key={row.term}
+                                            className="rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
+                                        >
+                                            {row.term}
+                                            <span className="ml-1.5 text-red-400 tabular-nums">
+                                                ×{row.searches}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </Panel>
+                    )}
+                </div>
             )}
         </div>
     );
@@ -531,56 +488,100 @@ export function ReviewPanels({ data }: { data: ReviewInsights }) {
         0,
     );
 
+    // The two short panels stack beside the long review list instead of
+    // each stretching to its height.
     return (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
-            <Panel title="Ratings" subtitle="All approved reviews" icon={Star}>
-                {data.total === 0 ? (
-                    <Empty>No approved reviews yet</Empty>
-                ) : (
-                    <div className="flex items-center gap-5">
-                        <div className="text-center">
-                            <p className="text-4xl font-bold text-slate-900 tabular-nums">
-                                <CountUp
-                                    value={data.average}
-                                    format={(n) => n.toFixed(1)}
-                                />
-                            </p>
-                            <Stars rating={data.average} />
-                            <p className="mt-1 text-[11px] text-slate-400">
-                                {number(data.total)} reviews
-                            </p>
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1">
-                            {data.distribution.map((row) => (
-                                <div
-                                    key={row.stars}
-                                    className="flex items-center gap-2 text-[11px]"
-                                >
-                                    <span className="w-3 text-slate-500">
-                                        {row.stars}
-                                    </span>
-                                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                                        <div
-                                            className="dash-grow h-full rounded-full bg-amber-400"
-                                            style={{
-                                                width: `${maxStars > 0 ? (row.reviews / maxStars) * 100 : 0}%`,
-                                            }}
-                                        />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+            <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
+                <Panel
+                    title="Ratings"
+                    subtitle="All approved reviews"
+                    icon={Star}
+                >
+                    {data.total === 0 ? (
+                        <Empty>No approved reviews yet</Empty>
+                    ) : (
+                        <div className="my-auto flex items-center gap-5">
+                            <div className="text-center">
+                                <p className="text-4xl font-bold text-slate-900 tabular-nums">
+                                    <CountUp
+                                        value={data.average}
+                                        format={(n) => n.toFixed(1)}
+                                    />
+                                </p>
+                                <Stars rating={data.average} />
+                                <p className="mt-1 text-[11px] text-slate-400">
+                                    {number(data.total)} reviews
+                                </p>
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                                {data.distribution.map((row) => (
+                                    <div
+                                        key={row.stars}
+                                        className="flex items-center gap-2 text-[11px]"
+                                    >
+                                        <span className="w-3 text-slate-500">
+                                            {row.stars}
+                                        </span>
+                                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                            <div
+                                                className="dash-grow h-full rounded-full bg-amber-400"
+                                                style={{
+                                                    width: `${maxStars > 0 ? (row.reviews / maxStars) * 100 : 0}%`,
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="w-8 text-right text-slate-500 tabular-nums">
+                                            {row.reviews}
+                                        </span>
                                     </div>
-                                    <span className="w-8 text-right text-slate-500 tabular-nums">
-                                        {row.reviews}
-                                    </span>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </Panel>
+                    )}
+                </Panel>
+
+                <Panel
+                    title="Lowest rated products"
+                    subtitle="At least 2 approved reviews"
+                    icon={ThumbsDown}
+                    className="flex-1"
+                >
+                    {data.lowest_rated.length === 0 ? (
+                        <Empty>Not enough reviews yet</Empty>
+                    ) : (
+                        <ul className="divide-y divide-slate-50">
+                            {data.lowest_rated.map((row) => (
+                                <li key={row.id}>
+                                    <Link
+                                        href={route(
+                                            'admin.products.edit',
+                                            row.id,
+                                        )}
+                                        className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
+                                    >
+                                        <span className="min-w-0 truncate font-medium text-slate-700">
+                                            {row.name}
+                                        </span>
+                                        <span className="flex shrink-0 items-center gap-1.5">
+                                            <Stars rating={row.average} />
+                                            <span className="text-slate-400 tabular-nums">
+                                                ({row.reviews})
+                                            </span>
+                                        </span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Panel>
+            </div>
 
             <Panel
                 title="Latest reviews"
                 subtitle="Newest first"
                 icon={UserCheck}
+                className="lg:col-span-3"
             >
                 {data.latest.length === 0 ? (
                     <Empty>No reviews yet</Empty>
@@ -609,38 +610,6 @@ export function ReviewPanels({ data }: { data: ReviewInsights }) {
                                         Waiting for approval
                                     </span>
                                 )}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </Panel>
-
-            <Panel
-                title="Lowest rated products"
-                subtitle="At least 2 approved reviews"
-                icon={ThumbsDown}
-                className="lg:col-span-2 xl:col-span-1"
-            >
-                {data.lowest_rated.length === 0 ? (
-                    <Empty>Not enough reviews yet</Empty>
-                ) : (
-                    <ul className="divide-y divide-slate-50">
-                        {data.lowest_rated.map((row) => (
-                            <li key={row.id}>
-                                <Link
-                                    href={route('admin.products.edit', row.id)}
-                                    className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
-                                >
-                                    <span className="min-w-0 truncate font-medium text-slate-700">
-                                        {row.name}
-                                    </span>
-                                    <span className="flex shrink-0 items-center gap-1.5">
-                                        <Stars rating={row.average} />
-                                        <span className="text-slate-400 tabular-nums">
-                                            ({row.reviews})
-                                        </span>
-                                    </span>
-                                </Link>
                             </li>
                         ))}
                     </ul>

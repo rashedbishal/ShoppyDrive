@@ -270,7 +270,7 @@ function InlinePayment({
     };
 
     return (
-        <div className="space-y-5 rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <div className="space-y-4 rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
             <div className="flex items-center gap-3">
                 <button
                     type="button"
@@ -283,7 +283,7 @@ function InlinePayment({
 
             <div className="text-center">
                 <div
-                    className="mb-3 inline-flex size-14 items-center justify-center rounded-full"
+                    className="mb-2 inline-flex size-12 items-center justify-center rounded-full"
                     style={{ backgroundColor: providerColor + '20' }}
                 >
                     <span
@@ -293,7 +293,7 @@ function InlinePayment({
                         {providerLabel[0]}
                     </span>
                 </div>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-base font-semibold text-slate-900">
                     Complete Payment via {providerLabel}
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-600">
@@ -309,14 +309,14 @@ function InlinePayment({
                 }}
             >
                 <p className="text-xs text-slate-600">Send exactly</p>
-                <p className="text-3xl font-extrabold text-slate-900">
+                <p className="text-2xl font-bold text-slate-900">
                     {formatCurrency(pending.amount)}
                 </p>
                 <p className="mt-1 text-xs text-slate-600">
                     to this {providerLabel} number
                 </p>
                 <p
-                    className="text-xl font-bold"
+                    className="text-lg font-semibold"
                     style={{ color: providerColor }}
                 >
                     {providerNumber}
@@ -394,7 +394,7 @@ function InlinePayment({
                 <button
                     type="submit"
                     disabled={processing || !data.transaction_id}
-                    className="w-full rounded-xl py-3 text-sm font-bold text-white transition-colors disabled:opacity-60"
+                    className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60"
                     style={{ backgroundColor: providerColor }}
                 >
                     {processing ? 'Verifying…' : 'Confirm Payment'}
@@ -426,7 +426,7 @@ function FieldLabel({
 }
 
 const cardBase =
-    'rounded-3xl bg-white shadow-[0_20px_60px_-24px_rgba(11,16,32,0.35)] ring-1 ring-slate-900/5';
+    'rounded-2xl bg-white shadow-[0_12px_40px_-20px_rgba(11,16,32,0.3)] ring-1 ring-slate-900/5';
 
 /** One pickable option (a single variant or a combo), as a toggle tile or a quantity stepper. */
 function OptionCard({
@@ -450,68 +450,6 @@ function OptionCard({
         option.compare && option.compare > option.price
             ? option.compare - option.price
             : 0;
-
-    const body = (
-        <>
-            {option.image ? (
-                <img
-                    src={option.image}
-                    alt=""
-                    className="size-16 shrink-0 rounded-2xl bg-slate-100 object-cover"
-                />
-            ) : (
-                <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <ShoppingBag className="size-6" />
-                </div>
-            )}
-            <div className="min-w-0 flex-1 text-left">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="text-[15px] font-bold text-slate-900">
-                        {option.name}
-                    </p>
-                    {option.badge && (
-                        <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase">
-                            {option.badge}
-                        </span>
-                    )}
-                    {option.kind === 'combo' && !option.badge && (
-                        <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-brand uppercase">
-                            Combo
-                        </span>
-                    )}
-                </div>
-                {option.detail && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">
-                        {option.detail}
-                    </p>
-                )}
-                <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <span className="font-extrabold text-brand">
-                        {formatCurrency(option.price)}
-                    </span>
-                    {option.compare && option.compare > option.price && (
-                        <span className="text-xs text-slate-400 line-through">
-                            {formatCurrency(option.compare)}
-                        </span>
-                    )}
-                    {savings > 0 && (
-                        <span className="text-xs font-semibold text-emerald-600">
-                            Save {formatCurrency(savings)}
-                        </span>
-                    )}
-                    {soldOut ? (
-                        <span className="text-xs font-semibold text-red-500">
-                            Out of stock
-                        </span>
-                    ) : option.stock <= 5 ? (
-                        <span className="text-xs font-semibold text-amber-600">
-                            Only {option.stock} left
-                        </span>
-                    ) : null}
-                </p>
-            </div>
-        </>
-    );
 
     if (mode === 'pick') {
         return (
@@ -567,7 +505,7 @@ function OptionCard({
                         </span>
                     )}
                 </div>
-                <div className="space-y-0.5 p-3">
+                <div className="space-y-0.5 p-2.5">
                     <p className="truncate text-sm font-bold text-slate-900">
                         {option.name}
                     </p>
@@ -577,7 +515,7 @@ function OptionCard({
                         </p>
                     )}
                     <p className="flex flex-wrap items-baseline gap-x-1.5">
-                        <span className="text-sm font-extrabold text-brand">
+                        <span className="text-sm font-bold text-brand">
                             {formatCurrency(option.price)}
                         </span>
                         {option.compare && option.compare > option.price && (
@@ -600,42 +538,101 @@ function OptionCard({
         <div
             onClick={onFocus}
             className={cn(
-                'flex flex-col gap-3 rounded-2xl border-2 bg-white p-3 transition-all duration-200 sm:flex-row sm:items-center',
+                'group flex flex-col overflow-hidden rounded-2xl border-2 bg-white transition-all duration-200',
                 selected
                     ? 'border-brand shadow-[0_10px_30px_-12px_rgb(var(--brand-rgb)/0.5)]'
                     : 'border-slate-200',
                 soldOut && 'opacity-50',
             )}
         >
-            {body}
-            <div className="flex items-center gap-1 self-end rounded-full bg-slate-100 p-1 sm:self-auto">
-                <button
-                    type="button"
-                    disabled={qty === 0}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onChange(qty - 1);
-                    }}
-                    aria-label={`Decrease ${option.name}`}
-                    className="flex size-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
-                >
-                    <Minus className="size-4" />
-                </button>
-                <span className="w-8 text-center text-sm font-extrabold text-slate-900">
-                    {qty}
-                </span>
-                <button
-                    type="button"
-                    disabled={soldOut || qty >= ceiling}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onChange(qty + 1);
-                    }}
-                    aria-label={`Increase ${option.name}`}
-                    className="flex size-9 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
-                >
-                    <Plus className="size-4" />
-                </button>
+            <div className="relative aspect-square w-full bg-slate-100">
+                {option.image ? (
+                    <img
+                        src={option.image}
+                        alt={option.name}
+                        className="size-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                ) : (
+                    <div className="flex size-full items-center justify-center text-slate-300">
+                        <ShoppingBag className="size-10" />
+                    </div>
+                )}
+                {(option.badge || option.kind === 'combo') && (
+                    <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase shadow">
+                        {option.badge || 'Combo'}
+                    </span>
+                )}
+                {selected && (
+                    <span className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border-2 border-brand bg-brand text-[11px] font-bold text-brand-foreground shadow">
+                        {qty}
+                    </span>
+                )}
+                {soldOut && (
+                    <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-bold text-white">
+                        Out of stock
+                    </span>
+                )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-2.5">
+                <div className="space-y-0.5">
+                    <p className="truncate text-sm font-bold text-slate-900">
+                        {option.name}
+                    </p>
+                    {option.detail && (
+                        <p className="line-clamp-2 text-[11px] text-slate-600">
+                            {option.detail}
+                        </p>
+                    )}
+                    <p className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-sm font-bold text-brand">
+                            {formatCurrency(option.price)}
+                        </span>
+                        {option.compare && option.compare > option.price && (
+                            <span className="text-[11px] text-slate-400 line-through">
+                                {formatCurrency(option.compare)}
+                            </span>
+                        )}
+                    </p>
+                    {savings > 0 && (
+                        <p className="text-[11px] font-semibold text-emerald-600">
+                            Save {formatCurrency(savings)}
+                        </p>
+                    )}
+                    {!soldOut && option.stock <= 5 && (
+                        <p className="text-[11px] font-semibold text-amber-600">
+                            Only {option.stock} left
+                        </p>
+                    )}
+                </div>
+                <div className="mt-auto flex items-center justify-between rounded-full bg-slate-100 p-1">
+                    <button
+                        type="button"
+                        disabled={qty === 0}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(qty - 1);
+                        }}
+                        aria-label={`Decrease ${option.name}`}
+                        className="flex size-8 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                    >
+                        <Minus className="size-4" />
+                    </button>
+                    <span className="min-w-6 text-center text-sm font-extrabold text-slate-900">
+                        {qty}
+                    </span>
+                    <button
+                        type="button"
+                        disabled={soldOut || qty >= ceiling}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(qty + 1);
+                        }}
+                        aria-label={`Increase ${option.name}`}
+                        className="flex size-8 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
+                    >
+                        <Plus className="size-4" />
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -653,15 +650,15 @@ function SectionHeading({
     light?: boolean;
 }) {
     return (
-        <div className="mx-auto mb-10 max-w-2xl text-center">
+        <div className="mx-auto mb-6 max-w-2xl text-center">
             {eyebrow && (
-                <p className="mb-2 text-xs font-extrabold tracking-[0.2em] text-amber-500 uppercase">
+                <p className="mb-1.5 text-[11px] font-bold tracking-[0.18em] text-amber-500 uppercase">
                     {eyebrow}
                 </p>
             )}
             <h2
                 className={cn(
-                    'text-3xl font-extrabold tracking-tight whitespace-pre-line sm:text-4xl',
+                    'text-2xl font-bold tracking-tight whitespace-pre-line sm:text-3xl',
                     light ? 'text-white' : 'text-slate-900',
                 )}
             >
@@ -670,7 +667,7 @@ function SectionHeading({
             {subtitle && (
                 <p
                     className={cn(
-                        'mt-3 text-base',
+                        'mt-2 text-sm',
                         light ? 'text-white/70' : 'text-slate-600',
                     )}
                 >
@@ -844,7 +841,7 @@ function OrderSection({
     return (
         <section
             id="order"
-            className="relative scroll-mt-20 overflow-hidden bg-[#faf7f2] px-4 py-20"
+            className="relative scroll-mt-20 overflow-hidden bg-[#faf7f2] px-4 py-12"
         >
             <div className="pointer-events-none absolute -top-40 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl" />
             <div className="relative mx-auto max-w-6xl">
@@ -866,12 +863,12 @@ function OrderSection({
                 ) : (
                     <form
                         onSubmit={handleSubmit}
-                        className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.05fr_1fr]"
+                        className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.05fr_1fr]"
                     >
                         {/* Left: what to buy */}
-                        <div className={cn(cardBase, 'space-y-4 p-5 sm:p-7')}>
+                        <div className={cn(cardBase, 'space-y-3 p-4 sm:p-5')}>
                             <div className="flex items-baseline justify-between">
-                                <h3 className="text-lg font-extrabold text-slate-900">
+                                <h3 className="text-base font-bold text-slate-900">
                                     {hasVariants
                                         ? 'Choose your options'
                                         : 'Quantity'}
@@ -884,7 +881,7 @@ function OrderSection({
                             </div>
 
                             {hasVariants ? (
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                                     {options.map((option) => (
                                         <OptionCard
                                             key={option.key}
@@ -911,7 +908,7 @@ function OrderSection({
                                         <p className="font-bold text-slate-900">
                                             {product.name}
                                         </p>
-                                        <p className="text-sm font-extrabold text-brand">
+                                        <p className="text-sm font-bold text-brand">
                                             {formatCurrency(product.price)}
                                         </p>
                                     </div>
@@ -951,12 +948,12 @@ function OrderSection({
                         </div>
 
                         {/* Right: price summary, then the form */}
-                        <div className="space-y-6">
-                            <div className="overflow-hidden rounded-3xl bg-[#0b1020] text-white shadow-[0_24px_70px_-24px_rgba(11,16,32,0.7)]">
-                                <div className="bg-gradient-to-r from-brand to-brand-bright px-6 py-3 text-sm font-extrabold tracking-wide text-brand-foreground uppercase">
+                        <div className="space-y-4">
+                            <div className="overflow-hidden rounded-2xl bg-[#0b1020] text-white shadow-[0_16px_50px_-22px_rgba(11,16,32,0.6)]">
+                                <div className="bg-gradient-to-r from-brand to-brand-bright px-5 py-2.5 text-xs font-bold tracking-wide text-brand-foreground uppercase">
                                     Price summary
                                 </div>
-                                <div className="space-y-3 p-6 text-sm">
+                                <div className="space-y-2.5 p-5 text-sm">
                                     {hasVariants && chosen.length === 0 ? (
                                         <p className="text-white/60">
                                             Pick an option on the left to see
@@ -1029,7 +1026,7 @@ function OrderSection({
                                         <span className="text-base font-bold">
                                             Total
                                         </span>
-                                        <span className="text-3xl font-extrabold text-amber-400">
+                                        <span className="text-2xl font-bold text-amber-400">
                                             {formatCurrency(
                                                 product.free_delivery ||
                                                     locationChosen
@@ -1044,7 +1041,7 @@ function OrderSection({
                             <div
                                 className={cn(cardBase, 'space-y-3 p-4 sm:p-5')}
                             >
-                                <h3 className="text-base font-extrabold text-slate-900">
+                                <h3 className="text-sm font-bold text-slate-900">
                                     Delivery details
                                 </h3>
                                 <HoneypotField
@@ -1403,7 +1400,7 @@ function OrderSection({
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="lp-glow relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-brand-bright to-brand text-lg font-extrabold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
+                                    className="lp-glow relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-brand-bright to-brand text-base font-bold tracking-wide text-brand-foreground ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
                                 >
                                     <span
                                         aria-hidden
@@ -1713,24 +1710,24 @@ export default function LandingPageShow({
                         style={{
                             backgroundColor: sec.hero?.bg_color || '#0b1020',
                         }}
-                        className="relative overflow-hidden px-4 pt-14 pb-20 text-white sm:pt-20"
+                        className="relative overflow-hidden px-4 pt-10 pb-12 text-white sm:pt-14"
                     >
                         <div className="pointer-events-none absolute -top-32 -left-24 size-[30rem] rounded-full bg-brand/35 blur-[110px]" />
                         <div className="pointer-events-none absolute -right-24 bottom-0 size-[28rem] rounded-full bg-amber-400/20 blur-[110px]" />
                         <div className="relative mx-auto max-w-6xl">
-                            <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
-                                <div className="order-2 space-y-6 lg:order-1">
+                            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+                                <div className="order-2 space-y-4 lg:order-1">
                                     {sec.hero?.badge && (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3.5 py-1 text-xs font-bold tracking-wide text-amber-300 uppercase">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 text-[11px] font-bold tracking-wide text-amber-300 uppercase">
                                             <Sparkles className="size-3.5" />
                                             {sec.hero.badge}
                                         </span>
                                     )}
-                                    <h1 className="text-4xl leading-[1.08] font-extrabold tracking-tight whitespace-pre-line sm:text-5xl lg:text-6xl">
+                                    <h1 className="text-3xl leading-[1.1] font-bold tracking-tight whitespace-pre-line sm:text-4xl lg:text-5xl">
                                         {sec.hero?.headline || product.name}
                                     </h1>
                                     {sec.hero?.subheadline && (
-                                        <p className="max-w-xl text-lg whitespace-pre-line text-white/75">
+                                        <p className="max-w-xl text-base whitespace-pre-line text-white/75">
                                             {sec.hero.subheadline}
                                         </p>
                                     )}
@@ -1740,13 +1737,13 @@ export default function LandingPageShow({
                                                 From
                                             </span>
                                         )}
-                                        <span className="text-4xl font-extrabold text-amber-400">
+                                        <span className="text-3xl font-bold text-amber-400">
                                             {formatCurrency(heroPrice)}
                                         </span>
                                         {heroCompare &&
                                             heroCompare > heroPrice && (
                                                 <>
-                                                    <span className="text-lg text-white/45 line-through">
+                                                    <span className="text-base text-white/45 line-through">
                                                         {formatCurrency(
                                                             heroCompare,
                                                         )}
@@ -1763,21 +1760,21 @@ export default function LandingPageShow({
                                                 </>
                                             )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-4 pt-2">
+                                    <div className="flex flex-wrap items-center gap-3 pt-1">
                                         <GlowButton href="#order" size="xl">
                                             {ctaText}
                                         </GlowButton>
                                         {sec.hero?.secondary_cta_text && (
                                             <a
                                                 href="#details"
-                                                className="inline-flex h-14 items-center rounded-full border border-white/25 px-7 text-base font-bold text-white transition hover:bg-white/10"
+                                                className="inline-flex h-12 items-center rounded-full border border-white/25 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
                                             >
                                                 {sec.hero.secondary_cta_text}
                                             </a>
                                         )}
                                     </div>
                                 </div>
-                                <div className="order-1 mx-auto w-full max-w-md pb-6 lg:order-2 lg:max-w-lg">
+                                <div className="order-1 mx-auto w-full max-w-sm pb-3 lg:order-2 lg:max-w-md">
                                     <HeroCarousel
                                         slides={slides}
                                         alt={product.name}
@@ -1787,7 +1784,7 @@ export default function LandingPageShow({
                             </div>
 
                             {features.length > 0 && (
-                                <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                     {features.slice(0, 3).map((feature, i) => {
                                         const Icon =
                                             featureIcons[
@@ -1797,24 +1794,24 @@ export default function LandingPageShow({
                                         return (
                                             <div
                                                 key={i}
-                                                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.11] to-white/[0.03] p-6 backdrop-blur-md transition duration-300 hover:-translate-y-1.5 hover:border-amber-300/40 hover:shadow-[0_24px_60px_-20px_rgba(245,166,35,0.4)]"
+                                                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.11] to-white/[0.03] p-4 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-amber-300/40 hover:shadow-[0_18px_45px_-18px_rgba(245,166,35,0.4)]"
                                             >
                                                 <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
                                                 <span className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-amber-400/15 blur-2xl transition duration-300 group-hover:bg-amber-400/35" />
-                                                <span className="absolute top-3 right-5 text-6xl leading-none font-black text-white/[0.06] select-none">
+                                                <span className="absolute top-2 right-4 text-5xl leading-none font-black text-white/[0.06] select-none">
                                                     {String(i + 1).padStart(
                                                         2,
                                                         '0',
                                                     )}
                                                 </span>
-                                                <span className="relative flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-slate-900 shadow-[0_12px_30px_-8px_rgba(245,166,35,0.75)] ring-4 ring-amber-300/15 transition duration-300 group-hover:scale-110 group-hover:-rotate-6">
-                                                    <Icon className="size-6" />
+                                                <span className="relative flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-slate-900 shadow-[0_10px_24px_-8px_rgba(245,166,35,0.7)] ring-4 ring-amber-300/15 transition duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                                                    <Icon className="size-5" />
                                                 </span>
-                                                <p className="relative mt-5 text-lg font-extrabold tracking-tight">
+                                                <p className="relative mt-4 text-base font-bold tracking-tight">
                                                     {feature.title}
                                                 </p>
                                                 {feature.text && (
-                                                    <p className="relative mt-1.5 text-sm leading-relaxed text-white/65">
+                                                    <p className="relative mt-1 text-[13px] leading-relaxed text-white/65">
                                                         {feature.text}
                                                     </p>
                                                 )}
@@ -1830,12 +1827,12 @@ export default function LandingPageShow({
                 {/* Product description: gallery + details + option picker */}
                 {(sec.description?.enabled !== false ||
                     sec.gallery?.enabled !== false) && (
-                    <section id="details" className="scroll-mt-20 px-4 py-20">
-                        <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-12 lg:grid-cols-2">
+                    <section id="details" className="scroll-mt-20 px-4 py-12">
+                        <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 lg:grid-cols-2">
                             {/* Gallery */}
                             {sec.gallery?.enabled !== false &&
                                 orderedMedia.length > 0 && (
-                                    <div className="space-y-4 lg:sticky lg:top-24">
+                                    <div className="space-y-3 lg:sticky lg:top-24">
                                         <div
                                             className={cn(
                                                 cardBase,
@@ -1878,7 +1875,7 @@ export default function LandingPageShow({
                                             )}
                                         </div>
                                         {orderedMedia.length > 1 && (
-                                            <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                            <div className="flex gap-2 overflow-x-auto pb-1">
                                                 {orderedMedia.map((item, i) => (
                                                     <button
                                                         key={item.id}
@@ -1893,7 +1890,7 @@ export default function LandingPageShow({
                                                         }}
                                                         aria-label={`Show ${item.type} ${i + 1}`}
                                                         className={cn(
-                                                            'relative size-[4.5rem] shrink-0 overflow-hidden rounded-2xl border-2 bg-white transition',
+                                                            'relative size-16 shrink-0 overflow-hidden rounded-2xl border-2 bg-white transition',
                                                             i ===
                                                                 activeMediaIdx &&
                                                                 !showVariantImage
@@ -1932,21 +1929,21 @@ export default function LandingPageShow({
                             {/* Details */}
                             <div
                                 className={cn(
-                                    'space-y-6',
+                                    'space-y-4',
                                     (sec.gallery?.enabled === false ||
                                         orderedMedia.length === 0) &&
                                         'lg:col-span-2 lg:mx-auto lg:max-w-3xl',
                                 )}
                             >
                                 {description.enabled !== false && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         {description.badge && (
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1 text-xs font-extrabold tracking-wide text-brand-foreground uppercase">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-0.5 text-[11px] font-bold tracking-wide text-brand-foreground uppercase">
                                                 <Sparkles className="size-3.5" />
                                                 {description.badge}
                                             </span>
                                         )}
-                                        <h2 className="text-3xl font-extrabold tracking-tight whitespace-pre-line text-slate-900 sm:text-4xl">
+                                        <h2 className="text-2xl font-bold tracking-tight whitespace-pre-line text-slate-900 sm:text-3xl">
                                             {description.title}
                                         </h2>
                                         <div
@@ -1966,11 +1963,11 @@ export default function LandingPageShow({
                                     <div
                                         className={cn(
                                             cardBase,
-                                            'space-y-4 p-5 sm:p-6',
+                                            'space-y-3 p-4 sm:p-5',
                                         )}
                                     >
                                         <div>
-                                            <h3 className="text-lg font-extrabold text-slate-900">
+                                            <h3 className="text-base font-bold text-slate-900">
                                                 {description.selection_title ||
                                                     'Choose your set'}
                                             </h3>
@@ -1980,7 +1977,7 @@ export default function LandingPageShow({
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                                             {options.map((option) => (
                                                 <OptionCard
                                                     key={option.key}
@@ -2029,30 +2026,30 @@ export default function LandingPageShow({
                 {delivery.enabled !== false && (
                     <section
                         id="delivery"
-                        className="relative scroll-mt-20 overflow-hidden bg-gradient-to-br from-[#0b1020] via-[#1a1a2e] to-[#5a0a18] px-4 py-20 text-white"
+                        className="relative scroll-mt-20 overflow-hidden bg-gradient-to-br from-[#0b1020] via-[#1a1a2e] to-[#5a0a18] px-4 py-12 text-white"
                     >
                         <div className="pointer-events-none absolute -top-24 right-0 size-96 rounded-full bg-amber-400/15 blur-[100px]" />
                         <div className="relative mx-auto max-w-3xl text-center">
-                            <span className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-slate-900">
-                                <Truck className="size-7" />
+                            <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-slate-900">
+                                <Truck className="size-6" />
                             </span>
-                            <h2 className="text-3xl font-extrabold tracking-tight whitespace-pre-line sm:text-4xl">
+                            <h2 className="text-2xl font-bold tracking-tight whitespace-pre-line sm:text-3xl">
                                 {delivery.title}
                             </h2>
                             {delivery.text && (
-                                <p className="mx-auto mt-4 max-w-2xl text-base whitespace-pre-line text-white/75">
+                                <p className="mx-auto mt-3 max-w-2xl text-sm whitespace-pre-line text-white/75">
                                     {delivery.text}
                                 </p>
                             )}
                             {(delivery.areas ?? []).filter(Boolean).length >
                                 0 && (
-                                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                <div className="mt-4 flex flex-wrap justify-center gap-1.5">
                                     {(delivery.areas as string[])
                                         .filter(Boolean)
                                         .map((area, i) => (
                                             <span
                                                 key={i}
-                                                className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] px-4 py-1.5 text-sm font-medium backdrop-blur"
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-xs font-medium backdrop-blur"
                                             >
                                                 <MapPin className="size-3.5 text-amber-300" />
                                                 {area}
@@ -2060,7 +2057,7 @@ export default function LandingPageShow({
                                         ))}
                                 </div>
                             )}
-                            <div className="mx-auto mt-7 inline-flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-4 text-sm">
+                            <div className="mx-auto mt-5 inline-flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm">
                                 {product.free_delivery ? (
                                     <span className="font-bold text-emerald-300">
                                         ✓ Free delivery on this product
@@ -2086,7 +2083,7 @@ export default function LandingPageShow({
                                     </>
                                 )}
                             </div>
-                            <div className="mt-9 flex flex-col items-center gap-6">
+                            <div className="mt-6 flex flex-col items-center gap-4">
                                 <GlowButton href="#order" size="xl">
                                     {delivery.cta_text || ctaText}
                                 </GlowButton>
@@ -2099,9 +2096,9 @@ export default function LandingPageShow({
                                         )}
                                         <a
                                             href={`tel:${contactPhone}`}
-                                            className="inline-flex items-center gap-3 text-2xl font-extrabold text-amber-300 transition hover:text-amber-200 sm:text-3xl"
+                                            className="inline-flex items-center gap-2.5 text-xl font-bold text-amber-300 transition hover:text-amber-200 sm:text-2xl"
                                         >
-                                            <Phone className="size-6 sm:size-7" />
+                                            <Phone className="size-5 sm:size-6" />
                                             {contactPhone}
                                         </a>
                                     </div>
@@ -2133,11 +2130,11 @@ export default function LandingPageShow({
                     (sec.testimonials.mode === 'image'
                         ? (sec.testimonials.images?.length ?? 0) > 0
                         : sec.testimonials.items?.length > 0) && (
-                        <section className="bg-slate-50 px-4 py-12">
+                        <section className="bg-slate-50 px-4 py-10">
                             <div
                                 className={`mx-auto ${sec.testimonials.mode === 'image' ? 'max-w-6xl' : 'max-w-4xl'}`}
                             >
-                                <h2 className="mb-8 text-center text-2xl font-bold text-slate-900">
+                                <h2 className="mb-5 text-center text-xl font-semibold text-slate-900">
                                     {sec.testimonials.title}
                                 </h2>
                                 {sec.testimonials.mode === 'image' ? (
@@ -2149,13 +2146,13 @@ export default function LandingPageShow({
                                         }
                                     />
                                 ) : (
-                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {sec.testimonials.items.map(
                                             (item: any, i: number) =>
                                                 item.name && (
                                                     <div
                                                         key={i}
-                                                        className="rounded-2xl bg-white p-5 shadow-sm"
+                                                        className="rounded-2xl bg-white p-4 shadow-sm"
                                                     >
                                                         <StarRating
                                                             rating={item.rating}
@@ -2183,9 +2180,9 @@ export default function LandingPageShow({
 
                 {/* FAQ */}
                 {sec.faq?.enabled && sec.faq.items?.length > 0 && (
-                    <section className="px-4 py-12">
+                    <section className="px-4 py-10">
                         <div className="mx-auto max-w-2xl">
-                            <h2 className="mb-6 text-center text-2xl font-bold text-slate-900">
+                            <h2 className="mb-4 text-center text-xl font-semibold text-slate-900">
                                 {sec.faq.title}
                             </h2>
                             <div className="space-y-2">
@@ -2205,7 +2202,7 @@ export default function LandingPageShow({
                                                                 : i,
                                                         )
                                                     }
-                                                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+                                                    className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
                                                 >
                                                     {item.question}
                                                     {openFaq === i ? (
@@ -2229,10 +2226,10 @@ export default function LandingPageShow({
 
                 {/* Footer */}
                 {sec.footer?.enabled && (
-                    <footer className="bg-slate-900 px-4 pt-10 pb-6">
+                    <footer className="bg-slate-900 px-4 pt-8 pb-5">
                         <div className="mx-auto max-w-6xl">
                             {/* Top row: brand + contact */}
-                            <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-between">
                                 {/* Brand */}
                                 <div className="flex flex-col items-center gap-3 sm:items-start">
                                     <SiteLogo
@@ -2240,7 +2237,7 @@ export default function LandingPageShow({
                                         name={siteName}
                                         plate="always"
                                         tone="onDark"
-                                        className="h-12"
+                                        className="h-10"
                                     />
                                     {sec.footer.text && (
                                         <p className="max-w-xs text-center text-xs whitespace-pre-line text-slate-400 sm:text-left">
@@ -2291,7 +2288,7 @@ export default function LandingPageShow({
                             </div>
 
                             {/* Divider + copyright */}
-                            <div className="mt-8 border-t border-slate-800 pt-5 text-center">
+                            <div className="mt-6 border-t border-slate-800 pt-4 text-center">
                                 <p className="text-xs text-slate-500">
                                     &copy; {new Date().getFullYear()} {siteName}
                                     . All rights reserved.

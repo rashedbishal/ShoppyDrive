@@ -263,8 +263,8 @@ function RevenueChart({ data }: { data: ChartPoint[] }) {
     const totalOrders = data.reduce((s, d) => s + d.orders, 0);
 
     return (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-start justify-between">
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-start justify-between">
                 <div>
                     <p className="text-xs font-semibold tracking-widest text-slate-600 uppercase">
                         Revenue
@@ -333,8 +333,8 @@ function VisitorsChart({ data }: { data: VisitorChartPoint[] }) {
     const totalPageViews = data.reduce((s, d) => s + d.page_views, 0);
 
     return (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-start justify-between">
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-start justify-between">
                 <div>
                     <p className="text-xs font-semibold tracking-widest text-slate-600 uppercase">
                         Visitors
@@ -457,14 +457,23 @@ function StatCard({
     );
 }
 
-/** Today up to now against yesterday up to the same time. */
+/**
+ * Today up to now against yesterday up to the same time. Also carries the
+ * original "Today's" cards (visitors and the pending/processing counts),
+ * merged here for admins who see it (owner decision 2026-11-15).
+ */
 function TodaySoFar({
     today,
-    wide = false,
+    visitors,
+    pipeline,
+    className = '',
 }: {
     today: Overview['today'];
-    wide?: boolean;
+    visitors: { today: number; yesterday: number };
+    pipeline: { pending: number; processing: number };
+    className?: string;
 }) {
+    const count = (n: number) => Math.round(n).toLocaleString('en-IN');
     const items = [
         {
             label: 'Collected',
@@ -476,19 +485,25 @@ function TodaySoFar({
             label: 'Orders',
             value: today.orders,
             previous: today.yesterday_orders,
-            format: (n: number) => Math.round(n).toLocaleString('en-IN'),
+            format: count,
         },
     ];
 
     return (
-        <div className="dash-rise min-w-0 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-light p-4 shadow-sm">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                <Clock className="size-3.5 text-brand" /> Today so far · until{' '}
-                {today.as_of}
-            </p>
-            <div
-                className={`mt-3 grid gap-3 ${wide ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1'}`}
-            >
+        <div
+            className={`dash-rise min-w-0 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-light p-4 shadow-sm ${className}`}
+        >
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                    <Clock className="size-3.5 text-brand" /> Today so far ·
+                    until {today.as_of}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                    {pipeline.pending} pending · {pipeline.processing}{' '}
+                    processing
+                </p>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {items.map((item) => {
                     const ahead = item.value >= item.previous;
 
@@ -516,6 +531,16 @@ function TodaySoFar({
                         </div>
                     );
                 })}
+                {/* Visits are only counted per whole day, so this compares with all of yesterday and stays neutral rather than ahead/behind. */}
+                <div className="min-w-0">
+                    <p className="text-[11px] text-slate-500">Visitors</p>
+                    <p className="truncate text-lg font-bold text-slate-900 tabular-nums">
+                        <CountUp value={visitors.today} format={count} />
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-500">
+                        Yesterday: {count(visitors.yesterday)} (whole day)
+                    </p>
+                </div>
             </div>
         </div>
     );
@@ -531,7 +556,7 @@ function SectionTitle({
     subtitle: string;
 }) {
     return (
-        <div className="flex items-end gap-3 pt-2">
+        <div className="flex items-end gap-3 pt-1">
             <span className="flex size-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
                 <Icon className="size-4" />
             </span>
@@ -578,6 +603,9 @@ export default function Dashboard({
             onFinish: () => setLoadingRange(false),
         });
     };
+
+    // Until the marketing data loads, keep the heatmap's place (its skeleton shows).
+    const heatmapShown = marketing === undefined || Boolean(marketing.heatmap);
 
     const revenueChange = pct(stats.today_revenue, stats.yesterday_revenue);
     const ordersChange = diff(stats.today_orders, stats.yesterday_orders);
@@ -646,7 +674,7 @@ export default function Dashboard({
             <Head title="Dashboard — Admin" />
 
             <div
-                className={`space-y-6 pb-10 transition-opacity duration-300 ${loadingRange ? 'opacity-60' : ''}`}
+                className={`space-y-5 pb-10 transition-opacity duration-300 ${loadingRange ? 'opacity-60' : ''}`}
                 aria-busy={loadingRange}
             >
                 {/* ── Header ── */}
@@ -740,18 +768,19 @@ export default function Dashboard({
                     <Deferred
                         data="overview"
                         fallback={
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-8">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                                 {Array.from({ length: 7 }, (_, index) => (
                                     <Skeleton
                                         key={index}
-                                        className={`h-44 ${index === 6 ? 'col-span-2' : ''}`}
+                                        className={`h-48 ${index === 4 ? 'col-span-2' : ''}`}
                                     />
                                 ))}
                             </div>
                         }
                     >
                         {overview ? (
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-8">
+                            // Four columns from lg up (two even rows): eight at 2xl made each card ~145px and cut off amounts.
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                                 <KpiCard
                                     label="Revenue collected"
                                     icon={CircleDollarSign}
@@ -772,6 +801,11 @@ export default function Dashboard({
                                     icon={BadgePercent}
                                     compare={overview.kpis.average_order_value}
                                     format={money}
+                                    className={
+                                        overview.kpis.new_customers
+                                            ? ''
+                                            : 'lg:col-span-2'
+                                    }
                                 />
                                 <KpiCard
                                     label="Visitors"
@@ -790,8 +824,10 @@ export default function Dashboard({
                                     compare={overview.kpis.conversion_rate}
                                     format={percent}
                                     hint="Orders per 100 visitors"
+                                    // The target is one card wide, so Conversion (and AOV without New customers, from lg) spans two to keep every row full.
+                                    className="col-span-2"
                                 />
-                                {overview.kpis.new_customers ? (
+                                {overview.kpis.new_customers && (
                                     <KpiCard
                                         label="New customers"
                                         icon={UserPlus}
@@ -799,129 +835,179 @@ export default function Dashboard({
                                         trend={overview.trend}
                                         trendKey="new_customers"
                                     />
-                                ) : (
-                                    <TodaySoFar today={overview.today} />
                                 )}
-                                {/* Two columns at every width: the ring and its text need ~400px side by side. */}
-                                <div className="col-span-2">
-                                    <TargetRing
-                                        target={overview.target}
-                                        canEdit={access.edit_target}
-                                    />
-                                </div>
+                                {/* One card wide (owner request 2026-11-15); full width on phones only when it would otherwise sit alone. */}
+                                <TargetRing
+                                    target={overview.target}
+                                    canEdit={access.edit_target}
+                                    className={
+                                        overview.kpis.new_customers
+                                            ? ''
+                                            : 'col-span-2 lg:col-span-1'
+                                    }
+                                />
                             </div>
                         ) : null}
                     </Deferred>
                 )}
 
-                {/* ── Today: the original cards, shown to every admin ── */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
-                    <StatCard
-                        label="Today's Visitors"
-                        value={<CountUp value={stats.today_visitors} />}
-                        sub={`Yesterday: ${stats.yesterday_visitors.toLocaleString()}`}
-                        icon={Eye}
-                        iconBg="bg-cyan-50"
-                        iconColor="text-cyan-600"
-                        trend={visitorsChange}
-                    />
-                    <StatCard
-                        label="Today's Revenue"
-                        value={
-                            <CountUp value={stats.today_revenue} format={fmt} />
-                        }
-                        sub={`Yesterday: ${fmt(stats.yesterday_revenue)}`}
-                        icon={ShoppingBag}
-                        iconBg="bg-rose-50"
-                        iconColor="text-brand"
-                        trend={revenueChange}
-                    />
-                    <StatCard
-                        label="Today's Orders"
-                        value={<CountUp value={stats.today_orders} />}
-                        sub={`${stats.pending_orders} pending · ${stats.processing_orders} processing`}
-                        icon={Package}
-                        iconBg="bg-blue-50"
-                        iconColor="text-blue-600"
-                        trend={ordersChange}
-                    />
-                    <StatCard
-                        label="Total Customers"
-                        value={<CountUp value={stats.total_customers} />}
-                        sub={`+${stats.new_customers_this_week} this week`}
-                        icon={Users}
-                        iconBg="bg-violet-50"
-                        iconColor="text-violet-600"
-                    />
-                    <StatCard
-                        label="Active Products"
-                        value={<CountUp value={stats.total_products} />}
-                        sub={
-                            stats.low_stock_count > 0
-                                ? `${stats.low_stock_count} low stock`
-                                : 'All stocked'
-                        }
-                        icon={Box}
-                        iconBg="bg-emerald-50"
-                        iconColor="text-emerald-600"
-                        className="col-span-2 xl:col-span-1"
-                    />
-                </div>
+                {/* ── Today. With Orders access, today's visitors/revenue/orders are merged into "Today so far" (owner decision 2026-11-15); otherwise the original five cards ── */}
+                {access.orders ? (
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+                        <Deferred
+                            data="overview"
+                            fallback={
+                                <Skeleton className="col-span-2 h-36 lg:col-span-3" />
+                            }
+                        >
+                            {overview ? (
+                                <TodaySoFar
+                                    today={overview.today}
+                                    visitors={{
+                                        today: stats.today_visitors,
+                                        yesterday: stats.yesterday_visitors,
+                                    }}
+                                    pipeline={{
+                                        pending: stats.pending_orders,
+                                        processing: stats.processing_orders,
+                                    }}
+                                    className="col-span-2 lg:col-span-3"
+                                />
+                            ) : (
+                                <></>
+                            )}
+                        </Deferred>
+                        <StatCard
+                            label="Total Customers"
+                            value={<CountUp value={stats.total_customers} />}
+                            sub={`+${stats.new_customers_this_week} this week`}
+                            icon={Users}
+                            iconBg="bg-violet-50"
+                            iconColor="text-violet-600"
+                        />
+                        <StatCard
+                            label="Active Products"
+                            value={<CountUp value={stats.total_products} />}
+                            sub={
+                                stats.low_stock_count > 0
+                                    ? `${stats.low_stock_count} low stock`
+                                    : 'All stocked'
+                            }
+                            icon={Box}
+                            iconBg="bg-emerald-50"
+                            iconColor="text-emerald-600"
+                        />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+                        <StatCard
+                            label="Today's Visitors"
+                            value={<CountUp value={stats.today_visitors} />}
+                            sub={`Yesterday: ${stats.yesterday_visitors.toLocaleString()}`}
+                            icon={Eye}
+                            iconBg="bg-cyan-50"
+                            iconColor="text-cyan-600"
+                            trend={visitorsChange}
+                        />
+                        <StatCard
+                            label="Today's Revenue"
+                            value={
+                                <CountUp
+                                    value={stats.today_revenue}
+                                    format={fmt}
+                                />
+                            }
+                            sub={`Yesterday: ${fmt(stats.yesterday_revenue)}`}
+                            icon={ShoppingBag}
+                            iconBg="bg-rose-50"
+                            iconColor="text-brand"
+                            trend={revenueChange}
+                        />
+                        <StatCard
+                            label="Today's Orders"
+                            value={<CountUp value={stats.today_orders} />}
+                            sub={`${stats.pending_orders} pending · ${stats.processing_orders} processing`}
+                            icon={Package}
+                            iconBg="bg-blue-50"
+                            iconColor="text-blue-600"
+                            trend={ordersChange}
+                        />
+                        <StatCard
+                            label="Total Customers"
+                            value={<CountUp value={stats.total_customers} />}
+                            sub={`+${stats.new_customers_this_week} this week`}
+                            icon={Users}
+                            iconBg="bg-violet-50"
+                            iconColor="text-violet-600"
+                        />
+                        <StatCard
+                            label="Active Products"
+                            value={<CountUp value={stats.total_products} />}
+                            sub={
+                                stats.low_stock_count > 0
+                                    ? `${stats.low_stock_count} low stock`
+                                    : 'All stocked'
+                            }
+                            icon={Box}
+                            iconBg="bg-emerald-50"
+                            iconColor="text-emerald-600"
+                            className="col-span-2 lg:col-span-1"
+                        />
+                    </div>
+                )}
 
                 {/* ── Trend + needs action ── */}
-                <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
                     {access.orders ? (
                         <Deferred
                             data="overview"
-                            fallback={<Skeleton className="h-96" />}
+                            fallback={<Skeleton className="h-[26rem]" />}
                         >
                             {overview ? (
-                                <div className="min-w-0 space-y-5">
-                                    <TrendChart
-                                        trend={overview.trend}
-                                        rangeLabel={range.label}
-                                        showCustomers={
-                                            overview.kpis.new_customers !== null
-                                        }
-                                    />
-                                    {overview.kpis.new_customers && (
-                                        <TodaySoFar
-                                            today={overview.today}
-                                            wide
-                                        />
-                                    )}
-                                </div>
-                            ) : null}
+                                <TrendChart
+                                    trend={overview.trend}
+                                    rangeLabel={range.label}
+                                    showCustomers={
+                                        overview.kpis.new_customers !== null
+                                    }
+                                />
+                            ) : (
+                                <></>
+                            )}
                         </Deferred>
                     ) : (
-                        <div className="min-w-0 space-y-5">
+                        <div className="min-w-0 space-y-4">
                             <RevenueChart data={chartData} />
                             <VisitorsChart data={visitorChartData} />
                         </div>
                     )}
-                    <Deferred
-                        data="actionNeeded"
-                        fallback={<Skeleton className="h-96" />}
-                    >
-                        <ActionNeededPanel
-                            data={actionNeeded}
-                            fallback={{
-                                pending_orders: stats.pending_orders,
-                                low_stock: stats.low_stock_count,
-                                pending_reviews: stats.pending_reviews,
-                                failed_jobs: stats.failed_jobs,
-                            }}
-                        />
-                    </Deferred>
+                    {/* From xl the chart sets this row's height: the panel fills exactly that and scrolls inside when longer. */}
+                    <div className="relative min-w-0">
+                        <Deferred
+                            data="actionNeeded"
+                            fallback={<Skeleton className="h-96" />}
+                        >
+                            <ActionNeededPanel
+                                className="xl:absolute xl:inset-0"
+                                data={actionNeeded}
+                                fallback={{
+                                    pending_orders: stats.pending_orders,
+                                    low_stock: stats.low_stock_count,
+                                    pending_reviews: stats.pending_reviews,
+                                    failed_jobs: stats.failed_jobs,
+                                }}
+                            />
+                        </Deferred>
+                    </div>
                 </div>
 
                 {/* ── Live orders (or the original recent orders) + low stock + quick actions ── */}
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
                     {liveFeed ? (
                         <LiveOrders initial={liveFeed} />
                     ) : (
-                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                        <div className="flex flex-col rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Recent Orders
                                 </p>
@@ -934,7 +1020,7 @@ export default function Dashboard({
                             </div>
 
                             {recentOrders.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center gap-2 py-14">
+                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8">
                                     <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100">
                                         <ShoppingCart className="size-5 text-slate-300" />
                                     </div>
@@ -1008,10 +1094,11 @@ export default function Dashboard({
                         </div>
                     )}
 
-                    <div className="min-w-0 space-y-5">
+                    {/* Low stock takes whatever height is left, so neither column ends in a blank gap. */}
+                    <div className="flex min-w-0 flex-col gap-4">
                         {/* Low stock */}
-                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                        <div className="flex flex-1 flex-col rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                                 <div className="flex items-center gap-2">
                                     <AlertTriangle className="size-4 text-amber-500" />
                                     <p className="text-sm font-semibold text-slate-800">
@@ -1027,7 +1114,7 @@ export default function Dashboard({
                             </div>
 
                             {lowStockProducts.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center gap-2 py-14">
+                                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8">
                                     <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50">
                                         <CheckCircle2 className="size-5 text-emerald-400" />
                                     </div>
@@ -1056,7 +1143,7 @@ export default function Dashboard({
                                                     'admin.products.edit',
                                                     product.id,
                                                 )}
-                                                className="flex items-center gap-3 px-5 py-3 transition hover:bg-slate-50/60"
+                                                className="flex items-center gap-3 px-4 py-2 transition hover:bg-slate-50/60"
                                             >
                                                 <div
                                                     className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${urgent ? 'bg-red-50' : 'bg-amber-50'}`}
@@ -1088,11 +1175,11 @@ export default function Dashboard({
                             )}
                         </div>
 
-                        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                            <p className="mb-4 text-xs font-semibold tracking-widest text-slate-600 uppercase">
+                        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                            <p className="mb-3 text-xs font-semibold tracking-widest text-slate-600 uppercase">
                                 Quick Actions
                             </p>
-                            <div className="grid grid-cols-3 gap-2.5">
+                            <div className="grid grid-cols-3 gap-2">
                                 {quickActions.map((action) => {
                                     const Icon = action.icon;
 
@@ -1100,10 +1187,10 @@ export default function Dashboard({
                                         <Link
                                             key={action.label}
                                             href={action.href}
-                                            className="group flex flex-col items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center transition hover:border-slate-200 hover:bg-white hover:shadow-sm"
+                                            className="group flex flex-col items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 text-center transition hover:border-slate-200 hover:bg-white hover:shadow-sm"
                                         >
                                             <div
-                                                className={`flex size-9 items-center justify-center rounded-xl ${action.color} text-white shadow-sm transition group-hover:scale-105`}
+                                                className={`flex size-8 items-center justify-center rounded-xl ${action.color} text-white shadow-sm transition group-hover:scale-105`}
                                             >
                                                 <Icon className="size-4" />
                                             </div>
@@ -1129,10 +1216,10 @@ export default function Dashboard({
                         <Deferred
                             data={['orderHealth', 'couriers']}
                             fallback={
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                                    <Skeleton className="h-80" />
-                                    <Skeleton className="h-80" />
-                                    <Skeleton className="h-80" />
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    <Skeleton className="h-64" />
+                                    <Skeleton className="h-64" />
+                                    <Skeleton className="h-64" />
                                 </div>
                             }
                         >
@@ -1140,21 +1227,32 @@ export default function Dashboard({
                                 {orderHealth && (
                                     <OrderHealthPanels data={orderHealth} />
                                 )}
-                                <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
-                                    {couriers && (
-                                        <CourierPanel rows={couriers} />
-                                    )}
-                                    <Deferred
-                                        data="marketing"
-                                        fallback={<Skeleton className="h-72" />}
+                                {(couriers || heatmapShown) && (
+                                    // Two columns only when both panels show, so neither sits beside an empty half.
+                                    <div
+                                        className={`mt-4 grid grid-cols-1 gap-4 ${couriers && heatmapShown ? 'xl:grid-cols-2' : ''}`}
                                     >
-                                        {marketing?.heatmap ? (
-                                            <Heatmap grid={marketing.heatmap} />
-                                        ) : (
-                                            <></>
+                                        {couriers && (
+                                            <CourierPanel rows={couriers} />
                                         )}
-                                    </Deferred>
-                                </div>
+                                        {heatmapShown && (
+                                            <Deferred
+                                                data="marketing"
+                                                fallback={
+                                                    <Skeleton className="h-64" />
+                                                }
+                                            >
+                                                {marketing?.heatmap ? (
+                                                    <Heatmap
+                                                        grid={marketing.heatmap}
+                                                    />
+                                                ) : (
+                                                    <></>
+                                                )}
+                                            </Deferred>
+                                        )}
+                                    </div>
+                                )}
                             </>
                         </Deferred>
                     </>

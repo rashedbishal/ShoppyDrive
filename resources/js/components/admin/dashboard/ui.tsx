@@ -213,7 +213,7 @@ export function Panel({
     action,
     children,
     className = '',
-    bodyClassName = 'p-5',
+    bodyClassName = 'p-4',
 }: {
     title: string;
     subtitle?: string;
@@ -225,9 +225,9 @@ export function Panel({
 }) {
     return (
         <section
-            className={`dash-rise min-w-0 rounded-2xl border border-slate-100 bg-white shadow-sm ${className}`}
+            className={`dash-rise flex min-w-0 flex-col rounded-2xl border border-slate-100 bg-white shadow-sm ${className}`}
         >
-            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-2.5">
                     {Icon && (
                         <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand-light text-brand">
@@ -247,9 +247,35 @@ export function Panel({
                 </div>
                 {action}
             </header>
-            <div className={bodyClassName}>{children}</div>
+            {/* The body fills a stretched grid cell, so short content can centre itself (my-auto) instead of leaving a blank band. */}
+            <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`}>
+                {children}
+            </div>
         </section>
     );
+}
+
+/**
+ * Column classes for a row of optional panels, so a panel hidden by
+ * permissions never leaves a hole: an odd last panel spans both columns
+ * while the grid has two.
+ */
+export function panelGrid(count: number): string {
+    const oddLastSpans = 'md:[&>*:last-child:nth-child(odd)]:col-span-2';
+
+    if (count <= 1) {
+        return 'grid grid-cols-1 gap-4';
+    }
+
+    if (count === 2) {
+        return 'grid grid-cols-1 gap-4 md:grid-cols-2';
+    }
+
+    if (count === 3) {
+        return `grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 ${oddLastSpans} xl:[&>*:last-child:nth-child(odd)]:col-span-1`;
+    }
+
+    return `grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4 ${oddLastSpans} 2xl:[&>*:last-child:nth-child(odd)]:col-span-1`;
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
@@ -262,7 +288,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 
 export function Empty({ children }: { children: ReactNode }) {
     return (
-        <p className="flex min-h-24 items-center justify-center px-4 py-6 text-center text-sm text-slate-400">
+        <p className="flex min-h-20 flex-1 items-center justify-center px-4 py-4 text-center text-sm text-slate-400">
             {children}
         </p>
     );

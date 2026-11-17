@@ -11,7 +11,16 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ProductInsights, Promotions, RankedRow } from './types';
-import { BarRow, Empty, money, number, Panel, SERIES, timeAgo } from './ui';
+import {
+    BarRow,
+    Empty,
+    money,
+    number,
+    Panel,
+    panelGrid,
+    SERIES,
+    timeAgo,
+} from './ui';
 
 const STOCK_TYPE_LABELS: Record<string, string> = {
     in: 'Back in stock',
@@ -32,14 +41,20 @@ export function ProductPanels({ data }: { data: ProductInsights }) {
     };
     const rows = ranked[tab];
     const max = Math.max(...rows.map((row) => row.revenue), 0);
+    // With stock activity: three longer lists over two shorter ones
+    // (xl: 2+2+2 / 3+3 of six columns). Without it: two rows of two.
+    const withStock = Boolean(data.stock_activity);
+    const topRowSpan = withStock ? 'xl:col-span-2' : 'xl:col-span-3';
 
     return (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-6">
             <Panel
                 title="Best sellers"
                 subtitle="By sales in this period"
                 icon={Trophy}
-                className="lg:col-span-2 xl:col-span-1 xl:row-span-2"
+                className={
+                    withStock ? `lg:col-span-2 ${topRowSpan}` : topRowSpan
+                }
                 action={
                     <div className="flex gap-1">
                         {(
@@ -88,6 +103,7 @@ export function ProductPanels({ data }: { data: ProductInsights }) {
                 title="Most wishlisted"
                 subtitle="Products customers are saving"
                 icon={Heart}
+                className={topRowSpan}
             >
                 {data.most_wishlisted.length === 0 ? (
                     <Empty>No wishlisted products yet</Empty>
@@ -108,67 +124,12 @@ export function ProductPanels({ data }: { data: ProductInsights }) {
                 )}
             </Panel>
 
-            <Panel
-                title="Slow movers"
-                subtitle="In stock, no sale in 60 days"
-                icon={Snail}
-            >
-                {data.slow_movers.length === 0 ? (
-                    <Empty>Every product in stock sold recently</Empty>
-                ) : (
-                    <ul className="divide-y divide-slate-50">
-                        {data.slow_movers.map((row) => (
-                            <li key={row.id}>
-                                <Link
-                                    href={route('admin.products.edit', row.id)}
-                                    className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
-                                >
-                                    <span className="min-w-0 truncate font-medium text-slate-700">
-                                        {row.name}
-                                    </span>
-                                    <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700 tabular-nums">
-                                        {number(row.stock)} in stock
-                                    </span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </Panel>
-
-            <Panel
-                title="Out of stock"
-                subtitle="Active products with nothing left"
-                icon={PackageX}
-            >
-                {data.out_of_stock.length === 0 ? (
-                    <Empty>Nothing is out of stock</Empty>
-                ) : (
-                    <ul className="divide-y divide-slate-50">
-                        {data.out_of_stock.map((row) => (
-                            <li key={row.id}>
-                                <Link
-                                    href={route('admin.products.edit', row.id)}
-                                    className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
-                                >
-                                    <span className="min-w-0 truncate font-medium text-slate-700">
-                                        {row.name}
-                                    </span>
-                                    <span className="shrink-0 font-mono text-[11px] text-slate-400">
-                                        {row.sku ?? '—'}
-                                    </span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </Panel>
-
             {data.stock_activity && (
                 <Panel
                     title="Recent stock changes"
                     subtitle="Latest stock movements"
                     icon={History}
+                    className="xl:col-span-2"
                 >
                     {data.stock_activity.length === 0 ? (
                         <Empty>No stock changes yet</Empty>
@@ -212,13 +173,75 @@ export function ProductPanels({ data }: { data: ProductInsights }) {
                     )}
                 </Panel>
             )}
+
+            <Panel
+                title="Slow movers"
+                subtitle="In stock, no sale in 60 days"
+                icon={Snail}
+                className="xl:col-span-3"
+            >
+                {data.slow_movers.length === 0 ? (
+                    <Empty>Every product in stock sold recently</Empty>
+                ) : (
+                    <ul className="divide-y divide-slate-50">
+                        {data.slow_movers.map((row) => (
+                            <li key={row.id}>
+                                <Link
+                                    href={route('admin.products.edit', row.id)}
+                                    className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
+                                >
+                                    <span className="min-w-0 truncate font-medium text-slate-700">
+                                        {row.name}
+                                    </span>
+                                    <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700 tabular-nums">
+                                        {number(row.stock)} in stock
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Panel>
+
+            <Panel
+                title="Out of stock"
+                subtitle="Active products with nothing left"
+                icon={PackageX}
+                className="xl:col-span-3"
+            >
+                {data.out_of_stock.length === 0 ? (
+                    <Empty>Nothing is out of stock</Empty>
+                ) : (
+                    <ul className="divide-y divide-slate-50">
+                        {data.out_of_stock.map((row) => (
+                            <li key={row.id}>
+                                <Link
+                                    href={route('admin.products.edit', row.id)}
+                                    className="flex items-center justify-between gap-3 py-2 text-xs transition hover:text-brand"
+                                >
+                                    <span className="min-w-0 truncate font-medium text-slate-700">
+                                        {row.name}
+                                    </span>
+                                    <span className="shrink-0 font-mono text-[11px] text-slate-400">
+                                        {row.sku ?? '—'}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Panel>
         </div>
     );
 }
 
 export function PromotionPanels({ data }: { data: Promotions }) {
+    const visible = [data.flash_sales, data.coupons, data.bundles].filter(
+        Boolean,
+    ).length;
+
     return (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className={panelGrid(visible)}>
             {data.flash_sales && (
                 <Panel
                     title="Flash sales"

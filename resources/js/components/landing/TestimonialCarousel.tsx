@@ -252,7 +252,7 @@ export function TestimonialCarousel({
             <div
                 ref={trackRef}
                 onScroll={looping ? onScroll : undefined}
-                className={`flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+                className={`flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                     looping ? '' : 'justify-center'
                 }`}
             >
@@ -270,7 +270,7 @@ export function TestimonialCarousel({
                                     : ''
                             }
                             draggable={false}
-                            className="block h-[380px] w-auto max-w-[82vw] object-contain sm:h-[460px] sm:max-w-[28rem]"
+                            className="block h-[240px] w-auto max-w-[82vw] object-contain sm:h-[300px] sm:max-w-[22rem]"
                         />
                     </figure>
                 ))}
