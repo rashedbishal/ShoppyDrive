@@ -22,6 +22,7 @@ use App\Services\ShippingCostCalculator;
 use App\Support\BangladeshDistricts;
 use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
+use App\Support\LandingPageLanguage;
 use App\Support\OrderInvoice;
 use App\Support\OrderNumberGenerator;
 use App\Support\PaidOrderStockFailure;
@@ -77,6 +78,8 @@ class LandingPageController extends Controller
                 'slug' => $page->slug,
                 'sections' => $page->getSections(),
                 'max_order_quantity' => (int) $page->max_order_quantity,
+                // DISC-65: Bangla is only sent when the page has it turned on.
+                ...$this->languageProps($page),
             ],
             'product' => $product = $this->serializeProduct($page->product),
             'combos' => $this->combos->forDisplay(
@@ -153,8 +156,10 @@ class LandingPageController extends Controller
      *
      * @return list<array{variant_id: int|null, quantity: int, combo?: array{key: string, id: string, name: string, price: float|null, quantity: int}}>
      */
-    private function orderLines(Request $request, LandingPage $page, Product $product): array
+    private function orderLines(Request $request, LandingPage $page, Product $product, string $language = LandingPageLanguage::ENGLISH): array
     {
+        $bangla = LandingPageLanguage::isBangla($language);
+
         if ($product->variants->isEmpty()) {
             $lines = [['variant_id' => null, 'quantity' => (int) $request->input('quantity')]];
         } else {
@@ -178,7 +183,7 @@ class LandingPageController extends Controller
             }
 
             if ($lines === []) {
-                throw ValidationException::withMessages(['items' => 'Choose at least one option and quantity.']);
+                throw ValidationException::withMessages(['items' => $bangla ? LandingPageLanguage::message('choose_option') : 'Choose at least one option and quantity.']);
             }
 
             usort($lines, fn (array $a, array $b): int => $a['variant_id'] <=> $b['variant_id']);
@@ -188,7 +193,9 @@ class LandingPageController extends Controller
 
         if (array_sum(array_column($lines, 'quantity')) > $max) {
             throw ValidationException::withMessages([
-                $product->variants->isEmpty() ? 'quantity' : 'items' => "You can order up to {$max} items at a time.",
+                $product->variants->isEmpty() ? 'quantity' : 'items' => $bangla
+                    ? LandingPageLanguage::message('max_units', ['max' => LandingPageLanguage::digits($max)])
+                    : "You can order up to {$max} items at a time.",
             ]);
         }
 
@@ -215,6 +222,9 @@ class LandingPageController extends Controller
         // that happens to pass.
         $request->merge(['phone' => BangladeshiPhone::normalize($request->string('phone')->toString())]);
 
+        // DISC-65: the visitor's language, for the messages only.
+        $language = LandingPageLanguage::fromRequest($request, $page);
+
         $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
@@ -233,7 +243,7 @@ class LandingPageController extends Controller
             'order_token' => ['required', 'uuid'],
             // BIZ-011: honeypot, see PlaceOrderRequest.
             'sd_confirm_ref' => ['prohibited'],
-        ], [
+        ], LandingPageLanguage::isBangla($language) ? LandingPageLanguage::orderValidationMessages(max(1, (int) $page->max_order_quantity)) : [
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
             'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
             'items.required' => 'Choose at least one option and quantity.',
@@ -241,12 +251,14 @@ class LandingPageController extends Controller
             'items.*.variant_id.in' => 'One of the selected options is no longer available. Please refresh the page.',
         ]);
 
-        $lines = $this->orderLines($request, $page, $product);
+        $lines = $this->orderLines($request, $page, $product, $language);
 
         // OPS-005: see PlaceOrderRequest::withValidator() for why.
         if ($request->input('payment_method') === 'mobile_banking' && SmsForwarderHeartbeat::isDown()) {
             throw ValidationException::withMessages([
-                'payment_method' => 'Mobile payment verification is temporarily unavailable. Please choose Cash on Delivery instead.',
+                'payment_method' => LandingPageLanguage::isBangla($language)
+                    ? LandingPageLanguage::message('mobile_banking_unavailable')
+                    : 'Mobile payment verification is temporarily unavailable. Please choose Cash on Delivery instead.',
             ]);
         }
 
@@ -265,14 +277,14 @@ class LandingPageController extends Controller
         $lock = Cache::lock("lp-order-lock:{$orderToken}", self::ORDER_TOKEN_LOCK_WAIT_SECONDS * 3);
 
         try {
-            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use ($request, $page, $product, $slug, $resultKey, $lines) {
+            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use ($request, $page, $product, $slug, $resultKey, $lines, $language) {
                 // The other holder may have finished and released between
                 // our first check above and actually acquiring the lock.
                 if (($cached = Cache::get($resultKey)) !== null) {
                     return $this->redirectForCachedLandingOrder($cached, $slug);
                 }
 
-                return $this->completeLandingPageOrder($request, $page, $product, $slug, $resultKey, $lines);
+                return $this->completeLandingPageOrder($request, $page, $product, $slug, $resultKey, $lines, $language);
             });
         } catch (LockTimeoutException) {
             // Someone else is actively processing this exact submission and
@@ -280,7 +292,9 @@ class LandingPageController extends Controller
             // order/PendingCheckout; ask the customer to wait rather than
             // guess at what happened.
             return back()
-                ->withErrors(['order_token' => 'Your order is still being processed. Please wait a moment and try again.'])
+                ->withErrors(['order_token' => LandingPageLanguage::isBangla($language)
+                    ? LandingPageLanguage::message('still_processing')
+                    : 'Your order is still being processed. Please wait a moment and try again.'])
                 ->withInput();
         }
     }
@@ -329,7 +343,7 @@ class LandingPageController extends Controller
     /**
      * @param  list<array{variant_id: int|null, quantity: int}>  $lines
      */
-    private function completeLandingPageOrder(Request $request, LandingPage $page, mixed $product, string $slug, string $resultKey, array $lines): RedirectResponse
+    private function completeLandingPageOrder(Request $request, LandingPage $page, mixed $product, string $slug, string $resultKey, array $lines, string $language = LandingPageLanguage::ENGLISH): RedirectResponse
     {
         $product->loadMissing(['media', 'variants.media']);
         $primaryImage = $product->media->where('is_primary', true)->first()?->path ?? $product->media->first()?->path;
@@ -452,7 +466,7 @@ class LandingPageController extends Controller
                 // Not cached as a result — a failed attempt must not poison
                 // this token; the customer (or a genuine retry of it) can
                 // still try again once stock is available.
-                return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
+                return back()->withErrors(['quantity' => $this->stockMessage($e, $page, $language)])->withInput();
             }
 
             Cache::put($resultKey, ['type' => 'cod', 'guest_token' => $guestToken], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
@@ -469,7 +483,7 @@ class LandingPageController extends Controller
                 $this->inventory->assertAvailable($itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
             }
         } catch (InsufficientStockException $e) {
-            return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
+            return back()->withErrors(['quantity' => $this->stockMessage($e, $page, $language)])->withInput();
         }
 
         $guestToken = Str::random(40);
@@ -546,20 +560,25 @@ class LandingPageController extends Controller
             'nagadNumber' => Setting::find('nagad_number')?->value,
             'siteName' => Setting::find('site_name')?->value ?? config('app.name'),
             'siteLogo' => Setting::find('logo')?->value,
+            'language' => $this->languagePropsFor($pending->landing_page_id),
         ]);
     }
 
     public function submitPayment(Request $request, string $slug, string $token): RedirectResponse
     {
+        // DISC-65: the visitor's language, for the messages only.
+        $language = LandingPageLanguage::fromRequest($request, LandingPage::where('slug', $slug)->first());
+        $bangla = LandingPageLanguage::isBangla($language);
+
         $request->validate([
             'transaction_id' => ['required', 'string', 'min:4', 'max:40'],
-        ]);
+        ], $bangla ? LandingPageLanguage::paymentValidationMessages() : []);
 
         $pending = PendingCheckout::where('token', $token)->first();
         $this->abortUnlessStagedByLandingPage($pending, $slug);
 
         if (! $pending || $pending->isExpired()) {
-            return redirect()->route('lp.show', $slug)->with('error', 'Payment session expired.');
+            return redirect()->route('lp.show', $slug)->with('error', $bangla ? LandingPageLanguage::message('session_expired') : 'Payment session expired.');
         }
 
         if ($pending->order_number !== null) {
@@ -696,10 +715,14 @@ class LandingPageController extends Controller
             ];
 
             if ($msg === 'expired') {
-                return redirect()->route('lp.show', $slug)->with('error', 'Payment session expired. Please place your order again.');
+                return redirect()->route('lp.show', $slug)->with('error', $bangla ? LandingPageLanguage::message('session_expired_order_again') : 'Payment session expired. Please place your order again.');
             }
 
             session()->flash('lp_pending_payment', $pendingFlash);
+
+            if ($bangla) {
+                return $this->banglaPaymentFailure($e, $msg, $slug, $pending, $verifiedSms, $provider, $transactionId, $expectedAmount);
+            }
 
             return match (true) {
                 $e instanceof InsufficientStockException && $verifiedSms !== null => redirect()->route('lp.show', $slug)
@@ -728,6 +751,87 @@ class LandingPageController extends Controller
         return redirect()->route('lp.confirmation', $guestToken);
     }
 
+    /**
+     * DISC-65: submitPayment()'s failure answers, in Bangla. Same outcomes,
+     * same side effects (PaidOrderStockFailure still records and alerts).
+     */
+    private function banglaPaymentFailure(\RuntimeException $e, string $msg, string $slug, PendingCheckout $pending, ?ReceivedSms $verifiedSms, string $provider, string $transactionId, float $expectedAmount): RedirectResponse
+    {
+        $page = LandingPage::where('slug', $slug)->first();
+        $back = fn (string $message): RedirectResponse => redirect()->route('lp.show', $slug)->withErrors(['transaction_id' => $message]);
+
+        if ($e instanceof InsufficientStockException && $verifiedSms !== null) {
+            PaidOrderStockFailure::handle($pending, $verifiedSms, $provider, $transactionId, $e);
+            $productNameBn = $page?->banglaSections()['product']['name'] ?? null;
+            $item = $e->productName !== null
+                ? '"'.(filled($productNameBn) ? $productNameBn : $e->productName).'"'
+                : 'আপনার অর্ডারের একটি পণ্য';
+
+            return $back(LandingPageLanguage::message('paid_out_of_stock', [
+                'amount' => LandingPageLanguage::money($expectedAmount),
+                'trx' => $transactionId,
+                'item' => $item,
+            ]));
+        }
+
+        return match (true) {
+            $e instanceof InsufficientStockException => $back($page !== null ? $this->stockMessage($e, $page, LandingPageLanguage::BANGLA) : $msg),
+            $msg === 'not_found' => $back(LandingPageLanguage::message('trx_not_found', ['provider' => LandingPageLanguage::providerName($provider)])),
+            $msg === 'wrong_provider' => $back(LandingPageLanguage::message('trx_wrong_provider')),
+            $msg === 'already_used', $msg === 'before_checkout' => $back(LandingPageLanguage::message('trx_cannot_use')),
+            $msg === 'amount_unavailable' => $back(LandingPageLanguage::message('trx_amount_unavailable')),
+            str_starts_with($msg, 'amount_mismatch:') => $back(LandingPageLanguage::message('trx_amount_mismatch', ['amount' => '৳'.LandingPageLanguage::digits((string) $expectedAmount)])),
+            default => (function () use ($e, $slug) {
+                Log::error('[LandingPage] Unexpected payment error', SafeLogContext::exception($e));
+
+                return redirect()->route('lp.show', $slug)->with('error', LandingPageLanguage::message('something_wrong'));
+            })(),
+        };
+    }
+
+    /** A stock problem in the visitor's language (English unchanged). */
+    private function stockMessage(InsufficientStockException $e, LandingPage $page, string $language): string
+    {
+        if (! LandingPageLanguage::isBangla($language)) {
+            return $e->getMessage();
+        }
+
+        return LandingPageLanguage::stockMessage($e, $page->banglaSections()['product']['name'] ?? null);
+    }
+
+    /**
+     * DISC-65: what the landing page needs to offer Bangla. Bangla text is
+     * left out entirely while it is turned off.
+     *
+     * @return array{bangla_enabled: bool, default_language: string, title_bn: string|null, sections_bn: object|null}
+     */
+    private function languageProps(LandingPage $page): array
+    {
+        return [
+            'bangla_enabled' => $page->hasBangla(),
+            'default_language' => $page->initialLanguage(),
+            'title_bn' => $page->hasBangla() ? $page->title_bn : null,
+            'sections_bn' => $page->hasBangla() ? (object) $page->banglaSections() : null,
+        ];
+    }
+
+    /**
+     * DISC-65: the language settings the payment and confirmation pages
+     * need (no page text), or null for an order that has no landing page.
+     *
+     * @return array{slug: string, bangla_enabled: bool, default_language: string}|null
+     */
+    private function languagePropsFor(?int $landingPageId): ?array
+    {
+        $page = $landingPageId !== null ? LandingPage::find($landingPageId) : null;
+
+        return $page === null ? null : [
+            'slug' => $page->slug,
+            'bangla_enabled' => $page->hasBangla(),
+            'default_language' => $page->initialLanguage(),
+        ];
+    }
+
     public function confirmation(string $guestToken): Response|RedirectResponse
     {
         $order = Order::where('guest_token', $guestToken)->with('items')->first();
@@ -735,6 +839,8 @@ class LandingPageController extends Controller
         if (! $order) {
             abort(404);
         }
+
+        $landingPage = $order->landing_page_id !== null ? LandingPage::find($order->landing_page_id) : null;
 
         return Inertia::render('landing/LandingConfirmation', [
             // SEC-006: the raw model was sent here directly — guest_token
@@ -757,6 +863,10 @@ class LandingPageController extends Controller
                     array_flip(['name', 'phone', 'address_line1', 'address_line2', 'city', 'state']),
                 ),
                 'items' => $order->items->map(fn ($item) => [
+                    // DISC-65: the Bangla labels, when the landing page has Bangla on.
+                    'bn' => $landingPage?->hasBangla() === true
+                        ? LandingPageLanguage::orderItemLabels($landingPage, $item->product_id, (array) $item->product_snapshot)
+                        : null,
                     'id' => $item->id,
                     'product_name' => $item->product_name,
                     // e.g. "Color: Red, Size: M" for a variant line.
@@ -772,6 +882,7 @@ class LandingPageController extends Controller
             'guestToken' => $guestToken,
             'siteName' => Setting::find('site_name')?->value ?? config('app.name'),
             'siteLogo' => Setting::find('logo')?->value,
+            'language' => $this->languagePropsFor($order->landing_page_id),
         ]);
     }
 

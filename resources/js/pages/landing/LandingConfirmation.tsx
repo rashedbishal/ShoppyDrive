@@ -1,7 +1,14 @@
 import { Head } from '@inertiajs/react';
 import { CheckCircle, Download, Mail, Phone } from 'lucide-react';
 import { useEffect } from 'react';
+import LanguageSwitch from '@/components/landing/LanguageSwitch';
 import { SiteLogo } from '@/components/shared/SiteLogo';
+import {
+    BANGLA_FONT_CSS,
+    BANGLA_FONT_FAMILY,
+    useLandingLanguage,
+} from '@/lib/landing-i18n';
+import type { LandingLanguageSettings } from '@/lib/landing-i18n';
 import { trackMetaPurchase } from '@/lib/meta-tracking';
 
 type OrderItem = {
@@ -12,6 +19,12 @@ type OrderItem = {
     price: number;
     quantity: number;
     subtotal: number;
+    /** DISC-65: Bangla labels from the landing page, when it has Bangla on. */
+    bn?: {
+        product_name: string | null;
+        variant_label: string | null;
+        combo_name: string | null;
+    } | null;
 };
 type Order = {
     id: number;
@@ -33,6 +46,8 @@ type Props = {
     support?: { phone: string | null; email: string | null };
     siteName: string;
     siteLogo: string | null;
+    /** DISC-65: the landing page's language settings. */
+    language?: LandingLanguageSettings | null;
 };
 
 export default function LandingConfirmation({
@@ -41,7 +56,11 @@ export default function LandingConfirmation({
     support,
     siteName,
     siteLogo,
+    language,
 }: Props) {
+    const text = useLandingLanguage(language);
+    const taka = (amount: number): string =>
+        `৳${text.num(amount.toLocaleString())}`;
     const address = order.shipping_address;
     const isPaid = order.payment_status === 'paid';
     const invoiceUrl = route('lp.invoice', guestToken);
@@ -73,15 +92,32 @@ export default function LandingConfirmation({
 
     return (
         <>
-            <Head title={`Order Confirmed — ${siteName}`} />
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <Head title={`${text.t('order_confirmed_title')} — ${siteName}`}>
+                {text.banglaEnabled && <style>{BANGLA_FONT_CSS}</style>}
+            </Head>
+            <div
+                className="flex min-h-screen flex-col bg-slate-50"
+                lang={text.banglaEnabled ? text.lang : undefined}
+                style={
+                    text.isBangla
+                        ? { fontFamily: BANGLA_FONT_FAMILY }
+                        : undefined
+                }
+            >
                 <header className="border-b border-slate-100 bg-white px-4 py-3">
-                    <div className="mx-auto flex max-w-lg items-center">
+                    <div
+                        className={
+                            text.banglaEnabled
+                                ? 'mx-auto flex max-w-lg items-center justify-between gap-3'
+                                : 'mx-auto flex max-w-lg items-center'
+                        }
+                    >
                         <SiteLogo
                             src={siteLogo}
                             name={siteName}
                             className="h-9"
                         />
+                        <LanguageSwitch text={text} tone="light" />
                     </div>
                 </header>
 
@@ -91,11 +127,10 @@ export default function LandingConfirmation({
                         <div className="space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-6 text-center">
                             <CheckCircle className="mx-auto size-12 text-emerald-500" />
                             <h1 className="text-xl font-bold text-emerald-900">
-                                Order Placed!
+                                {text.t('order_placed')}
                             </h1>
                             <p className="text-sm text-emerald-700">
-                                Thank you, {address.name}! Your order has been
-                                received.
+                                {text.t('thank_you', { name: address.name })}
                             </p>
                             <p className="inline-block rounded-lg bg-emerald-100 px-3 py-1.5 font-mono text-xs font-semibold text-emerald-800">
                                 {order.order_number}
@@ -107,14 +142,14 @@ export default function LandingConfirmation({
                             className={`rounded-xl px-4 py-3 text-sm font-medium ${isPaid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}
                         >
                             {isPaid
-                                ? '✓ Payment confirmed'
-                                : '⏳ Cash on Delivery — pay when you receive your order'}
+                                ? text.t('payment_confirmed')
+                                : text.t('cod_pay_on_receive')}
                         </div>
 
                         {/* Order details */}
                         <div className="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                             <h2 className="text-sm font-bold text-slate-800">
-                                Order Summary
+                                {text.t('order_summary')}
                             </h2>
                             <div className="space-y-2">
                                 {order.items.map((item) => (
@@ -125,44 +160,53 @@ export default function LandingConfirmation({
                                         <span className="text-slate-700">
                                             {item.combo_name && (
                                                 <span className="mr-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                                                    {item.combo_name}
+                                                    {text.pick(
+                                                        item.combo_name,
+                                                        item.bn?.combo_name,
+                                                    )}
                                                 </span>
                                             )}
-                                            {item.product_name}
+                                            {text.pick(
+                                                item.product_name,
+                                                item.bn?.product_name,
+                                            )}
                                             {item.variant_label && (
                                                 <span className="text-slate-600">
                                                     {' '}
-                                                    ({item.variant_label})
+                                                    (
+                                                    {text.pick(
+                                                        item.variant_label,
+                                                        item.bn?.variant_label,
+                                                    )}
+                                                    )
                                                 </span>
                                             )}{' '}
                                             <span className="text-slate-600">
-                                                ×{item.quantity}
+                                                ×{text.num(item.quantity)}
                                             </span>
                                         </span>
                                         <span className="font-medium">
-                                            ৳{item.subtotal.toLocaleString()}
+                                            {taka(item.subtotal)}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                             <div className="space-y-1 border-t border-slate-100 pt-2 text-sm">
                                 <div className="flex justify-between text-slate-600">
-                                    <span>Subtotal</span>
-                                    <span>
-                                        ৳{order.subtotal.toLocaleString()}
-                                    </span>
+                                    <span>{text.t('subtotal')}</span>
+                                    <span>{taka(order.subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-600">
-                                    <span>Delivery</span>
+                                    <span>{text.t('delivery')}</span>
                                     <span>
                                         {order.shipping_cost === 0
-                                            ? 'Free'
-                                            : `৳${order.shipping_cost}`}
+                                            ? text.t('free')
+                                            : `৳${text.num(order.shipping_cost)}`}
                                     </span>
                                 </div>
                                 <div className="flex justify-between border-t border-slate-100 pt-1 text-base font-bold text-slate-900">
-                                    <span>Total</span>
-                                    <span>৳{order.total.toLocaleString()}</span>
+                                    <span>{text.t('total')}</span>
+                                    <span>{taka(order.total)}</span>
                                 </div>
                             </div>
                         </div>
@@ -170,7 +214,7 @@ export default function LandingConfirmation({
                         {/* Delivery address */}
                         <div className="space-y-2 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                             <h2 className="text-sm font-bold text-slate-800">
-                                Delivery Address
+                                {text.t('delivery_address')}
                             </h2>
                             <div className="space-y-0.5 text-sm text-slate-600">
                                 <p className="font-medium text-slate-800">
@@ -184,9 +228,10 @@ export default function LandingConfirmation({
                                         : ''}
                                 </p>
                                 <p>
-                                    {address.city}, {address.state}
+                                    {text.city(address.city)},{' '}
+                                    {text.district(address.state)}
                                 </p>
-                                <p>Bangladesh</p>
+                                <p>{text.t('bangladesh')}</p>
                             </div>
                         </div>
 
@@ -194,7 +239,7 @@ export default function LandingConfirmation({
                         {(support?.phone || support?.email) && (
                             <div className="space-y-3 rounded-2xl bg-[#0b1020] p-5 text-center text-white">
                                 <h2 className="text-sm font-bold">
-                                    Need help with your order?
+                                    {text.t('need_help')}
                                 </h2>
                                 <div className="flex flex-col items-center gap-2 text-sm sm:flex-row sm:justify-center sm:gap-6">
                                     {support.phone && (
@@ -227,12 +272,10 @@ export default function LandingConfirmation({
                                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                                 >
                                     <Download className="size-4" />
-                                    Download Invoice (PDF)
+                                    {text.t('download_invoice')}
                                 </a>
                                 <p className="text-center text-xs text-slate-600">
-                                    Your invoice download has started
-                                    automatically. Use the button above if it
-                                    didn't.
+                                    {text.t('invoice_started')}
                                 </p>
                             </>
                         )}

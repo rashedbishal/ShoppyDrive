@@ -10,6 +10,14 @@ import {
 import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import {
+    BanglaEditor,
+    BanglaSettingsFields,
+    EditorLanguageTabs,
+    pruneBangla,
+    removeBanglaItem,
+} from '@/components/admin/landing-bangla-fields';
+import type { BanglaSections } from '@/components/admin/landing-bangla-fields';
+import {
     CombosEditor,
     ContactEditor,
     DeliveryEditor,
@@ -80,8 +88,15 @@ type Props = {
         product_id: number;
         is_active: boolean;
         max_order_quantity: number;
+        // DISC-65
+        bangla_enabled: boolean;
+        default_language: 'en' | 'bn';
+        title_bn: string | null;
+        product?: { name: string; description: string | null } | null;
     };
     sections: Sections;
+    /** DISC-65: the page's Bangla text (an empty object until some is written). */
+    sectionsBn: BanglaSections;
     products: Product[];
     productMedia: BuilderMedia[];
     productVariants: BuilderVariant[];
@@ -160,6 +175,7 @@ function SectionWrap({
 export default function LandingPageEdit({
     page,
     sections: initialSections,
+    sectionsBn: initialSectionsBn,
     products,
     productMedia,
     productVariants,
@@ -170,15 +186,34 @@ export default function LandingPageEdit({
         'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand resize-none';
     const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
-    const { data, setData, put, processing, errors, setError, clearErrors } =
-        useForm({
-            title: page.title,
-            slug: page.slug,
-            product_id: String(page.product_id),
-            is_active: page.is_active,
-            max_order_quantity: page.max_order_quantity ?? 100,
-            sections: initialSections,
-        });
+    const {
+        data,
+        setData,
+        put,
+        processing,
+        errors,
+        setError,
+        clearErrors,
+        transform,
+    } = useForm({
+        title: page.title,
+        slug: page.slug,
+        product_id: String(page.product_id),
+        is_active: page.is_active,
+        max_order_quantity: page.max_order_quantity ?? 100,
+        sections: initialSections,
+        // DISC-65: Bangla is kept even while turned off, so it comes back when turned on again.
+        bangla_enabled: page.bangla_enabled ?? false,
+        default_language: page.default_language ?? 'en',
+        title_bn: page.title_bn ?? '',
+        sections_bn: (initialSectionsBn ?? {}) as BanglaSections,
+    });
+    const [editLanguage, setEditLanguage] = useState<'en' | 'bn'>('en');
+    const showingBangla = data.bangla_enabled && editLanguage === 'bn';
+    const banglaHasErrors = Object.keys(errors).some(
+        (key) => key.startsWith('sections_bn') || key === 'title_bn',
+    );
+    const setBn = (next: BanglaSections) => setData('sections_bn', next);
 
     const sec = data.sections;
     const testimonialRowKeys = useRowKeys(sec.testimonials.items.length);
@@ -227,6 +262,14 @@ export default function LandingPageEdit({
                             return;
                         }
 
+                        transform((formData) => ({
+                            ...formData,
+                            sections_bn: pruneBangla(
+                                formData.sections,
+                                formData.sections_bn,
+                                productVariants,
+                            ),
+                        }));
                         put(route('admin.landing-pages.update', page.id));
                     }}
                     className="space-y-3"
@@ -357,655 +400,779 @@ export default function LandingPageEdit({
                                     Active (publicly accessible)
                                 </label>
                             </div>
+
+                            <div className="sm:col-span-2">
+                                <BanglaSettingsFields
+                                    idPrefix="lp-edit"
+                                    enabled={data.bangla_enabled}
+                                    defaultLanguage={data.default_language}
+                                    onEnabledChange={(enabled) => {
+                                        setData('bangla_enabled', enabled);
+
+                                        if (!enabled) {
+                                            setEditLanguage('en');
+                                        }
+                                    }}
+                                    onDefaultLanguageChange={(language) =>
+                                        setData('default_language', language)
+                                    }
+                                    error={
+                                        errors.bangla_enabled ??
+                                        errors.default_language
+                                    }
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 
-                    {/* Hero section */}
-                    <SectionWrap
-                        title="Hero Section"
-                        enabled={sec.hero.enabled}
-                        onToggle={() =>
-                            setSec({
-                                hero: {
-                                    ...sec.hero,
-                                    enabled: !sec.hero.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>
-                                Background Color
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={sec.hero.bg_color}
-                                    onChange={(e) =>
-                                        setSec({
-                                            hero: {
-                                                ...sec.hero,
-                                                bg_color: e.target.value,
-                                            },
-                                        })
-                                    }
-                                    className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 p-1"
-                                />
-                                <input
-                                    maxLength={7}
-                                    className={inputClass}
-                                    value={sec.hero.bg_color}
-                                    onChange={(e) =>
-                                        setSec({
-                                            hero: {
-                                                ...sec.hero,
-                                                bg_color: e.target.value,
-                                            },
-                                        })
-                                    }
-                                    placeholder="#0f172a"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className={labelClass}>Headline</label>
-                            <input
-                                maxLength={120}
-                                className={inputClass}
-                                value={sec.hero.headline}
-                                onChange={(e) =>
-                                    setSec({
-                                        hero: {
-                                            ...sec.hero,
-                                            headline: e.target.value,
-                                        },
-                                    })
-                                }
-                                placeholder="Get the best deal on this product!"
-                            />
-                            <CharCount
-                                value={sec.hero.headline}
-                                max={120}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Sub-headline</label>
-                            <input
-                                maxLength={250}
-                                className={inputClass}
-                                value={sec.hero.subheadline}
-                                onChange={(e) =>
-                                    setSec({
-                                        hero: {
-                                            ...sec.hero,
-                                            subheadline: e.target.value,
-                                        },
-                                    })
-                                }
-                                placeholder="Limited time offer. Order now!"
-                            />
-                            <CharCount
-                                value={sec.hero.subheadline}
-                                max={250}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <div>
-                            <label className={labelClass}>
-                                CTA Button Text
-                            </label>
-                            <input
-                                maxLength={30}
-                                className={inputClass}
-                                value={sec.hero.cta_text}
-                                onChange={(e) =>
-                                    setSec({
-                                        hero: {
-                                            ...sec.hero,
-                                            cta_text: e.target.value,
-                                        },
-                                    })
-                                }
-                                placeholder="Order Now"
-                            />
-                            <CharCount
-                                value={sec.hero.cta_text}
-                                max={30}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <HeroExtras
-                            sec={sec}
-                            setSec={setSec}
-                            pageId={page.id}
-                            media={productMedia}
+                    {data.bangla_enabled && (
+                        <EditorLanguageTabs
+                            value={editLanguage}
+                            onChange={setEditLanguage}
+                            banglaHasErrors={banglaHasErrors}
                         />
-                    </SectionWrap>
+                    )}
 
-                    {/* Variant combos + order section texts */}
-                    <SectionWrap title="Combos & Order Options" enabled>
-                        <CombosEditor
+                    {showingBangla && (
+                        <BanglaEditor
                             sec={sec}
-                            setSec={setSec}
+                            bn={data.sections_bn}
+                            setBn={setBn}
+                            titleEn={data.title}
+                            titleBn={data.title_bn}
+                            setTitleBn={(value) => setData('title_bn', value)}
+                            productName={page.product?.name ?? ''}
+                            productDescription={
+                                page.product?.description ?? null
+                            }
                             variants={productVariants}
+                            errors={
+                                errors as Record<string, string | undefined>
+                            }
                         />
-                    </SectionWrap>
+                    )}
 
-                    {/* Delivery */}
-                    <SectionWrap
-                        title="Delivery Info"
-                        enabled={sec.delivery.enabled}
-                        onToggle={() =>
-                            setSec({
-                                delivery: {
-                                    ...sec.delivery,
-                                    enabled: !sec.delivery.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <DeliveryEditor sec={sec} setSec={setSec} />
-                    </SectionWrap>
-
-                    {/* Contact */}
-                    <SectionWrap title="Contact Details" enabled>
-                        <ContactEditor sec={sec} setSec={setSec} />
-                    </SectionWrap>
-
-                    {/* Description */}
-                    <SectionWrap
-                        title="Product Description"
-                        enabled={sec.description.enabled}
-                        onToggle={() =>
-                            setSec({
-                                description: {
-                                    ...sec.description,
-                                    enabled: !sec.description.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>Section Title</label>
-                            <textarea
-                                maxLength={120}
-                                rows={6}
-                                className={textareaClass}
-                                value={sec.description.title}
-                                onChange={(e) =>
-                                    setSec({
-                                        description: {
-                                            ...sec.description,
-                                            title: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                            <CharCount
-                                value={sec.description.title}
-                                max={120}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="use_prod_desc"
-                                checked={
-                                    sec.description.use_product_description
-                                }
-                                onChange={(e) =>
-                                    setSec({
-                                        description: {
-                                            ...sec.description,
-                                            use_product_description:
-                                                e.target.checked,
-                                        },
-                                    })
-                                }
-                                className="rounded border-slate-300"
-                            />
-                            <label
-                                htmlFor="use_prod_desc"
-                                className="text-xs font-medium text-slate-600"
-                            >
-                                Use product's own description
-                            </label>
-                        </div>
-                        <AnimatePresence initial={false}>
-                            {!sec.description.use_product_description && (
-                                <AdminReveal key="custom-description">
-                                    <div>
-                                        <label className={labelClass}>
-                                            Custom Content (HTML allowed)
-                                        </label>
-                                        <textarea
-                                            maxLength={20000}
-                                            rows={6}
-                                            className={textareaClass}
-                                            value={
-                                                sec.description.custom_content
-                                            }
-                                            onChange={(e) =>
-                                                setSec({
-                                                    description: {
-                                                        ...sec.description,
-                                                        custom_content:
-                                                            e.target.value,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                        <CharCount
-                                            value={
-                                                sec.description.custom_content
-                                            }
-                                            max={20000}
-                                            className="mt-0.5 block text-right text-[11px] leading-none"
-                                        />
-                                    </div>
-                                </AdminReveal>
-                            )}
-                        </AnimatePresence>
-                        <DescriptionExtras sec={sec} setSec={setSec} />
-                    </SectionWrap>
-
-                    {/* Gallery */}
-                    <SectionWrap
-                        title="Product Gallery"
-                        enabled={sec.gallery.enabled}
-                        onToggle={() =>
-                            setSec({
-                                gallery: {
-                                    ...sec.gallery,
-                                    enabled: !sec.gallery.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>Section Title</label>
-                            <input
-                                maxLength={60}
-                                className={inputClass}
-                                value={sec.gallery.title}
-                                onChange={(e) =>
-                                    setSec({
-                                        gallery: {
-                                            ...sec.gallery,
-                                            title: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                            <CharCount
-                                value={sec.gallery.title}
-                                max={60}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-600">
-                            Images are pulled automatically from the selected
-                            product's media.
-                        </p>
-                    </SectionWrap>
-
-                    {/* Testimonials */}
-                    <SectionWrap
-                        title="Customer Testimonials"
-                        enabled={sec.testimonials.enabled}
-                        onToggle={() =>
-                            setSec({
-                                testimonials: {
-                                    ...sec.testimonials,
-                                    enabled: !sec.testimonials.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>Section Title</label>
-                            <input
-                                maxLength={80}
-                                className={inputClass}
-                                value={sec.testimonials.title}
-                                onChange={(e) =>
-                                    setSec({
-                                        testimonials: {
-                                            ...sec.testimonials,
-                                            title: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                            <CharCount
-                                value={sec.testimonials.title}
-                                max={80}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <TestimonialImagesEditor
-                            sec={sec}
-                            setSec={setSec}
-                            pageId={page.id}
-                        />
-                        {(sec.testimonials.mode ?? 'text') === 'text' && (
-                            <>
-                                <AnimatePresence initial={false}>
-                                    {sec.testimonials.items.map((item, i) => (
-                                        <AdminReveal
-                                            key={testimonialRowKeys.keys[i]}
-                                        >
-                                            <div className="space-y-2 rounded-lg border border-slate-100 p-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-semibold text-slate-600">
-                                                        Review #{i + 1}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            testimonialRowKeys.removeKey(
-                                                                i,
-                                                            );
-                                                            setSec({
-                                                                testimonials: {
-                                                                    ...sec.testimonials,
-                                                                    items: sec.testimonials.items.filter(
-                                                                        (
-                                                                            _,
-                                                                            j,
-                                                                        ) =>
-                                                                            j !==
-                                                                            i,
-                                                                    ),
-                                                                },
-                                                            });
-                                                        }}
-                                                        className="text-slate-400 hover:text-red-500"
-                                                    >
-                                                        <Trash2 className="size-3.5" />
-                                                    </button>
-                                                </div>
-                                                <input
-                                                    maxLength={60}
-                                                    className={inputClass}
-                                                    value={item.name}
-                                                    onChange={(e) => {
-                                                        const items = [
-                                                            ...sec.testimonials
-                                                                .items,
-                                                        ];
-                                                        items[i] = {
-                                                            ...items[i],
-                                                            name: e.target
-                                                                .value,
-                                                        };
-                                                        setSec({
-                                                            testimonials: {
-                                                                ...sec.testimonials,
-                                                                items,
-                                                            },
-                                                        });
-                                                    }}
-                                                    placeholder="Customer name"
-                                                />
-                                                <CharCount
-                                                    value={item.name}
-                                                    max={60}
-                                                    className="mt-0.5 block text-right text-[11px] leading-none"
-                                                />
-                                                <Select
-                                                    selectClassName={inputClass}
-                                                    value={item.rating}
-                                                    onChange={(e) => {
-                                                        const items = [
-                                                            ...sec.testimonials
-                                                                .items,
-                                                        ];
-                                                        items[i] = {
-                                                            ...items[i],
-                                                            rating: Number(
-                                                                e.target.value,
-                                                            ),
-                                                        };
-                                                        setSec({
-                                                            testimonials: {
-                                                                ...sec.testimonials,
-                                                                items,
-                                                            },
-                                                        });
-                                                    }}
-                                                >
-                                                    {[5, 4, 3, 2, 1].map(
-                                                        (r) => (
-                                                            <option
-                                                                key={r}
-                                                                value={r}
-                                                            >
-                                                                {r} Stars
-                                                            </option>
-                                                        ),
-                                                    )}
-                                                </Select>
-                                                <RichTextEditor
-                                                    value={item.text}
-                                                    minHeight={110}
-                                                    maxLength={2000}
-                                                    maxTextLength={400}
-                                                    onChange={(html) => {
-                                                        const items = [
-                                                            ...sec.testimonials
-                                                                .items,
-                                                        ];
-                                                        items[i] = {
-                                                            ...items[i],
-                                                            text: html,
-                                                        };
-                                                        setSec({
-                                                            testimonials: {
-                                                                ...sec.testimonials,
-                                                                items,
-                                                            },
-                                                        });
-                                                    }}
-                                                />
-                                            </div>
-                                        </AdminReveal>
-                                    ))}
-                                </AnimatePresence>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setSec({
-                                            testimonials: {
-                                                ...sec.testimonials,
-                                                items: [
-                                                    ...sec.testimonials.items,
-                                                    {
-                                                        name: '',
-                                                        rating: 5,
-                                                        text: '',
-                                                    },
-                                                ],
-                                            },
-                                        })
-                                    }
-                                    className="flex items-center gap-1 text-xs text-brand hover:underline"
-                                >
-                                    <Plus className="size-3.5" /> Add review
-                                </button>
-                            </>
-                        )}
-                    </SectionWrap>
-
-                    {/* FAQ */}
-                    <SectionWrap
-                        title="FAQ"
-                        enabled={sec.faq.enabled}
-                        onToggle={() =>
-                            setSec({
-                                faq: { ...sec.faq, enabled: !sec.faq.enabled },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>Section Title</label>
-                            <input
-                                maxLength={80}
-                                className={inputClass}
-                                value={sec.faq.title}
-                                onChange={(e) =>
-                                    setSec({
-                                        faq: {
-                                            ...sec.faq,
-                                            title: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                            <CharCount
-                                value={sec.faq.title}
-                                max={80}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                        <AnimatePresence initial={false}>
-                            {sec.faq.items.map((item, i) => (
-                                <AdminReveal key={faqRowKeys.keys[i]}>
-                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-slate-600">
-                                                Q&A #{i + 1}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    faqRowKeys.removeKey(i);
-                                                    setSec({
-                                                        faq: {
-                                                            ...sec.faq,
-                                                            items: sec.faq.items.filter(
-                                                                (_, j) =>
-                                                                    j !== i,
-                                                            ),
-                                                        },
-                                                    });
-                                                }}
-                                                className="text-slate-400 hover:text-red-500"
-                                            >
-                                                <Trash2 className="size-3.5" />
-                                            </button>
-                                        </div>
-                                        <input
-                                            maxLength={160}
-                                            className={inputClass}
-                                            value={item.question}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.faq.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    question: e.target.value,
-                                                };
-                                                setSec({
-                                                    faq: { ...sec.faq, items },
-                                                });
-                                            }}
-                                            placeholder="Question"
-                                        />
-                                        <CharCount
-                                            value={item.question}
-                                            max={160}
-                                            className="mt-0.5 block text-right text-[11px] leading-none"
-                                        />
-                                        <textarea
-                                            maxLength={800}
-                                            rows={2}
-                                            className={textareaClass}
-                                            value={item.answer}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.faq.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    answer: e.target.value,
-                                                };
-                                                setSec({
-                                                    faq: { ...sec.faq, items },
-                                                });
-                                            }}
-                                            placeholder="Answer"
-                                        />
-                                        <CharCount
-                                            value={item.answer}
-                                            max={800}
-                                            className="mt-0.5 block text-right text-[11px] leading-none"
-                                        />
-                                    </div>
-                                </AdminReveal>
-                            ))}
-                        </AnimatePresence>
-                        <button
-                            type="button"
-                            onClick={() =>
+                    <div className={showingBangla ? 'hidden' : 'space-y-3'}>
+                        {/* Hero section */}
+                        <SectionWrap
+                            title="Hero Section"
+                            enabled={sec.hero.enabled}
+                            onToggle={() =>
                                 setSec({
-                                    faq: {
-                                        ...sec.faq,
-                                        items: [
-                                            ...sec.faq.items,
-                                            { question: '', answer: '' },
-                                        ],
+                                    hero: {
+                                        ...sec.hero,
+                                        enabled: !sec.hero.enabled,
                                     },
                                 })
                             }
-                            className="flex items-center gap-1 text-xs text-brand hover:underline"
                         >
-                            <Plus className="size-3.5" /> Add Q&A
-                        </button>
-                    </SectionWrap>
+                            <div>
+                                <label className={labelClass}>
+                                    Background Color
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="color"
+                                        value={sec.hero.bg_color}
+                                        onChange={(e) =>
+                                            setSec({
+                                                hero: {
+                                                    ...sec.hero,
+                                                    bg_color: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 p-1"
+                                    />
+                                    <input
+                                        maxLength={7}
+                                        className={inputClass}
+                                        value={sec.hero.bg_color}
+                                        onChange={(e) =>
+                                            setSec({
+                                                hero: {
+                                                    ...sec.hero,
+                                                    bg_color: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        placeholder="#0f172a"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Headline</label>
+                                <input
+                                    maxLength={120}
+                                    className={inputClass}
+                                    value={sec.hero.headline}
+                                    onChange={(e) =>
+                                        setSec({
+                                            hero: {
+                                                ...sec.hero,
+                                                headline: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    placeholder="Get the best deal on this product!"
+                                />
+                                <CharCount
+                                    value={sec.hero.headline}
+                                    max={120}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>
+                                    Sub-headline
+                                </label>
+                                <input
+                                    maxLength={250}
+                                    className={inputClass}
+                                    value={sec.hero.subheadline}
+                                    onChange={(e) =>
+                                        setSec({
+                                            hero: {
+                                                ...sec.hero,
+                                                subheadline: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    placeholder="Limited time offer. Order now!"
+                                />
+                                <CharCount
+                                    value={sec.hero.subheadline}
+                                    max={250}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>
+                                    CTA Button Text
+                                </label>
+                                <input
+                                    maxLength={30}
+                                    className={inputClass}
+                                    value={sec.hero.cta_text}
+                                    onChange={(e) =>
+                                        setSec({
+                                            hero: {
+                                                ...sec.hero,
+                                                cta_text: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    placeholder="Order Now"
+                                />
+                                <CharCount
+                                    value={sec.hero.cta_text}
+                                    max={30}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <HeroExtras
+                                sec={sec}
+                                setSec={setSec}
+                                pageId={page.id}
+                                media={productMedia}
+                            />
+                        </SectionWrap>
 
-                    {/* Footer */}
-                    <SectionWrap
-                        title="Footer"
-                        enabled={sec.footer.enabled}
-                        onToggle={() =>
-                            setSec({
-                                footer: {
-                                    ...sec.footer,
-                                    enabled: !sec.footer.enabled,
-                                },
-                            })
-                        }
-                    >
-                        <div>
-                            <label className={labelClass}>
-                                Footer Text (contact info, copyright, etc.)
-                            </label>
-                            <textarea
-                                maxLength={400}
-                                rows={3}
-                                className={textareaClass}
-                                value={sec.footer.text}
-                                onChange={(e) =>
+                        {/* Variant combos + order section texts */}
+                        <SectionWrap title="Combos & Order Options" enabled>
+                            <CombosEditor
+                                sec={sec}
+                                setSec={setSec}
+                                variants={productVariants}
+                            />
+                        </SectionWrap>
+
+                        {/* Delivery */}
+                        <SectionWrap
+                            title="Delivery Info"
+                            enabled={sec.delivery.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    delivery: {
+                                        ...sec.delivery,
+                                        enabled: !sec.delivery.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <DeliveryEditor
+                                sec={sec}
+                                setSec={setSec}
+                                onRemoveArea={(index) =>
+                                    setBn(
+                                        removeBanglaItem(
+                                            data.sections_bn,
+                                            'delivery',
+                                            'areas',
+                                            index,
+                                        ),
+                                    )
+                                }
+                            />
+                        </SectionWrap>
+
+                        {/* Contact */}
+                        <SectionWrap title="Contact Details" enabled>
+                            <ContactEditor sec={sec} setSec={setSec} />
+                        </SectionWrap>
+
+                        {/* Description */}
+                        <SectionWrap
+                            title="Product Description"
+                            enabled={sec.description.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    description: {
+                                        ...sec.description,
+                                        enabled: !sec.description.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <div>
+                                <label className={labelClass}>
+                                    Section Title
+                                </label>
+                                <textarea
+                                    maxLength={120}
+                                    rows={6}
+                                    className={textareaClass}
+                                    value={sec.description.title}
+                                    onChange={(e) =>
+                                        setSec({
+                                            description: {
+                                                ...sec.description,
+                                                title: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                                <CharCount
+                                    value={sec.description.title}
+                                    max={120}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="use_prod_desc"
+                                    checked={
+                                        sec.description.use_product_description
+                                    }
+                                    onChange={(e) =>
+                                        setSec({
+                                            description: {
+                                                ...sec.description,
+                                                use_product_description:
+                                                    e.target.checked,
+                                            },
+                                        })
+                                    }
+                                    className="rounded border-slate-300"
+                                />
+                                <label
+                                    htmlFor="use_prod_desc"
+                                    className="text-xs font-medium text-slate-600"
+                                >
+                                    Use product's own description
+                                </label>
+                            </div>
+                            <AnimatePresence initial={false}>
+                                {!sec.description.use_product_description && (
+                                    <AdminReveal key="custom-description">
+                                        <div>
+                                            <label className={labelClass}>
+                                                Custom Content (HTML allowed)
+                                            </label>
+                                            <textarea
+                                                maxLength={20000}
+                                                rows={6}
+                                                className={textareaClass}
+                                                value={
+                                                    sec.description
+                                                        .custom_content
+                                                }
+                                                onChange={(e) =>
+                                                    setSec({
+                                                        description: {
+                                                            ...sec.description,
+                                                            custom_content:
+                                                                e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                            <CharCount
+                                                value={
+                                                    sec.description
+                                                        .custom_content
+                                                }
+                                                max={20000}
+                                                className="mt-0.5 block text-right text-[11px] leading-none"
+                                            />
+                                        </div>
+                                    </AdminReveal>
+                                )}
+                            </AnimatePresence>
+                            <DescriptionExtras sec={sec} setSec={setSec} />
+                        </SectionWrap>
+
+                        {/* Gallery */}
+                        <SectionWrap
+                            title="Product Gallery"
+                            enabled={sec.gallery.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    gallery: {
+                                        ...sec.gallery,
+                                        enabled: !sec.gallery.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <div>
+                                <label className={labelClass}>
+                                    Section Title
+                                </label>
+                                <input
+                                    maxLength={60}
+                                    className={inputClass}
+                                    value={sec.gallery.title}
+                                    onChange={(e) =>
+                                        setSec({
+                                            gallery: {
+                                                ...sec.gallery,
+                                                title: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                                <CharCount
+                                    value={sec.gallery.title}
+                                    max={60}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <p className="text-xs text-slate-600">
+                                Images are pulled automatically from the
+                                selected product's media.
+                            </p>
+                        </SectionWrap>
+
+                        {/* Testimonials */}
+                        <SectionWrap
+                            title="Customer Testimonials"
+                            enabled={sec.testimonials.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    testimonials: {
+                                        ...sec.testimonials,
+                                        enabled: !sec.testimonials.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <div>
+                                <label className={labelClass}>
+                                    Section Title
+                                </label>
+                                <input
+                                    maxLength={80}
+                                    className={inputClass}
+                                    value={sec.testimonials.title}
+                                    onChange={(e) =>
+                                        setSec({
+                                            testimonials: {
+                                                ...sec.testimonials,
+                                                title: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                                <CharCount
+                                    value={sec.testimonials.title}
+                                    max={80}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <TestimonialImagesEditor
+                                sec={sec}
+                                setSec={setSec}
+                                pageId={page.id}
+                            />
+                            {(sec.testimonials.mode ?? 'text') === 'text' && (
+                                <>
+                                    <AnimatePresence initial={false}>
+                                        {sec.testimonials.items.map(
+                                            (item, i) => (
+                                                <AdminReveal
+                                                    key={
+                                                        testimonialRowKeys.keys[
+                                                            i
+                                                        ]
+                                                    }
+                                                >
+                                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs font-semibold text-slate-600">
+                                                                Review #{i + 1}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    testimonialRowKeys.removeKey(
+                                                                        i,
+                                                                    );
+                                                                    setBn(
+                                                                        removeBanglaItem(
+                                                                            data.sections_bn,
+                                                                            'testimonials',
+                                                                            'items',
+                                                                            i,
+                                                                        ),
+                                                                    );
+                                                                    setSec({
+                                                                        testimonials:
+                                                                            {
+                                                                                ...sec.testimonials,
+                                                                                items: sec.testimonials.items.filter(
+                                                                                    (
+                                                                                        _,
+                                                                                        j,
+                                                                                    ) =>
+                                                                                        j !==
+                                                                                        i,
+                                                                                ),
+                                                                            },
+                                                                    });
+                                                                }}
+                                                                className="text-slate-400 hover:text-red-500"
+                                                            >
+                                                                <Trash2 className="size-3.5" />
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            maxLength={60}
+                                                            className={
+                                                                inputClass
+                                                            }
+                                                            value={item.name}
+                                                            onChange={(e) => {
+                                                                const items = [
+                                                                    ...sec
+                                                                        .testimonials
+                                                                        .items,
+                                                                ];
+                                                                items[i] = {
+                                                                    ...items[i],
+                                                                    name: e
+                                                                        .target
+                                                                        .value,
+                                                                };
+                                                                setSec({
+                                                                    testimonials:
+                                                                        {
+                                                                            ...sec.testimonials,
+                                                                            items,
+                                                                        },
+                                                                });
+                                                            }}
+                                                            placeholder="Customer name"
+                                                        />
+                                                        <CharCount
+                                                            value={item.name}
+                                                            max={60}
+                                                            className="mt-0.5 block text-right text-[11px] leading-none"
+                                                        />
+                                                        <Select
+                                                            selectClassName={
+                                                                inputClass
+                                                            }
+                                                            value={item.rating}
+                                                            onChange={(e) => {
+                                                                const items = [
+                                                                    ...sec
+                                                                        .testimonials
+                                                                        .items,
+                                                                ];
+                                                                items[i] = {
+                                                                    ...items[i],
+                                                                    rating: Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                };
+                                                                setSec({
+                                                                    testimonials:
+                                                                        {
+                                                                            ...sec.testimonials,
+                                                                            items,
+                                                                        },
+                                                                });
+                                                            }}
+                                                        >
+                                                            {[
+                                                                5, 4, 3, 2, 1,
+                                                            ].map((r) => (
+                                                                <option
+                                                                    key={r}
+                                                                    value={r}
+                                                                >
+                                                                    {r} Stars
+                                                                </option>
+                                                            ))}
+                                                        </Select>
+                                                        <RichTextEditor
+                                                            value={item.text}
+                                                            minHeight={110}
+                                                            maxLength={2000}
+                                                            maxTextLength={400}
+                                                            onChange={(
+                                                                html,
+                                                            ) => {
+                                                                const items = [
+                                                                    ...sec
+                                                                        .testimonials
+                                                                        .items,
+                                                                ];
+                                                                items[i] = {
+                                                                    ...items[i],
+                                                                    text: html,
+                                                                };
+                                                                setSec({
+                                                                    testimonials:
+                                                                        {
+                                                                            ...sec.testimonials,
+                                                                            items,
+                                                                        },
+                                                                });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </AdminReveal>
+                                            ),
+                                        )}
+                                    </AnimatePresence>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setSec({
+                                                testimonials: {
+                                                    ...sec.testimonials,
+                                                    items: [
+                                                        ...sec.testimonials
+                                                            .items,
+                                                        {
+                                                            name: '',
+                                                            rating: 5,
+                                                            text: '',
+                                                        },
+                                                    ],
+                                                },
+                                            })
+                                        }
+                                        className="flex items-center gap-1 text-xs text-brand hover:underline"
+                                    >
+                                        <Plus className="size-3.5" /> Add review
+                                    </button>
+                                </>
+                            )}
+                        </SectionWrap>
+
+                        {/* FAQ */}
+                        <SectionWrap
+                            title="FAQ"
+                            enabled={sec.faq.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    faq: {
+                                        ...sec.faq,
+                                        enabled: !sec.faq.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <div>
+                                <label className={labelClass}>
+                                    Section Title
+                                </label>
+                                <input
+                                    maxLength={80}
+                                    className={inputClass}
+                                    value={sec.faq.title}
+                                    onChange={(e) =>
+                                        setSec({
+                                            faq: {
+                                                ...sec.faq,
+                                                title: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                                <CharCount
+                                    value={sec.faq.title}
+                                    max={80}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                            <AnimatePresence initial={false}>
+                                {sec.faq.items.map((item, i) => (
+                                    <AdminReveal key={faqRowKeys.keys[i]}>
+                                        <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-slate-600">
+                                                    Q&A #{i + 1}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        faqRowKeys.removeKey(i);
+                                                        setBn(
+                                                            removeBanglaItem(
+                                                                data.sections_bn,
+                                                                'faq',
+                                                                'items',
+                                                                i,
+                                                            ),
+                                                        );
+                                                        setSec({
+                                                            faq: {
+                                                                ...sec.faq,
+                                                                items: sec.faq.items.filter(
+                                                                    (_, j) =>
+                                                                        j !== i,
+                                                                ),
+                                                            },
+                                                        });
+                                                    }}
+                                                    className="text-slate-400 hover:text-red-500"
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </button>
+                                            </div>
+                                            <input
+                                                maxLength={160}
+                                                className={inputClass}
+                                                value={item.question}
+                                                onChange={(e) => {
+                                                    const items = [
+                                                        ...sec.faq.items,
+                                                    ];
+                                                    items[i] = {
+                                                        ...items[i],
+                                                        question:
+                                                            e.target.value,
+                                                    };
+                                                    setSec({
+                                                        faq: {
+                                                            ...sec.faq,
+                                                            items,
+                                                        },
+                                                    });
+                                                }}
+                                                placeholder="Question"
+                                            />
+                                            <CharCount
+                                                value={item.question}
+                                                max={160}
+                                                className="mt-0.5 block text-right text-[11px] leading-none"
+                                            />
+                                            <textarea
+                                                maxLength={800}
+                                                rows={2}
+                                                className={textareaClass}
+                                                value={item.answer}
+                                                onChange={(e) => {
+                                                    const items = [
+                                                        ...sec.faq.items,
+                                                    ];
+                                                    items[i] = {
+                                                        ...items[i],
+                                                        answer: e.target.value,
+                                                    };
+                                                    setSec({
+                                                        faq: {
+                                                            ...sec.faq,
+                                                            items,
+                                                        },
+                                                    });
+                                                }}
+                                                placeholder="Answer"
+                                            />
+                                            <CharCount
+                                                value={item.answer}
+                                                max={800}
+                                                className="mt-0.5 block text-right text-[11px] leading-none"
+                                            />
+                                        </div>
+                                    </AdminReveal>
+                                ))}
+                            </AnimatePresence>
+                            <button
+                                type="button"
+                                onClick={() =>
                                     setSec({
-                                        footer: {
-                                            ...sec.footer,
-                                            text: e.target.value,
+                                        faq: {
+                                            ...sec.faq,
+                                            items: [
+                                                ...sec.faq.items,
+                                                { question: '', answer: '' },
+                                            ],
                                         },
                                     })
                                 }
-                                placeholder="© 2025 ShoppyDrive · support@shoppydrive.com"
-                            />
-                            <CharCount
-                                value={sec.footer.text}
-                                max={400}
-                                className="mt-0.5 block text-right text-[11px] leading-none"
-                            />
-                        </div>
-                    </SectionWrap>
+                                className="flex items-center gap-1 text-xs text-brand hover:underline"
+                            >
+                                <Plus className="size-3.5" /> Add Q&A
+                            </button>
+                        </SectionWrap>
+
+                        {/* Footer */}
+                        <SectionWrap
+                            title="Footer"
+                            enabled={sec.footer.enabled}
+                            onToggle={() =>
+                                setSec({
+                                    footer: {
+                                        ...sec.footer,
+                                        enabled: !sec.footer.enabled,
+                                    },
+                                })
+                            }
+                        >
+                            <div>
+                                <label className={labelClass}>
+                                    Footer Text (contact info, copyright, etc.)
+                                </label>
+                                <textarea
+                                    maxLength={400}
+                                    rows={3}
+                                    className={textareaClass}
+                                    value={sec.footer.text}
+                                    onChange={(e) =>
+                                        setSec({
+                                            footer: {
+                                                ...sec.footer,
+                                                text: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    placeholder="© 2025 ShoppyDrive · support@shoppydrive.com"
+                                />
+                                <CharCount
+                                    value={sec.footer.text}
+                                    max={400}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </div>
+                        </SectionWrap>
+                    </div>
 
                     <Button
                         type="submit"

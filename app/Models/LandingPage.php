@@ -14,7 +14,10 @@ class LandingPage extends Model
 {
     use Auditable;
 
-    protected $fillable = ['title', 'slug', 'product_id', 'is_active', 'max_order_quantity', 'sections'];
+    protected $fillable = ['title', 'slug', 'product_id', 'is_active', 'max_order_quantity', 'sections', 'bangla_enabled', 'default_language', 'title_bn', 'sections_bn'];
+
+    /** DISC-65: the languages a landing page can be shown in. */
+    public const LANGUAGES = ['en', 'bn'];
 
     protected function casts(): array
     {
@@ -22,6 +25,8 @@ class LandingPage extends Model
             'is_active' => 'boolean',
             'max_order_quantity' => 'integer',
             'sections' => 'array',
+            'bangla_enabled' => 'boolean',
+            'sections_bn' => 'array',
         ];
     }
 
@@ -54,13 +59,35 @@ class LandingPage extends Model
 
                 $landingPage->sections = $sections;
             }
+
+            // DISC-65: the Bangla copies of the same rich-text fields, plus
+            // the Bangla product description (also HTML), get the same cleaning.
+            $bangla = $landingPage->sections_bn;
+
+            if (is_array($bangla)) {
+                foreach ([['description', 'custom_content'], ['product', 'description']] as [$section, $key]) {
+                    if (is_string($bangla[$section][$key] ?? null)) {
+                        $bangla[$section][$key] = Purifier::clean($bangla[$section][$key]);
+                    }
+                }
+
+                if (is_array($bangla['testimonials']['items'] ?? null)) {
+                    foreach ($bangla['testimonials']['items'] as $index => $item) {
+                        if (is_array($item) && is_string($item['text'] ?? null)) {
+                            $bangla['testimonials']['items'][$index]['text'] = Purifier::clean($item['text']);
+                        }
+                    }
+                }
+
+                $landingPage->sections_bn = $bangla;
+            }
         });
     }
 
     /** `sections` is the full page-builder payload — too large to keep duplicating into every log row. */
     protected function auditExcept(): array
     {
-        return ['sections', 'created_at', 'updated_at'];
+        return ['sections', 'sections_bn', 'created_at', 'updated_at'];
     }
 
     public function product(): BelongsTo
@@ -161,6 +188,46 @@ class LandingPage extends Model
                 'text' => '',
             ],
         ];
+    }
+
+    /**
+     * DISC-65: whether visitors can switch this page to Bangla.
+     */
+    public function hasBangla(): bool
+    {
+        return (bool) $this->bangla_enabled;
+    }
+
+    /**
+     * DISC-65: the language a visitor sees first — the admin's choice when
+     * Bangla is on, otherwise always English.
+     */
+    public function initialLanguage(): string
+    {
+        return $this->hasBangla() && $this->default_language === 'bn' ? 'bn' : 'en';
+    }
+
+    /**
+     * DISC-65: the Bangla text for this page, shaped like `sections` but
+     * holding only text. Lists (hero features, delivery areas, testimonials,
+     * FAQ) line up index-for-index with the English lists; combos are keyed
+     * by combo id; `product` holds the landing-page-only Bangla product name,
+     * description and attribute/option names. An empty value means "show the
+     * English text".
+     *
+     * @return array<string, mixed>
+     */
+    public function banglaSections(): array
+    {
+        $saved = is_array($this->sections_bn) ? $this->sections_bn : [];
+
+        foreach ([['hero', 'features'], ['delivery', 'areas'], ['testimonials', 'items'], ['faq', 'items'], ['product', 'attribute_names'], ['product', 'value_names']] as [$section, $key]) {
+            if (is_array($saved[$section][$key] ?? null)) {
+                $saved[$section][$key] = array_values($saved[$section][$key]);
+            }
+        }
+
+        return $saved;
     }
 
     public function getSections(): array

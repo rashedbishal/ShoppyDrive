@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { BanglaSettingsFields } from '@/components/admin/landing-bangla-fields';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
@@ -23,6 +24,9 @@ export default function LandingPageCreate({ products }: Props) {
             product_id: '',
             is_active: true,
             max_order_quantity: 100,
+            // DISC-65
+            bangla_enabled: false,
+            default_language: 'en' as 'en' | 'bn',
         });
     const [slugTouched, setSlugTouched] = useState(false);
 
@@ -225,6 +229,22 @@ export default function LandingPageCreate({ products }: Props) {
                                     Active (publicly accessible)
                                 </label>
                             </div>
+
+                            <BanglaSettingsFields
+                                idPrefix="lp-create"
+                                enabled={data.bangla_enabled}
+                                defaultLanguage={data.default_language}
+                                onEnabledChange={(enabled) =>
+                                    setData('bangla_enabled', enabled)
+                                }
+                                onDefaultLanguageChange={(language) =>
+                                    setData('default_language', language)
+                                }
+                                error={
+                                    errors.bangla_enabled ??
+                                    errors.default_language
+                                }
+                            />
 
                             <div className="flex gap-2 pt-2">
                                 <Button

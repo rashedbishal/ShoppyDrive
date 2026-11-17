@@ -22,12 +22,19 @@ import HoneypotField from '@/components/honeypot-field';
 import GlowButton from '@/components/landing/GlowButton';
 import HeroCarousel from '@/components/landing/HeroCarousel';
 import type { CarouselSettings } from '@/components/landing/HeroCarousel';
+import LanguageSwitch from '@/components/landing/LanguageSwitch';
 import { TestimonialCarousel } from '@/components/landing/TestimonialCarousel';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
-import { cn, formatCurrency } from '@/lib/utils';
+import {
+    BANGLA_FONT_CSS,
+    BANGLA_FONT_FAMILY,
+    useLandingLanguage,
+} from '@/lib/landing-i18n';
+import type { LandingLanguage, LandingText } from '@/lib/landing-i18n';
+import { cn } from '@/lib/utils';
 import type { SharedPageProps } from '@/types';
 
 type ProductMedia = {
@@ -93,24 +100,46 @@ type Option = {
 
 type Selection = Record<string, number>;
 
+/** DISC-65: shows an attribute or option name, in Bangla when the admin gave one. */
+type AttributeNames = {
+    attribute: (name: string) => string;
+    value: (attribute: string, value: string) => string;
+};
+
+const PLAIN_NAMES: AttributeNames = {
+    attribute: (name) => name,
+    value: (_attribute, value) => value,
+};
+
 /**
  * "Color: Red · Set: 12pcs" from a variant's attributes — any attributes, not
  * only colour and size, each named so "12pcs" is never shown without saying
  * what it is. Falls back to the SKU.
  */
-function variantName(variant: Variant): string {
+function variantName(
+    variant: Variant,
+    names: AttributeNames = PLAIN_NAMES,
+    fallback = 'Option',
+): string {
     const parts = Object.entries(variant.attributes ?? {}).map(
-        ([name, value]) => `${name}: ${value}`,
+        ([name, value]) =>
+            `${names.attribute(name)}: ${names.value(name, value)}`,
     );
 
-    return parts.length > 0 ? parts.join(' · ') : (variant.sku ?? 'Option');
+    return parts.length > 0 ? parts.join(' · ') : (variant.sku ?? fallback);
 }
 
 /** Just the values ("Bubu", "Red · M") — the short name a pick-list card leads with. */
-function variantShortName(attributes: Record<string, string> | null): string {
-    const values = Object.values(attributes ?? {});
+function variantShortName(
+    attributes: Record<string, string> | null,
+    names: AttributeNames = PLAIN_NAMES,
+    fallback = 'Option',
+): string {
+    const values = Object.entries(attributes ?? {}).map(([name, value]) =>
+        names.value(name, value),
+    );
 
-    return values.length > 0 ? values.join(' · ') : 'Option';
+    return values.length > 0 ? values.join(' · ') : fallback;
 }
 
 type Props = {
@@ -120,6 +149,11 @@ type Props = {
         slug: string;
         sections: Sections;
         max_order_quantity: number;
+        // DISC-65
+        bangla_enabled: boolean;
+        default_language: LandingLanguage;
+        title_bn: string | null;
+        sections_bn: Sections | null;
     };
     product: {
         id: number;
@@ -248,24 +282,33 @@ function InlinePayment({
     slug,
     bkashNumber,
     nagadNumber,
+    text,
 }: {
     pending: PendingPayment;
     slug: string;
     bkashNumber: string | null;
     nagadNumber: string | null;
+    text: LandingText;
 }) {
     const { errors } = usePage<any>().props as {
         errors: Record<string, string>;
     };
     const providerNumber =
         pending.provider === 'bkash' ? bkashNumber : nagadNumber;
-    const providerLabel = pending.provider === 'bkash' ? 'Bkash' : 'Nagad';
+    const providerLabel = text.t(
+        pending.provider === 'bkash' ? 'bkash' : 'nagad',
+    );
+    const providerInitial = pending.provider === 'bkash' ? 'B' : 'N';
     const providerColor = pending.provider === 'bkash' ? '#e2136e' : '#f4821f';
 
-    const { data, setData, post, processing } = useForm({ transaction_id: '' });
+    const { data, setData, post, processing, transform } = useForm({
+        transaction_id: '',
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // DISC-65: messages come back in the visitor's language.
+        transform((formData) => ({ ...formData, lang: text.lang }));
         post(route('lp.payment.submit', { slug, token: pending.token }));
     };
 
@@ -277,7 +320,8 @@ function InlinePayment({
                     onClick={() => router.get(route('lp.show', slug))}
                     className="flex items-center gap-1.5 text-xs text-slate-600 transition-colors hover:text-slate-800"
                 >
-                    <ArrowLeft className="size-3.5" /> Back to order form
+                    <ArrowLeft className="size-3.5" />{' '}
+                    {text.t('back_to_order_form')}
                 </button>
             </div>
 
@@ -290,14 +334,18 @@ function InlinePayment({
                         className="text-xl font-extrabold"
                         style={{ color: providerColor }}
                     >
-                        {providerLabel[0]}
+                        {providerInitial}
                     </span>
                 </div>
                 <h2 className="text-base font-semibold text-slate-900">
-                    Complete Payment via {providerLabel}
+                    {text.t('complete_payment_via', {
+                        provider: providerLabel,
+                    })}
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-600">
-                    Order #{pending.order_number}
+                    {text.t('order_number', {
+                        number: pending.order_number,
+                    })}
                 </p>
             </div>
 
@@ -308,12 +356,14 @@ function InlinePayment({
                     border: `1px solid ${providerColor}30`,
                 }}
             >
-                <p className="text-xs text-slate-600">Send exactly</p>
+                <p className="text-xs text-slate-600">
+                    {text.t('send_exactly')}
+                </p>
                 <p className="text-2xl font-bold text-slate-900">
-                    {formatCurrency(pending.amount)}
+                    {text.money(pending.amount)}
                 </p>
                 <p className="mt-1 text-xs text-slate-600">
-                    to this {providerLabel} number
+                    {text.t('to_this_number', { provider: providerLabel })}
                 </p>
                 <p
                     className="text-lg font-semibold"
@@ -322,42 +372,44 @@ function InlinePayment({
                     {providerNumber}
                 </p>
                 <p className="text-[11px] text-slate-600">
-                    Send Money → Personal
+                    {text.t('send_money_personal')}
                 </p>
             </div>
 
             <ol className="space-y-1.5 text-sm text-slate-600">
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
-                        1.
+                        {text.num(1)}.
                     </span>{' '}
-                    Open your {providerLabel} app
+                    {text.t('step_open_app', { provider: providerLabel })}
                 </li>
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
-                        2.
+                        {text.num(2)}.
                     </span>{' '}
-                    Go to <strong>Send Money</strong> and enter the number above
+                    <span>{text.rich('step_send_money')}</span>
                 </li>
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
-                        3.
+                        {text.num(3)}.
                     </span>{' '}
-                    Send exactly{' '}
-                    <strong>{formatCurrency(pending.amount)}</strong>
+                    <span>
+                        {text.rich('step_send_exactly', {
+                            amount: text.money(pending.amount),
+                        })}
+                    </span>
                 </li>
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
-                        4.
+                        {text.num(4)}.
                     </span>{' '}
-                    Copy the <strong>Transaction ID</strong> from the
-                    confirmation SMS
+                    <span>{text.rich('step_copy_trx')}</span>
                 </li>
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
-                        5.
+                        {text.num(5)}.
                     </span>{' '}
-                    Paste it below and click Confirm
+                    {text.t('step_paste_confirm')}
                 </li>
             </ol>
 
@@ -372,7 +424,7 @@ function InlinePayment({
                         htmlFor="lp-transaction-id"
                         className="mb-1 block text-sm font-medium text-slate-700"
                     >
-                        Transaction ID
+                        {text.t('transaction_id')}
                     </label>
                     <input
                         maxLength={40}
@@ -382,7 +434,7 @@ function InlinePayment({
                         onChange={(e) =>
                             setData('transaction_id', e.target.value)
                         }
-                        placeholder="Transaction ID from SMS…"
+                        placeholder={text.t('transaction_id_placeholder')}
                         autoFocus
                     />
                     {errors.transaction_id && (
@@ -397,7 +449,9 @@ function InlinePayment({
                     className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60"
                     style={{ backgroundColor: providerColor }}
                 >
-                    {processing ? 'Verifying…' : 'Confirm Payment'}
+                    {processing
+                        ? text.t('verifying')
+                        : text.t('confirm_payment')}
                 </button>
             </form>
         </div>
@@ -436,6 +490,7 @@ function OptionCard({
     mode,
     onChange,
     onFocus,
+    text,
 }: {
     option: Option;
     qty: number;
@@ -443,6 +498,7 @@ function OptionCard({
     mode: 'pick' | 'stepper';
     onChange: (next: number) => void;
     onFocus?: () => void;
+    text: LandingText;
 }) {
     const soldOut = option.stock < 1;
     const selected = qty > 0;
@@ -482,7 +538,7 @@ function OptionCard({
                     )}
                     {(option.badge || option.kind === 'combo') && (
                         <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase shadow">
-                            {option.badge || 'Combo'}
+                            {option.badge || text.t('combo')}
                         </span>
                     )}
                     <span
@@ -494,14 +550,16 @@ function OptionCard({
                         )}
                     >
                         {qty > 1 ? (
-                            <span className="text-[11px] font-bold">{qty}</span>
+                            <span className="text-[11px] font-bold">
+                                {text.num(qty)}
+                            </span>
                         ) : (
                             <Check className="size-4" />
                         )}
                     </span>
                     {soldOut && (
                         <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-bold text-white">
-                            Out of stock
+                            {text.t('out_of_stock')}
                         </span>
                     )}
                 </div>
@@ -516,17 +574,17 @@ function OptionCard({
                     )}
                     <p className="flex flex-wrap items-baseline gap-x-1.5">
                         <span className="text-sm font-bold text-brand">
-                            {formatCurrency(option.price)}
+                            {text.money(option.price)}
                         </span>
                         {option.compare && option.compare > option.price && (
                             <span className="text-[11px] text-slate-400 line-through">
-                                {formatCurrency(option.compare)}
+                                {text.money(option.compare)}
                             </span>
                         )}
                     </p>
                     {!soldOut && option.stock <= 5 && (
                         <p className="text-[11px] font-semibold text-amber-600">
-                            Only {option.stock} left
+                            {text.t('only_left', { n: option.stock })}
                         </p>
                     )}
                 </div>
@@ -559,17 +617,17 @@ function OptionCard({
                 )}
                 {(option.badge || option.kind === 'combo') && (
                     <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase shadow">
-                        {option.badge || 'Combo'}
+                        {option.badge || text.t('combo')}
                     </span>
                 )}
                 {selected && (
                     <span className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border-2 border-brand bg-brand text-[11px] font-bold text-brand-foreground shadow">
-                        {qty}
+                        {text.num(qty)}
                     </span>
                 )}
                 {soldOut && (
                     <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-bold text-white">
-                        Out of stock
+                        {text.t('out_of_stock')}
                     </span>
                 )}
             </div>
@@ -585,22 +643,24 @@ function OptionCard({
                     )}
                     <p className="flex flex-wrap items-baseline gap-x-1.5">
                         <span className="text-sm font-bold text-brand">
-                            {formatCurrency(option.price)}
+                            {text.money(option.price)}
                         </span>
                         {option.compare && option.compare > option.price && (
                             <span className="text-[11px] text-slate-400 line-through">
-                                {formatCurrency(option.compare)}
+                                {text.money(option.compare)}
                             </span>
                         )}
                     </p>
                     {savings > 0 && (
                         <p className="text-[11px] font-semibold text-emerald-600">
-                            Save {formatCurrency(savings)}
+                            {text.t('save_amount', {
+                                amount: text.money(savings),
+                            })}
                         </p>
                     )}
                     {!soldOut && option.stock <= 5 && (
                         <p className="text-[11px] font-semibold text-amber-600">
-                            Only {option.stock} left
+                            {text.t('only_left', { n: option.stock })}
                         </p>
                     )}
                 </div>
@@ -612,13 +672,15 @@ function OptionCard({
                             e.stopPropagation();
                             onChange(qty - 1);
                         }}
-                        aria-label={`Decrease ${option.name}`}
+                        aria-label={text.t('decrease_item', {
+                            name: option.name,
+                        })}
                         className="flex size-8 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
                     >
                         <Minus className="size-4" />
                     </button>
                     <span className="min-w-6 text-center text-sm font-extrabold text-slate-900">
-                        {qty}
+                        {text.num(qty)}
                     </span>
                     <button
                         type="button"
@@ -627,7 +689,9 @@ function OptionCard({
                             e.stopPropagation();
                             onChange(qty + 1);
                         }}
-                        aria-label={`Increase ${option.name}`}
+                        aria-label={text.t('increase_item', {
+                            name: option.name,
+                        })}
                         className="flex size-8 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm transition hover:bg-brand-hover disabled:opacity-40"
                     >
                         <Plus className="size-4" />
@@ -695,6 +759,9 @@ function OrderSection({
     nagadNumber,
     orderToken,
     pendingPayment,
+    text,
+    bn,
+    productName,
 }: {
     product: Props['product'];
     sec: Sections;
@@ -709,6 +776,10 @@ function OrderSection({
     nagadNumber: string | null;
     orderToken: string;
     pendingPayment: PendingPayment | null;
+    /** DISC-65: the visitor's language, the page's Bangla text, and the product name to show. */
+    text: LandingText;
+    bn: Sections;
+    productName: string;
 }) {
     const { settings, mobile_banking_available: mobileBankingAvailable } =
         usePage<SharedPageProps>().props;
@@ -804,7 +875,7 @@ function OrderSection({
         e.preventDefault();
 
         if (hasVariants && chosen.length === 0) {
-            setVariantError('Choose at least one option and a quantity.');
+            setVariantError(text.t('choose_option_error'));
 
             return;
         }
@@ -814,11 +885,13 @@ function OrderSection({
             const { quantity, ...rest } = formData;
 
             if (!hasVariants) {
-                return { ...rest, quantity };
+                return { ...rest, quantity, lang: text.lang };
             }
 
             return {
                 ...rest,
+                // DISC-65: messages come back in the visitor's language.
+                lang: text.lang,
                 items: chosen
                     .filter((o) => o.kind === 'variant')
                     .map((o) => ({
@@ -837,6 +910,7 @@ function OrderSection({
     };
 
     const sel = sec.selection ?? {};
+    const selBn = bn.selection ?? {};
 
     return (
         <section
@@ -846,9 +920,12 @@ function OrderSection({
             <div className="pointer-events-none absolute -top-40 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl" />
             <div className="relative mx-auto max-w-6xl">
                 <SectionHeading
-                    eyebrow="Order now"
-                    title={sel.title || 'Select your order'}
-                    subtitle={sel.subtitle}
+                    eyebrow={text.t('order_now_eyebrow')}
+                    title={
+                        text.pick(sel.title, selBn.title) ||
+                        text.t('select_your_order')
+                    }
+                    subtitle={text.pick(sel.subtitle, selBn.subtitle)}
                 />
 
                 {pendingPayment ? (
@@ -858,6 +935,7 @@ function OrderSection({
                             slug={slug}
                             bkashNumber={bkashNumber}
                             nagadNumber={nagadNumber}
+                            text={text}
                         />
                     </div>
                 ) : (
@@ -870,12 +948,15 @@ function OrderSection({
                             <div className="flex items-baseline justify-between">
                                 <h3 className="text-base font-bold text-slate-900">
                                     {hasVariants
-                                        ? 'Choose your options'
-                                        : 'Quantity'}
+                                        ? text.t('choose_your_options')
+                                        : text.t('quantity')}
                                 </h3>
                                 {hasVariants && (
                                     <span className="text-xs font-medium text-slate-600">
-                                        {qty} of {maxQuantity} max
+                                        {text.t('qty_of_max', {
+                                            qty,
+                                            max: maxQuantity,
+                                        })}
                                     </span>
                                 )}
                             </div>
@@ -887,6 +968,7 @@ function OrderSection({
                                             key={option.key}
                                             option={option}
                                             mode="stepper"
+                                            text={text}
                                             qty={selection[option.key] ?? 0}
                                             ceiling={ceilingFor(option)}
                                             onChange={(next) =>
@@ -906,28 +988,32 @@ function OrderSection({
                                 <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
                                     <div>
                                         <p className="font-bold text-slate-900">
-                                            {product.name}
+                                            {productName}
                                         </p>
                                         <p className="text-sm font-bold text-brand">
-                                            {formatCurrency(product.price)}
+                                            {text.money(product.price)}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
                                         <button
                                             type="button"
                                             onClick={() => updateQty(qty - 1)}
-                                            aria-label="Decrease quantity"
+                                            aria-label={text.t(
+                                                'decrease_quantity',
+                                            )}
                                             className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm hover:bg-slate-50"
                                         >
                                             <Minus className="size-4" />
                                         </button>
                                         <span className="w-8 text-center text-sm font-extrabold">
-                                            {qty}
+                                            {text.num(qty)}
                                         </span>
                                         <button
                                             type="button"
                                             onClick={() => updateQty(qty + 1)}
-                                            aria-label="Increase quantity"
+                                            aria-label={text.t(
+                                                'increase_quantity',
+                                            )}
                                             className="flex size-9 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-sm hover:bg-brand-hover"
                                         >
                                             <Plus className="size-4" />
@@ -951,13 +1037,12 @@ function OrderSection({
                         <div className="space-y-4">
                             <div className="overflow-hidden rounded-2xl bg-[#0b1020] text-white shadow-[0_16px_50px_-22px_rgba(11,16,32,0.6)]">
                                 <div className="bg-gradient-to-r from-brand to-brand-bright px-5 py-2.5 text-xs font-bold tracking-wide text-brand-foreground uppercase">
-                                    Price summary
+                                    {text.t('price_summary')}
                                 </div>
                                 <div className="space-y-2.5 p-5 text-sm">
                                     {hasVariants && chosen.length === 0 ? (
                                         <p className="text-white/60">
-                                            Pick an option on the left to see
-                                            your total.
+                                            {text.t('pick_option_hint')}
                                         </p>
                                     ) : hasVariants ? (
                                         chosen.map((o) => (
@@ -968,11 +1053,14 @@ function OrderSection({
                                                 <span className="text-white/80">
                                                     {o.name}{' '}
                                                     <span className="text-white/50">
-                                                        ×{selection[o.key]}
+                                                        ×
+                                                        {text.num(
+                                                            selection[o.key],
+                                                        )}
                                                     </span>
                                                 </span>
                                                 <span className="font-semibold">
-                                                    {formatCurrency(
+                                                    {text.money(
                                                         o.price *
                                                             selection[o.key],
                                                     )}
@@ -982,52 +1070,52 @@ function OrderSection({
                                     ) : (
                                         <div className="flex justify-between gap-3">
                                             <span className="text-white/80">
-                                                {product.name}{' '}
+                                                {productName}{' '}
                                                 <span className="text-white/50">
-                                                    ×{qty}
+                                                    ×{text.num(qty)}
                                                 </span>
                                             </span>
                                             <span className="font-semibold">
-                                                {formatCurrency(subtotal)}
+                                                {text.money(subtotal)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="space-y-2 border-t border-white/10 pt-3">
                                         <div className="flex justify-between text-white/70">
-                                            <span>Subtotal</span>
-                                            <span>
-                                                {formatCurrency(subtotal)}
-                                            </span>
+                                            <span>{text.t('subtotal')}</span>
+                                            <span>{text.money(subtotal)}</span>
                                         </div>
                                         {savings > 0 && (
                                             <div className="flex justify-between font-semibold text-emerald-400">
-                                                <span>You save</span>
                                                 <span>
-                                                    −{formatCurrency(savings)}
+                                                    {text.t('you_save')}
+                                                </span>
+                                                <span>
+                                                    −{text.money(savings)}
                                                 </span>
                                             </div>
                                         )}
                                         <div className="flex justify-between text-white/70">
-                                            <span>Delivery</span>
+                                            <span>{text.t('delivery')}</span>
                                             <span>
                                                 {product.free_delivery
-                                                    ? 'Free'
+                                                    ? text.t('free')
                                                     : locationChosen
                                                       ? shipping === 0
-                                                          ? 'Free'
-                                                          : formatCurrency(
-                                                                shipping,
-                                                            )
-                                                      : 'Pick your area below'}
+                                                          ? text.t('free')
+                                                          : text.money(shipping)
+                                                      : text.t(
+                                                            'pick_area_below',
+                                                        )}
                                             </span>
                                         </div>
                                     </div>
                                     <div className="flex items-baseline justify-between border-t border-white/10 pt-4">
                                         <span className="text-base font-bold">
-                                            Total
+                                            {text.t('total')}
                                         </span>
                                         <span className="text-2xl font-bold text-amber-400">
-                                            {formatCurrency(
+                                            {text.money(
                                                 product.free_delivery ||
                                                     locationChosen
                                                     ? total
@@ -1042,7 +1130,7 @@ function OrderSection({
                                 className={cn(cardBase, 'space-y-3 p-4 sm:p-5')}
                             >
                                 <h3 className="text-sm font-bold text-slate-900">
-                                    Delivery details
+                                    {text.t('delivery_details')}
                                 </h3>
                                 <HoneypotField
                                     value={data.sd_confirm_ref}
@@ -1057,13 +1145,15 @@ function OrderSection({
                                             htmlFor={`${fieldId}-name`}
                                             required
                                         >
-                                            Full Name
+                                            {text.t('full_name')}
                                         </FieldLabel>
                                         <input
                                             maxLength={100}
                                             id={`${fieldId}-name`}
                                             className={fieldClass}
-                                            placeholder="Your full name"
+                                            placeholder={text.t(
+                                                'full_name_placeholder',
+                                            )}
                                             value={data.name}
                                             onChange={(e) =>
                                                 setData('name', e.target.value)
@@ -1080,7 +1170,7 @@ function OrderSection({
                                             htmlFor={`${fieldId}-phone`}
                                             required
                                         >
-                                            Phone Number
+                                            {text.t('phone_number')}
                                         </FieldLabel>
                                         <input
                                             id={`${fieldId}-phone`}
@@ -1103,9 +1193,9 @@ function OrderSection({
                                 </div>
                                 <div>
                                     <FieldLabel htmlFor={`${fieldId}-email`}>
-                                        Email{' '}
+                                        {text.t('email')}{' '}
                                         <span className="font-normal text-slate-600">
-                                            (optional)
+                                            {text.t('optional')}
                                         </span>
                                     </FieldLabel>
                                     <input
@@ -1124,13 +1214,15 @@ function OrderSection({
                                         htmlFor={`${fieldId}-address`}
                                         required
                                     >
-                                        Address
+                                        {text.t('address')}
                                     </FieldLabel>
                                     <input
                                         maxLength={200}
                                         id={`${fieldId}-address`}
                                         className={fieldClass}
-                                        placeholder="House, road, area"
+                                        placeholder={text.t(
+                                            'address_placeholder',
+                                        )}
                                         value={data.address_line1}
                                         onChange={(e) =>
                                             setData(
@@ -1149,7 +1241,7 @@ function OrderSection({
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
                                         <Select
-                                            label="District"
+                                            label={text.t('district')}
                                             required
                                             labelClassName="text-slate-700"
                                             containerClassName="space-y-0 [&>label]:mb-1 [&>label]:block"
@@ -1160,11 +1252,11 @@ function OrderSection({
                                             }
                                         >
                                             <option value="">
-                                                Select district
+                                                {text.t('select_district')}
                                             </option>
                                             {BD_DISTRICTS.map((d) => (
                                                 <option key={d} value={d}>
-                                                    {d}
+                                                    {text.district(d)}
                                                 </option>
                                             ))}
                                         </Select>
@@ -1177,7 +1269,7 @@ function OrderSection({
                                     <div>
                                         {data.state === 'Dhaka' ? (
                                             <Select
-                                                label="Area"
+                                                label={text.t('area')}
                                                 required
                                                 labelClassName="text-slate-700"
                                                 containerClassName="space-y-0 [&>label]:mb-1 [&>label]:block"
@@ -1188,13 +1280,17 @@ function OrderSection({
                                                 }
                                             >
                                                 <option value="">
-                                                    Select area
+                                                    {text.t('select_area')}
                                                 </option>
                                                 <option value="Inside Dhaka City Corporation">
-                                                    Inside Dhaka City
+                                                    {text.t(
+                                                        'inside_dhaka_city',
+                                                    )}
                                                 </option>
                                                 <option value="Outside Dhaka City Corporation">
-                                                    Outside Dhaka City
+                                                    {text.t(
+                                                        'outside_dhaka_city',
+                                                    )}
                                                 </option>
                                             </Select>
                                         ) : (
@@ -1203,13 +1299,15 @@ function OrderSection({
                                                     htmlFor={`${fieldId}-city`}
                                                     required
                                                 >
-                                                    City / Upazila
+                                                    {text.t('city_upazila')}
                                                 </FieldLabel>
                                                 <input
                                                     maxLength={60}
                                                     id={`${fieldId}-city`}
                                                     className={fieldClass}
-                                                    placeholder="City or upazila"
+                                                    placeholder={text.t(
+                                                        'city_placeholder',
+                                                    )}
                                                     value={data.city}
                                                     onChange={(e) =>
                                                         updateCity(
@@ -1229,9 +1327,12 @@ function OrderSection({
 
                                 <div>
                                     <FieldLabel htmlFor={`${fieldId}-notes`}>
-                                        {sel.notes_label || 'Order notes'}{' '}
+                                        {text.pick(
+                                            sel.notes_label,
+                                            selBn.notes_label,
+                                        ) || text.t('order_notes')}{' '}
                                         <span className="font-normal text-slate-600">
-                                            (optional)
+                                            {text.t('optional')}
                                         </span>
                                     </FieldLabel>
                                     <textarea
@@ -1240,8 +1341,10 @@ function OrderSection({
                                         maxLength={500}
                                         className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10 focus:outline-none"
                                         placeholder={
-                                            sel.notes_placeholder ||
-                                            'Anything we should know? (optional)'
+                                            text.pick(
+                                                sel.notes_placeholder,
+                                                selBn.notes_placeholder,
+                                            ) || text.t('notes_placeholder')
                                         }
                                         value={data.notes}
                                         onChange={(e) =>
@@ -1263,7 +1366,7 @@ function OrderSection({
                                 {/* Payment method */}
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-slate-700">
-                                        Payment Method
+                                        {text.t('payment_method')}
                                     </p>
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                         <label
@@ -1291,7 +1394,7 @@ function OrderSection({
                                                 className="accent-brand"
                                             />
                                             <span className="text-sm font-semibold">
-                                                Cash on Delivery
+                                                {text.t('cash_on_delivery')}
                                             </span>
                                         </label>
                                         {(bkashNumber || nagadNumber) && (
@@ -1327,12 +1430,12 @@ function OrderSection({
                                                     className="accent-brand"
                                                 />
                                                 <span className="text-sm font-semibold">
-                                                    Mobile Banking (Bkash /
-                                                    Nagad)
+                                                    {text.t('mobile_banking')}
                                                     {!mobileBankingAvailable && (
                                                         <span className="ml-1 font-normal text-slate-600">
-                                                            — temporarily
-                                                            unavailable
+                                                            {text.t(
+                                                                'temporarily_unavailable',
+                                                            )}
                                                         </span>
                                                     )}
                                                 </span>
@@ -1361,7 +1464,7 @@ function OrderSection({
                                                         className="[--control-color:var(--color-pink-600)]"
                                                     />
                                                     <span className="text-sm font-semibold text-pink-700">
-                                                        Bkash
+                                                        {text.t('bkash')}
                                                     </span>
                                                 </label>
                                             )}
@@ -1384,7 +1487,7 @@ function OrderSection({
                                                         className="[--control-color:var(--color-orange-600)]"
                                                     />
                                                     <span className="text-sm font-semibold text-orange-700">
-                                                        Nagad
+                                                        {text.t('nagad')}
                                                     </span>
                                                 </label>
                                             )}
@@ -1408,18 +1511,19 @@ function OrderSection({
                                     />
                                     <span className="relative">
                                         {processing
-                                            ? 'Placing Order…'
-                                            : `Place Order · ${formatCurrency(
-                                                  product.free_delivery ||
-                                                      locationChosen
-                                                      ? total
-                                                      : subtotal,
-                                              )}`}
+                                            ? text.t('placing_order')
+                                            : text.t('place_order', {
+                                                  amount: text.money(
+                                                      product.free_delivery ||
+                                                          locationChosen
+                                                          ? total
+                                                          : subtotal,
+                                                  ),
+                                              })}
                                     </span>
                                 </button>
                                 <p className="text-center text-xs text-slate-600">
-                                    🔒 Your details are only used to deliver
-                                    this order.
+                                    {text.t('details_privacy')}
                                 </p>
                             </div>
                         </div>
@@ -1467,6 +1571,44 @@ export default function LandingPageShow({
     orderToken,
 }: Props) {
     const sec = page.sections;
+    // DISC-65: the visitor's language and the page's Bangla text (empty when Bangla is off).
+    const text = useLandingLanguage({
+        slug: page.slug,
+        bangla_enabled: page.bangla_enabled,
+        default_language: page.default_language,
+    });
+    const bn: Sections = page.sections_bn ?? {};
+    const productBn = bn.product ?? {};
+    const productName = text.pick(product.name, productBn.name);
+    const names = useMemo<AttributeNames>(() => {
+        if (!text.isBangla) {
+            return PLAIN_NAMES;
+        }
+
+        const attributeNames = new Map<string, string>(
+            ((productBn.attribute_names ?? []) as { en: string; bn: string }[])
+                .filter((row) => row?.bn?.trim())
+                .map((row) => [row.en, row.bn]),
+        );
+        const valueNames = new Map<string, string>(
+            (
+                (productBn.value_names ?? []) as {
+                    attribute: string;
+                    en: string;
+                    bn: string;
+                }[]
+            )
+                .filter((row) => row?.bn?.trim())
+                .map((row) => [`${row.attribute}\u0000${row.en}`, row.bn]),
+        );
+
+        return {
+            attribute: (name) => attributeNames.get(name) ?? name,
+            value: (attribute, value) =>
+                valueNames.get(`${attribute}\u0000${value}`) ?? value,
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [text.isBangla, page.sections_bn]);
     const { settings } = usePage<SharedPageProps>().props;
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
     const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
@@ -1510,20 +1652,24 @@ export default function LandingPageShow({
     // pick-list beside the description and the order section.
     const options = useMemo<Option[]>(() => {
         const variantById = new Map(product.variants.map((v) => [v.id, v]));
+        const optionFallback = text.t('option');
         const comboOptions: Option[] = combos.map((combo) => ({
             key: `c:${combo.id}`,
             kind: 'combo',
             id: combo.id,
-            name: combo.name,
+            name: text.pick(combo.name, bn.combos?.[combo.id]?.name),
             detail:
-                combo.description ||
+                text.pick(
+                    combo.description,
+                    bn.combos?.[combo.id]?.description,
+                ) ||
                 combo.items
                     .map(
                         (item) =>
-                            `${item.quantity > 1 ? `${item.quantity}× ` : ''}${variantShortName(item.attributes)}`,
+                            `${item.quantity > 1 ? `${text.num(item.quantity)}× ` : ''}${variantShortName(item.attributes, names, optionFallback)}`,
                     )
                     .join(' + '),
-            badge: combo.badge,
+            badge: text.pick(combo.badge, bn.combos?.[combo.id]?.badge),
             price: combo.price,
             compare: combo.compare_price,
             stock: combo.stock_quantity,
@@ -1541,7 +1687,11 @@ export default function LandingPageShow({
                       key: `v:${v.id}`,
                       kind: 'variant',
                       id: v.id,
-                      name: variantShortName(v.attributes),
+                      name: variantShortName(
+                          v.attributes,
+                          names,
+                          optionFallback,
+                      ),
                       detail: '',
                       badge: '',
                       price: v.price,
@@ -1553,7 +1703,14 @@ export default function LandingPageShow({
                   }));
 
         return [...comboOptions, ...singleOptions];
-    }, [combos, product.variants, sec.selection?.show_single_options]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        combos,
+        product.variants,
+        sec.selection?.show_single_options,
+        names,
+        text.isBangla,
+    ]);
 
     const [selection, setSelection] = useState<Selection>({});
     const selectedUnits = options.reduce(
@@ -1664,26 +1821,47 @@ export default function LandingPageShow({
         };
     }, []);
 
-    const ctaText = sec.hero?.cta_text || 'Order Now';
+    const heroBn = bn.hero ?? {};
+    const ctaText =
+        text.pick(sec.hero?.cta_text, heroBn.cta_text) || text.t('order_now');
+    // Bangla feature boxes line up with the English ones by position.
     const features = (
         (sec.hero?.features ?? []) as {
             title: string;
             text: string;
         }[]
-    ).filter((f) => f.title);
+    )
+        .map((f, i) => ({
+            ...f,
+            title: text.pick(f.title, heroBn.features?.[i]?.title),
+            text: text.pick(f.text, heroBn.features?.[i]?.text),
+            hasEnglishTitle: Boolean(f.title),
+        }))
+        .filter((f) => f.hasEnglishTitle);
     const delivery = sec.delivery ?? {};
+    const deliveryBn = bn.delivery ?? {};
     const description = sec.description ?? {};
+    const descriptionBn = bn.description ?? {};
+    const testimonialsBn = bn.testimonials ?? {};
+    const faqBn = bn.faq ?? {};
 
     return (
         <>
-            <Head title={page.title}>
+            <Head
+                title={
+                    text.isBangla && page.title_bn ? page.title_bn : page.title
+                }
+            >
                 <style>{landingCss}</style>
+                {page.bangla_enabled && <style>{BANGLA_FONT_CSS}</style>}
             </Head>
             <div
                 className="min-h-screen bg-[#faf7f2] pb-24 lg:pb-0"
+                lang={page.bangla_enabled ? text.lang : undefined}
                 style={{
-                    fontFamily:
-                        "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif, 'Kalpurush'",
+                    fontFamily: text.isBangla
+                        ? BANGLA_FONT_FAMILY
+                        : "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif, 'Kalpurush'",
                 }}
             >
                 {/* Header */}
@@ -1698,9 +1876,18 @@ export default function LandingPageShow({
                                 className="h-9 sm:h-10"
                             />
                         </div>
-                        <GlowButton href="#order" size="md">
-                            {ctaText}
-                        </GlowButton>
+                        {page.bangla_enabled ? (
+                            <div className="flex shrink-0 items-center gap-2">
+                                <LanguageSwitch text={text} />
+                                <GlowButton href="#order" size="md">
+                                    {ctaText}
+                                </GlowButton>
+                            </div>
+                        ) : (
+                            <GlowButton href="#order" size="md">
+                                {ctaText}
+                            </GlowButton>
+                        )}
                     </div>
                 </header>
 
@@ -1720,42 +1907,59 @@ export default function LandingPageShow({
                                     {sec.hero?.badge && (
                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 text-[11px] font-bold tracking-wide text-amber-300 uppercase">
                                             <Sparkles className="size-3.5" />
-                                            {sec.hero.badge}
+                                            {text.pick(
+                                                sec.hero.badge,
+                                                heroBn.badge,
+                                            )}
                                         </span>
                                     )}
                                     <h1 className="text-3xl leading-[1.1] font-bold tracking-tight whitespace-pre-line sm:text-4xl lg:text-5xl">
-                                        {sec.hero?.headline || product.name}
+                                        {text.pick(
+                                            sec.hero?.headline,
+                                            heroBn.headline,
+                                        ) || productName}
                                     </h1>
                                     {sec.hero?.subheadline && (
                                         <p className="max-w-xl text-base whitespace-pre-line text-white/75">
-                                            {sec.hero.subheadline}
+                                            {text.pick(
+                                                sec.hero.subheadline,
+                                                heroBn.subheadline,
+                                            )}
                                         </p>
                                     )}
                                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                        {hasVariants && (
-                                            <span className="text-sm text-white/60">
-                                                From
-                                            </span>
-                                        )}
+                                        {hasVariants &&
+                                            text.t('from_prefix') && (
+                                                <span className="text-sm text-white/60">
+                                                    {text.t('from_prefix')}
+                                                </span>
+                                            )}
                                         <span className="text-3xl font-bold text-amber-400">
-                                            {formatCurrency(heroPrice)}
+                                            {text.money(heroPrice)}
                                         </span>
+                                        {hasVariants &&
+                                            text.t('from_suffix') && (
+                                                <span className="text-sm text-white/60">
+                                                    {text.t('from_suffix')}
+                                                </span>
+                                            )}
                                         {heroCompare &&
                                             heroCompare > heroPrice && (
                                                 <>
                                                     <span className="text-base text-white/45 line-through">
-                                                        {formatCurrency(
+                                                        {text.money(
                                                             heroCompare,
                                                         )}
                                                     </span>
                                                     <span className="rounded-full bg-brand px-2.5 py-0.5 text-xs font-extrabold text-brand-foreground">
-                                                        {Math.round(
-                                                            (1 -
-                                                                heroPrice /
-                                                                    heroCompare) *
-                                                                100,
-                                                        )}
-                                                        % OFF
+                                                        {text.t('percent_off', {
+                                                            n: Math.round(
+                                                                (1 -
+                                                                    heroPrice /
+                                                                        heroCompare) *
+                                                                    100,
+                                                            ),
+                                                        })}
                                                     </span>
                                                 </>
                                             )}
@@ -1769,7 +1973,10 @@ export default function LandingPageShow({
                                                 href="#details"
                                                 className="inline-flex h-12 items-center rounded-full border border-white/25 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
                                             >
-                                                {sec.hero.secondary_cta_text}
+                                                {text.pick(
+                                                    sec.hero.secondary_cta_text,
+                                                    heroBn.secondary_cta_text,
+                                                )}
                                             </a>
                                         )}
                                     </div>
@@ -1777,7 +1984,7 @@ export default function LandingPageShow({
                                 <div className="order-1 mx-auto w-full max-w-sm pb-3 lg:order-2 lg:max-w-md">
                                     <HeroCarousel
                                         slides={slides}
-                                        alt={product.name}
+                                        alt={productName}
                                         settings={carousel as CarouselSettings}
                                     />
                                 </div>
@@ -1799,9 +2006,11 @@ export default function LandingPageShow({
                                                 <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
                                                 <span className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-amber-400/15 blur-2xl transition duration-300 group-hover:bg-amber-400/35" />
                                                 <span className="absolute top-2 right-4 text-5xl leading-none font-black text-white/[0.06] select-none">
-                                                    {String(i + 1).padStart(
-                                                        2,
-                                                        '0',
+                                                    {text.num(
+                                                        String(i + 1).padStart(
+                                                            2,
+                                                            '0',
+                                                        ),
                                                     )}
                                                 </span>
                                                 <span className="relative flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-slate-900 shadow-[0_10px_24px_-8px_rgba(245,166,35,0.7)] ring-4 ring-amber-300/15 transition duration-300 group-hover:scale-105 group-hover:-rotate-3">
@@ -1843,7 +2052,7 @@ export default function LandingPageShow({
                                             focusedVariant?.image ? (
                                                 <img
                                                     src={focusedVariant.image}
-                                                    alt={`${product.name} – ${variantName(focusedVariant)}`}
+                                                    alt={`${productName} – ${variantName(focusedVariant, names, text.t('option'))}`}
                                                     className="aspect-square w-full rounded-2xl bg-slate-50 object-contain"
                                                 />
                                             ) : orderedMedia[activeMediaIdx]
@@ -1869,7 +2078,7 @@ export default function LandingPageShow({
                                                             activeMediaIdx
                                                         ]?.path
                                                     }
-                                                    alt={product.name}
+                                                    alt={productName}
                                                     className="aspect-square w-full rounded-2xl bg-slate-50 object-contain"
                                                 />
                                             )}
@@ -1888,7 +2097,13 @@ export default function LandingPageShow({
                                                                 i,
                                                             );
                                                         }}
-                                                        aria-label={`Show ${item.type} ${i + 1}`}
+                                                        aria-label={text.t(
+                                                            item.type ===
+                                                                'video'
+                                                                ? 'show_video'
+                                                                : 'show_image',
+                                                            { n: i + 1 },
+                                                        )}
                                                         className={cn(
                                                             'relative size-16 shrink-0 overflow-hidden rounded-2xl border-2 bg-white transition',
                                                             i ===
@@ -1940,20 +2155,31 @@ export default function LandingPageShow({
                                         {description.badge && (
                                             <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-0.5 text-[11px] font-bold tracking-wide text-brand-foreground uppercase">
                                                 <Sparkles className="size-3.5" />
-                                                {description.badge}
+                                                {text.pick(
+                                                    description.badge,
+                                                    descriptionBn.badge,
+                                                )}
                                             </span>
                                         )}
                                         <h2 className="text-2xl font-bold tracking-tight whitespace-pre-line text-slate-900 sm:text-3xl">
-                                            {description.title}
+                                            {text.pick(
+                                                description.title,
+                                                descriptionBn.title,
+                                            )}
                                         </h2>
                                         <div
                                             className="prose max-w-none text-slate-600 prose-slate"
                                             dangerouslySetInnerHTML={{
                                                 __html:
                                                     (description.use_product_description
-                                                        ? product.description
-                                                        : description.custom_content) ??
-                                                    '',
+                                                        ? text.pick(
+                                                              product.description,
+                                                              productBn.description,
+                                                          )
+                                                        : text.pick(
+                                                              description.custom_content,
+                                                              descriptionBn.custom_content,
+                                                          )) ?? '',
                                             }}
                                         />
                                     </div>
@@ -1968,12 +2194,17 @@ export default function LandingPageShow({
                                     >
                                         <div>
                                             <h3 className="text-base font-bold text-slate-900">
-                                                {description.selection_title ||
-                                                    'Choose your set'}
+                                                {text.pick(
+                                                    description.selection_title,
+                                                    descriptionBn.selection_title,
+                                                ) || text.t('choose_your_set')}
                                             </h3>
                                             {description.selection_hint && (
                                                 <p className="mt-0.5 text-sm text-slate-600">
-                                                    {description.selection_hint}
+                                                    {text.pick(
+                                                        description.selection_hint,
+                                                        descriptionBn.selection_hint,
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
@@ -1983,6 +2214,7 @@ export default function LandingPageShow({
                                                     key={option.key}
                                                     option={option}
                                                     mode="pick"
+                                                    text={text}
                                                     qty={
                                                         selection[option.key] ??
                                                         0
@@ -2014,7 +2246,9 @@ export default function LandingPageShow({
                                     className="w-full sm:w-auto"
                                 >
                                     {selectedUnits > 0
-                                        ? `Continue to order (${selectedUnits})`
+                                        ? text.t('continue_to_order', {
+                                              n: selectedUnits,
+                                          })
                                         : ctaText}
                                 </GlowButton>
                             </div>
@@ -2034,17 +2268,26 @@ export default function LandingPageShow({
                                 <Truck className="size-6" />
                             </span>
                             <h2 className="text-2xl font-bold tracking-tight whitespace-pre-line sm:text-3xl">
-                                {delivery.title}
+                                {text.pick(delivery.title, deliveryBn.title)}
                             </h2>
                             {delivery.text && (
                                 <p className="mx-auto mt-3 max-w-2xl text-sm whitespace-pre-line text-white/75">
-                                    {delivery.text}
+                                    {text.pick(delivery.text, deliveryBn.text)}
                                 </p>
                             )}
                             {(delivery.areas ?? []).filter(Boolean).length >
                                 0 && (
                                 <div className="mt-4 flex flex-wrap justify-center gap-1.5">
                                     {(delivery.areas as string[])
+                                        // Bangla areas line up with the English ones by position.
+                                        .map((area, i) =>
+                                            area
+                                                ? text.pick(
+                                                      area,
+                                                      deliveryBn.areas?.[i],
+                                                  )
+                                                : area,
+                                        )
                                         .filter(Boolean)
                                         .map((area, i) => (
                                             <span
@@ -2060,24 +2303,20 @@ export default function LandingPageShow({
                             <div className="mx-auto mt-5 inline-flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm">
                                 {product.free_delivery ? (
                                     <span className="font-bold text-emerald-300">
-                                        ✓ Free delivery on this product
+                                        {text.t('free_delivery_product')}
                                     </span>
                                 ) : (
                                     <>
                                         <span>
-                                            Inside Dhaka City:{' '}
+                                            {text.t('inside_dhaka_rate')}{' '}
                                             <strong className="text-amber-300">
-                                                {formatCurrency(
-                                                    insideDhakaRate,
-                                                )}
+                                                {text.money(insideDhakaRate)}
                                             </strong>
                                         </span>
                                         <span>
-                                            Outside Dhaka:{' '}
+                                            {text.t('outside_dhaka_rate')}{' '}
                                             <strong className="text-amber-300">
-                                                {formatCurrency(
-                                                    outsideDhakaRate,
-                                                )}
+                                                {text.money(outsideDhakaRate)}
                                             </strong>
                                         </span>
                                     </>
@@ -2085,13 +2324,19 @@ export default function LandingPageShow({
                             </div>
                             <div className="mt-6 flex flex-col items-center gap-4">
                                 <GlowButton href="#order" size="xl">
-                                    {delivery.cta_text || ctaText}
+                                    {text.pick(
+                                        delivery.cta_text,
+                                        deliveryBn.cta_text,
+                                    ) || ctaText}
                                 </GlowButton>
                                 {contactPhone && (
                                     <div className="space-y-1">
                                         {delivery.contact_label && (
                                             <p className="text-sm text-white/60">
-                                                {delivery.contact_label}
+                                                {text.pick(
+                                                    delivery.contact_label,
+                                                    deliveryBn.contact_label,
+                                                )}
                                             </p>
                                         )}
                                         <a
@@ -2123,6 +2368,9 @@ export default function LandingPageShow({
                     nagadNumber={nagadNumber}
                     orderToken={orderToken}
                     pendingPayment={pendingPayment}
+                    text={text}
+                    bn={bn}
+                    productName={productName}
                 />
 
                 {/* Testimonials: written reviews, or a carousel of pictures */}
@@ -2135,14 +2383,19 @@ export default function LandingPageShow({
                                 className={`mx-auto ${sec.testimonials.mode === 'image' ? 'max-w-6xl' : 'max-w-4xl'}`}
                             >
                                 <h2 className="mb-5 text-center text-xl font-semibold text-slate-900">
-                                    {sec.testimonials.title}
+                                    {text.pick(
+                                        sec.testimonials.title,
+                                        testimonialsBn.title,
+                                    )}
                                 </h2>
                                 {sec.testimonials.mode === 'image' ? (
                                     <TestimonialCarousel
                                         images={sec.testimonials.images}
                                         label={
-                                            sec.testimonials.title ||
-                                            'Customer testimonials'
+                                            text.pick(
+                                                sec.testimonials.title,
+                                                testimonialsBn.title,
+                                            ) || text.t('customer_testimonials')
                                         }
                                     />
                                 ) : (
@@ -2162,12 +2415,23 @@ export default function LandingPageShow({
                                                             className="prose prose-sm mt-2 max-w-none [overflow-wrap:anywhere] text-slate-600 prose-p:my-1.5 prose-p:leading-relaxed prose-ol:my-1.5 prose-ul:my-1.5"
                                                             dangerouslySetInnerHTML={{
                                                                 __html:
-                                                                    item.text ??
-                                                                    '',
+                                                                    text.pick(
+                                                                        item.text,
+                                                                        testimonialsBn
+                                                                            .items?.[
+                                                                            i
+                                                                        ]?.text,
+                                                                    ) ?? '',
                                                             }}
                                                         />
                                                         <p className="mt-3 text-xs font-semibold text-slate-800">
-                                                            — {item.name}
+                                                            —{' '}
+                                                            {text.pick(
+                                                                item.name,
+                                                                testimonialsBn
+                                                                    .items?.[i]
+                                                                    ?.name,
+                                                            )}
                                                         </p>
                                                     </div>
                                                 ),
@@ -2183,7 +2447,7 @@ export default function LandingPageShow({
                     <section className="px-4 py-10">
                         <div className="mx-auto max-w-2xl">
                             <h2 className="mb-4 text-center text-xl font-semibold text-slate-900">
-                                {sec.faq.title}
+                                {text.pick(sec.faq.title, faqBn.title)}
                             </h2>
                             <div className="space-y-2">
                                 {sec.faq.items.map(
@@ -2204,7 +2468,11 @@ export default function LandingPageShow({
                                                     }
                                                     className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
                                                 >
-                                                    {item.question}
+                                                    {text.pick(
+                                                        item.question,
+                                                        faqBn.items?.[i]
+                                                            ?.question,
+                                                    )}
                                                     {openFaq === i ? (
                                                         <ChevronUp className="size-4 shrink-0 text-slate-400" />
                                                     ) : (
@@ -2213,7 +2481,11 @@ export default function LandingPageShow({
                                                 </button>
                                                 {openFaq === i && (
                                                     <div className="px-4 pb-3 text-sm leading-relaxed text-slate-600">
-                                                        {item.answer}
+                                                        {text.pick(
+                                                            item.answer,
+                                                            faqBn.items?.[i]
+                                                                ?.answer,
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -2241,7 +2513,10 @@ export default function LandingPageShow({
                                     />
                                     {sec.footer.text && (
                                         <p className="max-w-xs text-center text-xs whitespace-pre-line text-slate-400 sm:text-left">
-                                            {sec.footer.text}
+                                            {text.pick(
+                                                sec.footer.text,
+                                                bn.footer?.text,
+                                            )}
                                         </p>
                                     )}
                                 </div>
@@ -2249,7 +2524,7 @@ export default function LandingPageShow({
                                 {/* Contact info */}
                                 <div className="flex flex-col items-center gap-3 sm:items-end">
                                     <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
-                                        Contact Us
+                                        {text.t('contact_us')}
                                     </p>
                                     {settings.contact_phone && (
                                         <a
@@ -2290,8 +2565,9 @@ export default function LandingPageShow({
                             {/* Divider + copyright */}
                             <div className="mt-6 border-t border-slate-800 pt-4 text-center">
                                 <p className="text-xs text-slate-500">
-                                    &copy; {new Date().getFullYear()} {siteName}
-                                    . All rights reserved.
+                                    &copy; {text.num(new Date().getFullYear())}{' '}
+                                    {siteName}
+                                    {text.t('all_rights_reserved')}
                                 </p>
                             </div>
                         </div>

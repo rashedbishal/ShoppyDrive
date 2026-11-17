@@ -71,6 +71,7 @@ class LandingPageController extends Controller
             'product_id' => ['required', 'integer', $this->productExistsRule()],
             'is_active' => ['boolean'],
             'max_order_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
+            ...$this->languageRules(),
         ]);
 
         LandingPage::create([
@@ -80,6 +81,8 @@ class LandingPageController extends Controller
             'is_active' => $request->boolean('is_active', true),
             'max_order_quantity' => $request->integer('max_order_quantity', 100),
             'sections' => LandingPage::defaultSections(),
+            'bangla_enabled' => $request->boolean('bangla_enabled'),
+            'default_language' => $request->input('default_language') ?? 'en',
         ]);
 
         return redirect()->route('admin.landing-pages.index')
@@ -92,8 +95,10 @@ class LandingPageController extends Controller
             ->get(['id', 'name', 'price', 'is_active']);
 
         return Inertia::render('admin/landing-pages/edit', [
-            'page' => $landingPage->load('product:id,name,price,free_delivery'),
+            // DISC-65: description too, shown beside its Bangla box.
+            'page' => $landingPage->load('product:id,name,price,free_delivery,description'),
             'sections' => $landingPage->getSections(),
+            'sectionsBn' => (object) $landingPage->banglaSections(),
             'products' => $products,
             // The page's saved product: its images feed the hero carousel and
             // its variants feed the combo builder.
@@ -113,6 +118,9 @@ class LandingPageController extends Controller
             'sections' => ['nullable', 'array'],
             'sections.description.custom_content' => ['nullable', 'string', 'max:20000'],
             ...$this->sectionRules((int) $request->input('product_id')),
+            ...$this->languageRules(),
+            'title_bn' => ['nullable', 'string', 'max:100'],
+            ...$this->banglaSectionRules(),
         ]);
 
         $landingPage->update([
@@ -122,6 +130,12 @@ class LandingPageController extends Controller
             'is_active' => $request->boolean('is_active'),
             'max_order_quantity' => $request->integer('max_order_quantity', (int) $landingPage->max_order_quantity),
             'sections' => $request->input('sections', $landingPage->sections),
+            // DISC-65: Bangla text is saved whether Bangla is on or off, so
+            // turning it off only hides it.
+            'bangla_enabled' => $request->boolean('bangla_enabled', (bool) $landingPage->bangla_enabled),
+            'default_language' => $request->input('default_language') ?? $landingPage->default_language ?? 'en',
+            'title_bn' => $request->input('title_bn', $landingPage->title_bn),
+            'sections_bn' => $request->input('sections_bn', $landingPage->sections_bn),
         ]);
 
         return redirect()->route('admin.landing-pages.index')
@@ -168,11 +182,7 @@ class LandingPageController extends Controller
             'sections.testimonials.items' => ['nullable', 'array', 'max:12'],
             'sections.testimonials.items.*.name' => ['nullable', 'string', 'max:60'],
             // Rich text: up to 2,000 characters of HTML, but at most 400 characters a visitor can read.
-            'sections.testimonials.items.*.text' => ['nullable', 'string', 'max:2000', function (string $attribute, mixed $value, \Closure $fail): void {
-                if (is_string($value) && mb_strlen(html_entity_decode(strip_tags($value))) > 400) {
-                    $fail('The review text can be at most 400 characters, not counting formatting.');
-                }
-            }],
+            'sections.testimonials.items.*.text' => ['nullable', 'string', 'max:2000', $this->reviewTextRule()],
             'sections.testimonials.items.*.rating' => ['nullable', 'integer', 'between:1,5'],
             'sections.faq.title' => ['nullable', 'string', 'max:80'],
             'sections.faq.items' => ['nullable', 'array', 'max:20'],
@@ -202,6 +212,91 @@ class LandingPageController extends Controller
             'sections.combos.*.items' => ['required', 'array', 'min:1', 'max:10'],
             'sections.combos.*.items.*.variant_id' => ['required', 'integer', $variantExists],
             'sections.combos.*.items.*.quantity' => ['required', 'integer', 'min:1', 'max:10'],
+        ];
+    }
+
+    /** Rich text: up to 2,000 characters of HTML, but at most 400 characters a visitor can read. */
+    private function reviewTextRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if (is_string($value) && mb_strlen(html_entity_decode(strip_tags($value))) > 400) {
+                $fail('The review text can be at most 400 characters, not counting formatting.');
+            }
+        };
+    }
+
+    /**
+     * DISC-65: the Bangla switch and the language a visitor sees first.
+     *
+     * @return array<string, mixed>
+     */
+    private function languageRules(): array
+    {
+        return [
+            'bangla_enabled' => ['boolean'],
+            'default_language' => ['nullable', Rule::in(LandingPage::LANGUAGES)],
+        ];
+    }
+
+    /**
+     * DISC-65: the Bangla text, with the same length limits as the English
+     * field each one translates. Lists line up index-for-index with the
+     * English lists; combos are keyed by combo id.
+     *
+     * @return array<string, mixed>
+     */
+    private function banglaSectionRules(): array
+    {
+        $text = fn (int $max): array => ['nullable', 'string', 'max:'.$max];
+
+        return [
+            'sections_bn' => ['nullable', 'array'],
+            'sections_bn.hero.badge' => $text(40),
+            'sections_bn.hero.headline' => $text(120),
+            'sections_bn.hero.subheadline' => $text(250),
+            'sections_bn.hero.cta_text' => $text(30),
+            'sections_bn.hero.secondary_cta_text' => $text(30),
+            'sections_bn.hero.features' => ['nullable', 'array', 'max:3'],
+            'sections_bn.hero.features.*.title' => $text(60),
+            'sections_bn.hero.features.*.text' => $text(140),
+            'sections_bn.description.badge' => $text(40),
+            'sections_bn.description.title' => $text(120),
+            'sections_bn.description.custom_content' => $text(20000),
+            'sections_bn.description.selection_title' => $text(60),
+            'sections_bn.description.selection_hint' => $text(140),
+            'sections_bn.gallery.title' => $text(60),
+            'sections_bn.delivery.title' => $text(80),
+            'sections_bn.delivery.text' => $text(400),
+            'sections_bn.delivery.areas' => ['nullable', 'array', 'max:30'],
+            'sections_bn.delivery.areas.*' => $text(40),
+            'sections_bn.delivery.cta_text' => $text(30),
+            'sections_bn.delivery.contact_label' => $text(60),
+            'sections_bn.selection.title' => $text(80),
+            'sections_bn.selection.subtitle' => $text(160),
+            'sections_bn.selection.notes_label' => $text(40),
+            'sections_bn.selection.notes_placeholder' => $text(100),
+            'sections_bn.testimonials.title' => $text(80),
+            'sections_bn.testimonials.items' => ['nullable', 'array', 'max:12'],
+            'sections_bn.testimonials.items.*.name' => $text(60),
+            'sections_bn.testimonials.items.*.text' => ['nullable', 'string', 'max:2000', $this->reviewTextRule()],
+            'sections_bn.faq.title' => $text(80),
+            'sections_bn.faq.items' => ['nullable', 'array', 'max:20'],
+            'sections_bn.faq.items.*.question' => $text(160),
+            'sections_bn.faq.items.*.answer' => $text(800),
+            'sections_bn.footer.text' => $text(400),
+            'sections_bn.combos' => ['nullable', 'array', 'max:12'],
+            'sections_bn.combos.*.name' => $text(50),
+            'sections_bn.combos.*.description' => $text(100),
+            'sections_bn.combos.*.badge' => $text(20),
+            'sections_bn.product.name' => $text(255),
+            'sections_bn.product.description' => $text(20000),
+            'sections_bn.product.attribute_names' => ['nullable', 'array', 'max:50'],
+            'sections_bn.product.attribute_names.*.en' => ['required', 'string', 'max:255'],
+            'sections_bn.product.attribute_names.*.bn' => $text(100),
+            'sections_bn.product.value_names' => ['nullable', 'array', 'max:500'],
+            'sections_bn.product.value_names.*.attribute' => ['required', 'string', 'max:255'],
+            'sections_bn.product.value_names.*.en' => ['required', 'string', 'max:255'],
+            'sections_bn.product.value_names.*.bn' => $text(100),
         ];
     }
 

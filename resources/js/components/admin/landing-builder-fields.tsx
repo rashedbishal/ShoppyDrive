@@ -886,9 +886,12 @@ export function CombosEditor({
 export function DeliveryEditor({
     sec,
     setSec,
+    onRemoveArea,
 }: {
     sec: Sections;
     setSec: SetSec;
+    /** DISC-65: lets the page drop the Bangla copy of a removed area too. */
+    onRemoveArea?: (index: number) => void;
 }) {
     const delivery = sec.delivery;
     const areas: string[] = delivery.areas ?? [];
@@ -953,11 +956,12 @@ export function DeliveryEditor({
                             </div>
                             <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
                                     set({
                                         areas: areas.filter((_, j) => j !== i),
-                                    })
-                                }
+                                    });
+                                    onRemoveArea?.(i);
+                                }}
                                 className="flex h-9 shrink-0 items-center text-slate-400 hover:text-red-500"
                                 aria-label="Remove area"
                             >

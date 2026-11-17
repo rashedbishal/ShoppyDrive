@@ -1,6 +1,13 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 
+import LanguageSwitch from '@/components/landing/LanguageSwitch';
 import { SiteLogo } from '@/components/shared/SiteLogo';
+import {
+    BANGLA_FONT_CSS,
+    BANGLA_FONT_FAMILY,
+    useLandingLanguage,
+} from '@/lib/landing-i18n';
+import type { LandingLanguageSettings } from '@/lib/landing-i18n';
 
 type Props = {
     token: string;
@@ -12,6 +19,8 @@ type Props = {
     nagadNumber: string | null;
     siteName: string;
     siteLogo: string | null;
+    /** DISC-65: the landing page's language settings. */
+    language?: LandingLanguageSettings | null;
 };
 
 export default function LandingPayment({
@@ -24,34 +33,59 @@ export default function LandingPayment({
     nagadNumber,
     siteName,
     siteLogo,
+    language,
 }: Props) {
+    const text = useLandingLanguage(language);
     const providerNumber = provider === 'bkash' ? bkashNumber : nagadNumber;
-    const providerLabel = provider === 'bkash' ? 'Bkash' : 'Nagad';
+    const providerLabel = text.t(provider === 'bkash' ? 'bkash' : 'nagad');
+    const providerInitial = provider === 'bkash' ? 'B' : 'N';
+    const amountText = text.isBangla
+        ? `৳${text.num(amount.toLocaleString())}`
+        : `৳${amount.toLocaleString()}`;
     const providerColor = provider === 'bkash' ? '#e2136e' : '#f4821f';
 
     const { errors: pageErrors } = usePage<any>().props as {
         errors: Record<string, string>;
     };
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         transaction_id: '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // DISC-65: messages come back in the visitor's language.
+        transform((formData) => ({ ...formData, lang: text.lang }));
         post(route('lp.payment.submit', { slug, token }));
     };
 
     return (
         <>
-            <Head title={`Complete Payment — ${siteName}`} />
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <Head title={`${text.t('complete_payment_title')} — ${siteName}`}>
+                {text.banglaEnabled && <style>{BANGLA_FONT_CSS}</style>}
+            </Head>
+            <div
+                className="flex min-h-screen flex-col bg-slate-50"
+                lang={text.banglaEnabled ? text.lang : undefined}
+                style={
+                    text.isBangla
+                        ? { fontFamily: BANGLA_FONT_FAMILY }
+                        : undefined
+                }
+            >
                 <header className="border-b border-slate-100 bg-white px-4 py-3">
-                    <div className="mx-auto flex max-w-lg items-center">
+                    <div
+                        className={
+                            text.banglaEnabled
+                                ? 'mx-auto flex max-w-lg items-center justify-between gap-3'
+                                : 'mx-auto flex max-w-lg items-center'
+                        }
+                    >
                         <SiteLogo
                             src={siteLogo}
                             name={siteName}
                             className="h-9"
                         />
+                        <LanguageSwitch text={text} tone="light" />
                     </div>
                 </header>
 
@@ -69,14 +103,18 @@ export default function LandingPayment({
                                         className="text-lg font-extrabold"
                                         style={{ color: providerColor }}
                                     >
-                                        {providerLabel[0]}
+                                        {providerInitial}
                                     </span>
                                 </div>
                                 <h1 className="text-lg font-bold text-slate-900">
-                                    Pay via {providerLabel}
+                                    {text.t('pay_via', {
+                                        provider: providerLabel,
+                                    })}
                                 </h1>
                                 <p className="mt-0.5 text-sm text-slate-600">
-                                    Order #{orderNumber}
+                                    {text.t('order_number', {
+                                        number: orderNumber,
+                                    })}
                                 </p>
                             </div>
 
@@ -89,13 +127,15 @@ export default function LandingPayment({
                                 }}
                             >
                                 <p className="mb-1 text-xs text-slate-600">
-                                    Send exactly
+                                    {text.t('send_exactly')}
                                 </p>
                                 <p className="text-3xl font-extrabold text-slate-900">
-                                    ৳{amount.toLocaleString()}
+                                    {amountText}
                                 </p>
                                 <p className="mt-2 text-xs text-slate-600">
-                                    to this {providerLabel} number
+                                    {text.t('to_this_number', {
+                                        provider: providerLabel,
+                                    })}
                                 </p>
                                 <p
                                     className="mt-1 text-xl font-bold"
@@ -104,43 +144,46 @@ export default function LandingPayment({
                                     {providerNumber}
                                 </p>
                                 <p className="mt-2 text-xs text-slate-600">
-                                    Send Money → Personal
+                                    {text.t('send_money_personal')}
                                 </p>
                             </div>
 
                             <ol className="space-y-2 text-sm text-slate-600">
                                 <li className="flex gap-2">
                                     <span className="font-bold text-slate-800">
-                                        1.
+                                        {text.num(1)}.
                                     </span>{' '}
-                                    Open your {providerLabel} app
+                                    {text.t('step_open_app', {
+                                        provider: providerLabel,
+                                    })}
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="font-bold text-slate-800">
-                                        2.
+                                        {text.num(2)}.
                                     </span>{' '}
-                                    Go to <strong>Send Money</strong> and enter
-                                    the number above
+                                    <span>{text.rich('step_send_money')}</span>
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="font-bold text-slate-800">
-                                        3.
+                                        {text.num(3)}.
                                     </span>{' '}
-                                    Send exactly{' '}
-                                    <strong>৳{amount.toLocaleString()}</strong>
+                                    <span>
+                                        {text.rich('step_send_exactly', {
+                                            amount: amountText,
+                                        })}
+                                    </span>
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="font-bold text-slate-800">
-                                        4.
+                                        {text.num(4)}.
                                     </span>{' '}
-                                    Copy the <strong>Transaction ID</strong>{' '}
-                                    from the confirmation SMS
+                                    <span>{text.rich('step_copy_trx')}</span>
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="font-bold text-slate-800">
-                                        5.
+                                        {text.num(5)}.
                                     </span>{' '}
-                                    Enter it below
+                                    {text.t('step_enter_below')}
                                 </li>
                             </ol>
 
@@ -152,7 +195,7 @@ export default function LandingPayment({
                                 )}
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                                        Transaction ID
+                                        {text.t('transaction_id')}
                                     </label>
                                     <input
                                         maxLength={40}
@@ -164,7 +207,9 @@ export default function LandingPayment({
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="e.g. 8G3H2K9P..."
+                                        placeholder={text.t(
+                                            'transaction_id_example',
+                                        )}
                                     />
                                     {errors.transaction_id && (
                                         <p className="mt-1 text-xs text-red-600">
@@ -182,15 +227,14 @@ export default function LandingPayment({
                                     style={{ backgroundColor: providerColor }}
                                 >
                                     {processing
-                                        ? 'Verifying…'
-                                        : 'Confirm Payment'}
+                                        ? text.t('verifying')
+                                        : text.t('confirm_payment')}
                                 </button>
                             </form>
                         </div>
 
                         <p className="text-center text-xs text-slate-600">
-                            Your order will be confirmed once we verify the
-                            transaction.
+                            {text.t('confirmed_once_verified')}
                         </p>
                     </div>
                 </main>
