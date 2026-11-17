@@ -94,6 +94,9 @@
     </head>
     <body class="antialiased">
         @include('partials.boot-loader')
+        @if(!request()->is('admin', 'admin/*'))
+            @include('partials.agent-fallback', ['title' => $seoTags['title'], 'description' => $seoTags['description']])
+        @endif
         <x-inertia::app />
 
         {{-- Custom Footer: same as Custom Header above, rendered just before

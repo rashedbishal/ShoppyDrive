@@ -1339,6 +1339,8 @@ function Home(): React.JSX.Element {
     return (
         <>
             <Head title="Premium BDT shopping" />
+            {/* DISC-57: the page's one top-level heading, for screen readers and agents; visually hidden, so the design is unchanged. */}
+            <h1 className="sr-only">{settings.site_name}</h1>
 
             <div className="space-y-16 py-8 lg:py-12">
                 {orderedSectionBlocks.map((block) => (
