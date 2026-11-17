@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /*
- * DISC-55: the homepage tells search engines and AI agents what business
+ * DISC-61: the homepage tells search engines and AI agents what business
  * this is, from saved Admin › Settings values only. Production has no SSR,
  * so the Blade root view's first response is what they read.
  */

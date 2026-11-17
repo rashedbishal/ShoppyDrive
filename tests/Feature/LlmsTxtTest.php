@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /*
- * DISC-56: /llms.txt summarises the shop for AI agents from live data.
+ * DISC-62: /llms.txt summarises the shop for AI agents from live data.
  */
 
 function llmsTxt(): string

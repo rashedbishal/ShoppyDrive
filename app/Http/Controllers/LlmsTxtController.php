@@ -13,7 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 /**
- * DISC-56: /llms.txt (https://llmstxt.org), a Markdown summary of the shop
+ * DISC-62: /llms.txt (https://llmstxt.org), a Markdown summary of the shop
  * for AI agents, linking its key pages. Built per request from live data
  * (site name, saved contact details, active categories, published policy
  * pages), so it never goes stale the way a committed file would.

@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /*
- * DISC-57: production has no SSR, so agents that don't run JavaScript read
+ * DISC-63: production has no SSR, so agents that don't run JavaScript read
  * only the first HTML response. The <noscript> fallback gives them one <h1>,
  * the footer's About/Contact/policy links and saved contact details.
  */

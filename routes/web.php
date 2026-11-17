@@ -64,7 +64,7 @@ Route::get('/sitemap.xml', function () {
     return response()->file(GenerateSitemapCommand::path(), ['Content-Type' => 'application/xml']);
 })->name('sitemap');
 
-// DISC-56: Markdown summary of the shop for AI agents (llmstxt.org).
+// DISC-62: Markdown summary of the shop for AI agents (llmstxt.org).
 Route::get('/llms.txt', LlmsTxtController::class)->name('llms-txt');
 
 // BIZ-034: return, refund and shipping policies.

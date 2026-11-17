@@ -42,7 +42,7 @@ class GenerateSitemapCommand extends Command
     }
 
     /**
-     * DISC-54: every URL carries <lastmod> (the updated_at of what the page
+     * DISC-60: every URL carries <lastmod> (the updated_at of what the page
      * shows) so crawlers and AI agents can tell what changed. A listing page
      * is dated by its newest item; a page with nothing to date omits it.
      */

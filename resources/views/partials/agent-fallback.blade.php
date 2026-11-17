@@ -1,5 +1,5 @@
 {{--
-    DISC-57: production has no SSR, so without JavaScript the page is only
+    DISC-63: production has no SSR, so without JavaScript the page is only
     the boot loader. AI agents and simple crawlers that don't run JavaScript
     read this instead: one <h1> naming the page, the footer's own links
     (About, Contact, policies) and the saved contact details as tel:/mailto:

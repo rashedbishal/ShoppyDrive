@@ -227,7 +227,7 @@ class HomeController extends Controller
             ];
         }
 
-        // DISC-55: business JSON-LD only; title, description and image
+        // DISC-61: business JSON-LD only; title, description and image
         // keep PageSeo's site defaults, as before.
         View::share('seo', ['jsonLd' => SiteJsonLd::forHome()]);
 

@@ -7,7 +7,7 @@ namespace App\Support;
 use Illuminate\Support\Str;
 
 /**
- * DISC-55: the homepage's JSON-LD, so search engines and AI agents can tell
+ * DISC-61: the homepage's JSON-LD, so search engines and AI agents can tell
  * what business this is. Built only from Admin › Settings values that are
  * actually saved: the storefront's display fallbacks (e.g. the placeholder
  * phone number) are never published as facts. Printed by app.blade.php
