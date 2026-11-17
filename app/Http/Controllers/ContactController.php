@@ -24,7 +24,7 @@ class ContactController extends Controller
      */
     public function show(): Response
     {
-        $settings = Setting::whereIn('key', $this->keys())->pluck('value', 'key');
+        $settings = Setting::whereIn('key', self::keys())->pluck('value', 'key');
 
         return Inertia::render('static/Contact', [
             'content' => [
@@ -79,8 +79,12 @@ class ContactController extends Controller
         }
     }
 
-    /** @return array<int, string> */
-    private function keys(): array
+    /**
+     * The Setting rows this page reads; the sitemap dates the page by them.
+     *
+     * @return array<int, string>
+     */
+    public static function keys(): array
     {
         return [
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',

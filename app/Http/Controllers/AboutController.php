@@ -16,7 +16,7 @@ class AboutController extends Controller
      */
     public function show(): Response
     {
-        $settings = Setting::whereIn('key', $this->keys())->pluck('value', 'key');
+        $settings = Setting::whereIn('key', self::keys())->pluck('value', 'key');
 
         return Inertia::render('static/About', [
             'content' => [
@@ -57,8 +57,12 @@ class AboutController extends Controller
         ]);
     }
 
-    /** @return array<int, string> */
-    private function keys(): array
+    /**
+     * The Setting rows this page reads; the sitemap dates the page by them.
+     *
+     * @return array<int, string>
+     */
+    public static function keys(): array
     {
         return [
             'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
