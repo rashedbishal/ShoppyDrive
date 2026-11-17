@@ -15,6 +15,8 @@ use App\Services\BundleService;
 use App\Support\DisplayOrderSettings;
 use App\Support\LayoutCache;
 use App\Support\ProductCardData;
+use App\Support\SiteJsonLd;
+use Illuminate\Support\Facades\View;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -224,6 +226,10 @@ class HomeController extends Controller
                 })->values(),
             ];
         }
+
+        // DISC-55: business JSON-LD only; title, description and image
+        // keep PageSeo's site defaults, as before.
+        View::share('seo', ['jsonLd' => SiteJsonLd::forHome()]);
 
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,
