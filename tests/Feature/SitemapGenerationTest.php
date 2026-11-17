@@ -138,6 +138,12 @@ test('the sitemap is rebuilt nightly and robots.txt points to it', function () {
         ->and(file_get_contents(public_path('robots.txt')))->toContain('Sitemap: https://shoppydrive.com/sitemap.xml');
 });
 
+test('robots.txt allows search and AI answers but not AI training, for every crawler', function () {
+    $robots = (string) file_get_contents(public_path('robots.txt'));
+
+    expect($robots)->toMatch('/^User-agent: \*\nContent-Signal: search=yes, ai-input=yes, ai-train=no\nDisallow:\n/m');
+});
+
 test('the generated file stays out of public/, where deploys would delete it', function () {
     expect(GenerateSitemapCommand::path())->toStartWith(storage_path('app/private'));
 });
