@@ -28,6 +28,7 @@ import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
+import { BANGLADESH_DISTRICTS } from '@/lib/bangladesh-geography';
 import {
     BANGLA_FONT_CSS,
     BANGLA_FONT_FAMILY,
@@ -178,73 +179,6 @@ type Props = {
     pendingPayment: PendingPayment | null;
     orderToken: string;
 };
-
-const BD_DISTRICTS = [
-    'Bagerhat',
-    'Bandarban',
-    'Barguna',
-    'Barisal',
-    'Bhola',
-    'Bogura',
-    'Brahmanbaria',
-    'Chandpur',
-    'Chapainawabganj',
-    'Chattogram',
-    'Chuadanga',
-    "Cox's Bazar",
-    'Cumilla',
-    'Dhaka',
-    'Dinajpur',
-    'Faridpur',
-    'Feni',
-    'Gaibandha',
-    'Gazipur',
-    'Gopalganj',
-    'Habiganj',
-    'Jamalpur',
-    'Jashore',
-    'Jhalokathi',
-    'Jhenaidah',
-    'Joypurhat',
-    'Khagrachhari',
-    'Khulna',
-    'Kishoreganj',
-    'Kurigram',
-    'Kushtia',
-    'Lakshmipur',
-    'Lalmonirhat',
-    'Madaripur',
-    'Magura',
-    'Manikganj',
-    'Meherpur',
-    'Moulvibazar',
-    'Munshiganj',
-    'Mymensingh',
-    'Naogaon',
-    'Narail',
-    'Narayanganj',
-    'Narsingdi',
-    'Natore',
-    'Netrokona',
-    'Nilphamari',
-    'Noakhali',
-    'Pabna',
-    'Panchagarh',
-    'Patuakhali',
-    'Pirojpur',
-    'Rajbari',
-    'Rajshahi',
-    'Rangamati',
-    'Rangpur',
-    'Satkhira',
-    'Shariatpur',
-    'Sherpur',
-    'Sirajganj',
-    'Sunamganj',
-    'Sylhet',
-    'Tangail',
-    'Thakurgaon',
-];
 
 function calcShipping(
     state: string,
@@ -1254,7 +1188,7 @@ function OrderSection({
                                             <option value="">
                                                 {text.t('select_district')}
                                             </option>
-                                            {BD_DISTRICTS.map((d) => (
+                                            {BANGLADESH_DISTRICTS.map((d) => (
                                                 <option key={d} value={d}>
                                                     {text.district(d)}
                                                 </option>

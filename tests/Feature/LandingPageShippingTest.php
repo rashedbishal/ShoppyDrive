@@ -83,3 +83,29 @@ test('a landing-page order above the sitewide free-delivery threshold charges no
 
     expect(Order::query()->firstOrFail()->shipping_cost)->toBe(0.0);
 });
+
+/*
+ * The landing page used to keep its own district list, with three names spelt
+ * differently from the server's (Barisal, Chapainawabganj, Jhalokathi), so a
+ * customer choosing one of those districts could never place an order. The
+ * form now offers the shared list that MoneyRulesTest (BIZ-021) keeps equal
+ * to BangladeshDistricts::ALL. The list lives in TypeScript, which no request
+ * reaches, so the first test reads the page's source.
+ */
+test('the landing order form offers the shared district list, not a copy of its own', function () {
+    $source = (string) file_get_contents(resource_path('js/pages/landing/LandingPage.tsx'));
+
+    expect($source)
+        ->toContain("import { BANGLADESH_DISTRICTS } from '@/lib/bangladesh-geography';")
+        ->toContain('BANGLADESH_DISTRICTS.map((d) =>')
+        ->not->toMatch('/\bconst\s+\w*DISTRICTS\s*=\s*\[/');
+});
+
+test('a landing-page order from each of the formerly misspelt districts is accepted', function (string $district) {
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay(), 'price' => 500, 'stock_quantity' => 50]);
+    $page = LandingPage::create(['title' => 'Promo', 'slug' => 'promo-'.uniqid(), 'product_id' => $product->id, 'is_active' => true, 'sections' => []]);
+
+    post(route('lp.order', $page->slug), landingPageOrderPayload(['state' => $district, 'city' => 'Sadar']))->assertSessionHasNoErrors();
+
+    expect(Order::query()->sole()->shipping_address['state'])->toBe($district);
+})->with(['Barishal', 'Chapai Nawabganj', 'Jhalokati']);
