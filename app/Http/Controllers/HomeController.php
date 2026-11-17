@@ -227,15 +227,30 @@ class HomeController extends Controller
             ];
         }
 
-        // DISC-61: business JSON-LD only; title, description and image
-        // keep PageSeo's site defaults, as before.
-        View::share('seo', ['jsonLd' => SiteJsonLd::forHome()]);
+        $featuredCards = $featuredProducts->map($mapProduct)->values();
+        $newArrivalCards = $newArrivals->map($mapProduct)->values();
+        $bestSellerCards = $bestSellers->map($mapProduct)->values();
+        $homepageSettings = LayoutCache::homepageSettings();
+
+        // DISC-61/DISC-64: business JSON-LD plus the products (with the
+        // prices their cards show) of every section a visitor can actually
+        // see; title, description and image keep PageSeo's site defaults.
+        $shownCards = collect([
+            'flash_sale' => collect($flashSaleData['items'] ?? [])->pluck('product'),
+            'featured_products' => $featuredCards,
+            'new_arrivals' => $newArrivalCards,
+            'best_sellers' => $bestSellerCards,
+        ])->filter(fn ($cards, string $section): bool => (bool) ($homepageSettings[$section]['is_visible'] ?? false))
+            ->flatten(1)
+            ->all();
+
+        View::share('seo', ['jsonLd' => SiteJsonLd::forHome($shownCards)]);
 
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,
-            'featuredProducts' => $featuredProducts->map($mapProduct)->values(),
-            'newArrivals' => $newArrivals->map($mapProduct)->values(),
-            'bestSellers' => $bestSellers->map($mapProduct)->values(),
+            'featuredProducts' => $featuredCards,
+            'newArrivals' => $newArrivalCards,
+            'bestSellers' => $bestSellerCards,
             'bundleDeals' => $bundleDeals,
             'brands' => $brands,
             'categories' => $categories,
@@ -247,7 +262,7 @@ class HomeController extends Controller
             // it overrides the global once-prop's slimmed (announcement_bar
             // -only) version for this response only, since page props win
             // over shared props of the same key.
-            'homepage_settings' => LayoutCache::homepageSettings(),
+            'homepage_settings' => $homepageSettings,
             'hero_slides' => LayoutCache::heroSlides(),
             'promotional_banners' => LayoutCache::promotionalBanners(),
         ]);

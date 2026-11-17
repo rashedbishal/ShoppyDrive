@@ -17,10 +17,14 @@ class SiteJsonLd
 {
     private const array SOCIAL_NETWORKS = ['facebook', 'instagram', 'twitter', 'youtube', 'tiktok'];
 
+    /** Bounds the page size; the homepage rarely shows more. */
+    private const int MAX_PRODUCTS = 50;
+
     /**
+     * @param  array<int, array<string, mixed>>  $productCards  the cards the homepage shows (ProductCardData + flash price), in page order
      * @return array{'@context': string, '@graph': array<int, array<string, mixed>>}
      */
-    public static function forHome(): array
+    public static function forHome(array $productCards = []): array
     {
         $settings = LayoutCache::settings();
         $home = url('/');
@@ -54,7 +58,69 @@ class SiteJsonLd
             ],
         ];
 
-        return ['@context' => 'https://schema.org', '@graph' => [$organization, $website]];
+        $graph = [$organization, $website];
+        $products = self::productList($productCards);
+
+        if ($products !== null) {
+            $graph[] = $products;
+        }
+
+        return ['@context' => 'https://schema.org', '@graph' => $graph];
+    }
+
+    /**
+     * DISC-64: the homepage's products as Product + Offer, so agents can
+     * read prices without JavaScript. Each price is the one its card shows:
+     * the flash-sale price while one applies, else the product price.
+     *
+     * @param  array<int, array<string, mixed>>  $productCards
+     * @return array<string, mixed>|null
+     */
+    private static function productList(array $productCards): ?array
+    {
+        $items = collect($productCards)
+            ->filter(fn (mixed $card): bool => is_array($card) && filled($card['slug'] ?? null) && is_numeric($card['price'] ?? null))
+            ->unique('id')
+            ->take(self::MAX_PRODUCTS)
+            ->values()
+            ->map(fn (array $card, int $index): array => [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'item' => self::product($card),
+            ]);
+
+        return $items->isEmpty() ? null : [
+            '@type' => 'ItemList',
+            'name' => 'Products on the homepage',
+            'numberOfItems' => $items->count(),
+            'itemListElement' => $items->all(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $card
+     * @return array<string, mixed>
+     */
+    private static function product(array $card): array
+    {
+        $url = route('product.show', $card['slug']);
+        $flashPrice = ($card['in_flash_sale'] ?? false) && is_numeric($card['flash_sale_price'] ?? null) ? $card['flash_sale_price'] : null;
+
+        return array_filter([
+            '@type' => 'Product',
+            'name' => self::text($card['name'] ?? null),
+            'url' => $url,
+            'image' => self::absoluteUrl($card['primary_image_url'] ?? null),
+            'sku' => self::text($card['sku'] ?? null),
+            'brand' => ($brand = self::text($card['brand']['name'] ?? null)) !== null ? ['@type' => 'Brand', 'name' => $brand] : null,
+            'offers' => [
+                '@type' => 'Offer',
+                'url' => $url,
+                'priceCurrency' => 'BDT',
+                'price' => number_format((float) ($flashPrice ?? $card['price']), 2, '.', ''),
+                'availability' => (float) ($card['available_stock'] ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            ],
+        ], fn (mixed $value): bool => $value !== null);
     }
 
     private static function text(mixed $value): ?string

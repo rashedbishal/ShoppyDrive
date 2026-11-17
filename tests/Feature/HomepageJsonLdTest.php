@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
+use App\Models\HomepageSetting;
+use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -86,4 +90,69 @@ test('a business name with </script> or HTML cannot break out of the JSON-LD scr
 
     expect($html)->not->toContain('<script>alert(1)</script>');
     expect($jsonLd['@graph'][0]['name'])->toBe($name);
+});
+
+function showHomepageSection(string $section, bool $visible = true): void
+{
+    HomepageSetting::updateOrCreate(['section_key' => $section], ['section_name' => $section, 'is_visible' => $visible, 'sort_order' => 0]);
+}
+
+/** @return array<string, mixed>|null the ItemList node, if any. */
+function homepageProductList(): ?array
+{
+    [, $jsonLd] = homepageJsonLd();
+
+    return collect($jsonLd['@graph'])->firstWhere('@type', 'ItemList');
+}
+
+test('DISC-64: products in a visible section are listed with the price, currency and stock their card shows', function () {
+    showHomepageSection('featured_products');
+    Product::factory()->create([
+        'name' => 'Steel Kettle', 'slug' => 'steel-kettle', 'sku' => 'KET-1', 'price' => 1500, 'stock_quantity' => 4,
+        'is_active' => true, 'is_featured' => true, 'published_at' => now()->subDay(),
+    ]);
+
+    $list = homepageProductList();
+
+    expect($list['numberOfItems'])->toBe(1);
+    expect($list['itemListElement'][0]['position'])->toBe(1);
+    expect($list['itemListElement'][0]['item'])->toMatchArray([
+        '@type' => 'Product',
+        'name' => 'Steel Kettle',
+        'url' => url('/product/steel-kettle'),
+        'sku' => 'KET-1',
+        'offers' => [
+            '@type' => 'Offer',
+            'url' => url('/product/steel-kettle'),
+            'priceCurrency' => 'BDT',
+            'price' => '1500.00',
+            'availability' => 'https://schema.org/InStock',
+        ],
+    ]);
+});
+
+test('DISC-64: a product on an active flash sale is listed once, at its flash-sale price', function () {
+    showHomepageSection('flash_sale');
+    showHomepageSection('featured_products');
+    $product = Product::factory()->create([
+        'slug' => 'sale-kettle', 'price' => 1500, 'stock_quantity' => 0,
+        'is_active' => true, 'is_featured' => true, 'published_at' => now()->subDay(),
+    ]);
+    $flashSale = FlashSale::factory()->create(['starts_at' => now()->subHour(), 'ends_at' => now()->addHour(), 'is_active' => true]);
+    FlashSaleItem::factory()->create(['flash_sale_id' => $flashSale->id, 'product_id' => $product->id, 'variant_id' => null, 'sale_price' => 1000]);
+
+    $list = homepageProductList();
+
+    expect($list['numberOfItems'])->toBe(1);
+    expect($list['itemListElement'][0]['item']['offers'])->toMatchArray([
+        'price' => '1000.00',
+        'availability' => 'https://schema.org/OutOfStock',
+    ]);
+});
+
+test('DISC-64: products of a hidden section are not listed', function () {
+    showHomepageSection('featured_products', visible: false);
+    Product::factory()->create(['is_active' => true, 'is_featured' => true, 'published_at' => now()->subDay()]);
+
+    expect(homepageProductList())->toBeNull();
 });
