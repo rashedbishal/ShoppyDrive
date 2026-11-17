@@ -29,7 +29,7 @@ class GenerateSitemapCommand extends Command
     protected $description = 'Generate the sitemap';
 
     /** Pages with their own top-level route; any other page lives at /page/{slug}. */
-    private const TOP_LEVEL_PAGES = ['privacy-policy', 'terms', 'faq', 'return-policy', 'refund-policy', 'shipping-policy'];
+    public const TOP_LEVEL_PAGES = ['privacy-policy', 'terms', 'faq', 'return-policy', 'refund-policy', 'shipping-policy'];
 
     /**
      * OPS-001: under storage/app/private, not public/, so deploys keep it

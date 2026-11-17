@@ -7,6 +7,7 @@ use App\Http\Controllers\ClientErrorController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\NewsletterController;
 use App\Models\Page;
 use App\Support\PageSeo;
@@ -62,6 +63,9 @@ Route::get('/sitemap.xml', function () {
 
     return response()->file(GenerateSitemapCommand::path(), ['Content-Type' => 'application/xml']);
 })->name('sitemap');
+
+// DISC-56: Markdown summary of the shop for AI agents (llmstxt.org).
+Route::get('/llms.txt', LlmsTxtController::class)->name('llms-txt');
 
 // BIZ-034: return, refund and shipping policies.
 foreach (['return-policy', 'refund-policy', 'shipping-policy'] as $policySlug) {
