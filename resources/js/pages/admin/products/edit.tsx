@@ -498,7 +498,7 @@ export default function ProductEdit({
                                     error={errors.short_description}
                                 >
                                     <textarea
-                                        maxLength={300}
+                                        maxLength={255}
                                         rows={2}
                                         className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none`}
                                         value={data.short_description}
@@ -511,7 +511,7 @@ export default function ProductEdit({
                                     />
                                     <CharCount
                                         value={data.short_description}
-                                        max={300}
+                                        max={255}
                                         className="mt-1 block text-right"
                                     />
                                 </Field>

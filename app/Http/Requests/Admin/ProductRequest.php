@@ -65,7 +65,9 @@ class ProductRequest extends FormRequest
                 'unique:products,slug,'.($productId ?? 'NULL').',id,deleted_at,NULL',
             ],
             'sku' => ['nullable', 'string', 'max:50'],
-            'short_description' => ['required', 'string', 'max:300'],
+            // DISC-68: products.short_description is VARCHAR(255); a longer
+            // value passed validation and then failed the insert with a 500.
+            'short_description' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:20000', function ($attribute, $value, $fail) {
                 // The rich-text editor leaves markup such as <p><br></p> behind
                 // when emptied, so "required" must look at the visible text.

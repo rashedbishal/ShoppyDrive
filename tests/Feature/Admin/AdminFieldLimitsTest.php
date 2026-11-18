@@ -22,7 +22,7 @@ beforeEach(function () {
 
 dataset('field limits', [
     'product name' => ['admin.products.store', 'name', 150],
-    'product short description' => ['admin.products.store', 'short_description', 300],
+    'product short description' => ['admin.products.store', 'short_description', 255],
     'product description' => ['admin.products.store', 'description', 20000],
     'product meta title' => ['admin.products.store', 'meta_title', 70],
     'product meta description' => ['admin.products.store', 'meta_description', 160],

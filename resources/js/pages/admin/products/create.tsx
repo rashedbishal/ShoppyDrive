@@ -188,7 +188,7 @@ export default function ProductCreate({
             sub_category_id: [required('Choose a sub-category.')],
             short_description: [
                 required('The short description is required.'),
-                maxLength(300),
+                maxLength(255),
             ],
         });
 
@@ -433,7 +433,7 @@ export default function ProductCreate({
                                     error={errors.short_description}
                                 >
                                     <textarea
-                                        maxLength={300}
+                                        maxLength={255}
                                         rows={2}
                                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 focus:outline-none ${errors.short_description ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-brand'}`}
                                         value={data.short_description}
@@ -446,7 +446,7 @@ export default function ProductCreate({
                                     />
                                     <CharCount
                                         value={data.short_description}
-                                        max={300}
+                                        max={255}
                                         className="mt-1 block text-right"
                                     />
                                 </Field>
