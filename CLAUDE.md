@@ -248,7 +248,7 @@ While remediation work is in flight, these hold until the user explicitly approv
 - Treat every uncommitted change as intentional. Never reset, revert, overwrite or `git stash`/`checkout` it, and never pop, drop or apply `stash@{0}`. When editing a file that already carries another task's uncommitted change, leave that change byte-for-byte intact.
 - Tests run on in-memory SQLite. Any MySQL test or migration runs only on a disposable `shoppydrive_test_*` database whose identity you verified first — never the dev `ShoppyDrive` database (unless that migration was approved) or production.
 
-MySQL-only `*ConcurrencyRaceTest.php` files skip on SQLite and call controllers directly (including inside PHP heredoc subprocess scripts), so a green SQLite suite does not cover them — grep them for call sites whenever a controller/service signature changes. On MySQL, query-builder `sum()` returns a string; cast before strict comparisons.
+MySQL-only `*ConcurrencyRaceTest.php` files skip on SQLite and call controllers directly (including inside PHP heredoc subprocess scripts), so a green SQLite suite does not cover them — grep them for call sites whenever a controller/service signature changes. On MySQL, query-builder `sum()` returns a string; cast before strict comparisons. SQLite also ignores column sizes, so `tests/Feature/ValidationLimitsFitColumnsTest.php` (DISC-69) compares every validation max/min in `app/` with the MySQL size of the column it can be saved into (TEXT counted at 4 bytes per character); when it fails, lower the rule or widen the column in a migration, and add an exception only with its written reason.
 
 ## Common Commands
 
