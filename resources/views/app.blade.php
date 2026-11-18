@@ -19,17 +19,19 @@
             })();
         </script>
 
-        {{-- Inline script to apply the visitor's saved storefront theme before paint, so there's no flash of the default theme. Purely client-side — no backend involved. --}}
-        <script nonce="{{ Vite::cspNonce() }}">
-            (function() {
-                try {
-                    var theme = localStorage.getItem('site_theme');
-                    if (theme && theme !== 'default') {
-                        document.documentElement.setAttribute('data-theme', theme);
-                    }
-                } catch (e) {}
-            })();
-        </script>
+        {{-- Inline script to apply the visitor's saved storefront theme before paint, so there's no flash of the default theme. Purely client-side — no backend involved. Never on admin pages: the CMS is built for the Classic look only, and a storefront theme there made its inputs invisible (Neomorphism's card and border colours are identical). AdminLayout also clears it after a client-side visit from the storefront. --}}
+        @unless (request()->is('admin', 'admin/*'))
+            <script nonce="{{ Vite::cspNonce() }}">
+                (function() {
+                    try {
+                        var theme = localStorage.getItem('site_theme');
+                        if (theme && theme !== 'default') {
+                            document.documentElement.setAttribute('data-theme', theme);
+                        }
+                    } catch (e) {}
+                })();
+            </script>
+        @endunless
 
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>

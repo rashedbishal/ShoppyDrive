@@ -55,6 +55,15 @@ export function initializeSiteTheme(): void {
     currentTheme = getStoredTheme();
 }
 
+/**
+ * Remove the storefront theme while the admin (CMS) is shown, since admin pages are designed for the Classic look only. Returns a cleanup that re-applies the visitor's saved theme when they leave the admin.
+ */
+export function suspendSiteTheme(): () => void {
+    applyTheme('default');
+
+    return () => applyTheme(getStoredTheme());
+}
+
 export function useSiteTheme(): {
     theme: SiteTheme;
     setTheme: (theme: SiteTheme) => void;

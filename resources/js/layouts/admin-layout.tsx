@@ -57,6 +57,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import { SiteLogo } from '@/components/shared/SiteLogo';
+import { suspendSiteTheme } from '@/hooks/use-theme';
 import { useWebPushSms } from '@/hooks/useWebPushSms';
 import type { SmsToast } from '@/hooks/useWebPushSms';
 import { dashboard as adminDashboard } from '@/routes/admin';
@@ -975,6 +976,10 @@ export default function AdminLayout({
         writeStored(PUSH_BANNER_DISMISSED_KEY, true);
         setPushBannerDismissed(true);
     };
+
+    // The server never sends the storefront theme to admin pages; this covers
+    // arriving here by a client-side visit from a themed storefront page.
+    useEffect(() => suspendSiteTheme(), []);
 
     // Prefetched pages (e.g. Add Product) hold form options such as categories.
     // Any admin write can change those, so drop what's cached instead of
