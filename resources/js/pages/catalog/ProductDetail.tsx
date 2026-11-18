@@ -33,6 +33,7 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { STORAGE_KEYS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 import { trackMetaProductEvent } from '@/lib/meta-tracking';
 import { formatCurrency, getDiscountPercent } from '@/lib/utils';
@@ -55,6 +56,31 @@ function variantValueIds(variant: ProductVariant): number[] {
             (id): id is number => id != null,
         )
     ).map(Number);
+}
+
+/** How many viewed products the browser remembers (ProductController::RECENTLY_VIEWED_LIMIT). */
+const RECENTLY_VIEWED_LIMIT = 10;
+const NO_RECENTLY_VIEWED: unknown[] = [];
+
+/**
+ * DISC-70: the stored list holds product ids only; the cards always come
+ * from the server, which drops products an admin has hidden. Lists saved
+ * before held whole product objects, so their `id` is read too.
+ */
+function recentlyViewedIds(stored: unknown): number[] {
+    if (!Array.isArray(stored)) {
+        return [];
+    }
+
+    return stored
+        .map((entry) =>
+            Number(
+                typeof entry === 'object' && entry !== null
+                    ? (entry as { id?: unknown }).id
+                    : entry,
+            ),
+        )
+        .filter((id) => Number.isInteger(id) && id > 0);
 }
 
 interface ProductDetailProps {
@@ -166,10 +192,10 @@ export default function ProductDetail({
         ),
     );
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-    const [recentlyViewed, setRecentlyViewed] = useLocalStorage<Product[]>(
-        'recently_viewed',
-        [],
-    );
+    const [storedRecentlyViewed, setStoredRecentlyViewed] = useLocalStorage<
+        unknown[]
+    >(STORAGE_KEYS.recentlyViewed, NO_RECENTLY_VIEWED);
+    const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
     // Gates Add to Cart / Buy Now behind the variant-selection modal for
     // variant-based products — see handleModalConfirm below. `null` means
     // the modal is closed; otherwise it records which action to run once
@@ -272,13 +298,43 @@ export default function ProductDetail({
             });
             setSelectedAttributes(defaults);
         }
+    }, [product.id]);
 
-        // Handle recently viewed
-        const updatedRecentlyViewed = [
-            product,
-            ...recentlyViewed.filter((p) => p.id !== product.id),
-        ].slice(0, 10);
-        setRecentlyViewed(updatedRecentlyViewed);
+    // Recently viewed: remember this product's id, then load the other
+    // products' current cards (only those still visible on the storefront).
+    useEffect(() => {
+        const otherIds = recentlyViewedIds(storedRecentlyViewed)
+            .filter((id) => id !== product.id)
+            .slice(0, RECENTLY_VIEWED_LIMIT - 1);
+        setStoredRecentlyViewed([product.id, ...otherIds]);
+
+        if (otherIds.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- nothing to load for this product
+            setRecentlyViewed([]);
+
+            return;
+        }
+
+        const controller = new AbortController();
+
+        fetch(route('products.recently-viewed', { ids: otherIds }), {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal,
+        })
+            .then((response) =>
+                response.ok ? response.json() : { products: [] },
+            )
+            .then((data: { products?: Product[] }) =>
+                setRecentlyViewed(data.products ?? []),
+            )
+            .catch(() => {
+                if (!controller.signal.aborted) {
+                    setRecentlyViewed([]);
+                }
+            });
+
+        return () => controller.abort();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once per product; the stored list is read, then rewritten here
     }, [product.id]);
 
     // Meta ViewContent: once per visit to this product (keyed on its id,
@@ -1566,7 +1622,7 @@ export default function ProductDetail({
                     className="mt-0"
                 />
 
-                {recentlyViewed.length > 1 && (
+                {recentlyViewed.some((p) => p.id !== product.id) && (
                     <ProductCarousel
                         title="Recently Viewed"
                         products={recentlyViewed.filter(

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/products', [ProductListingController::class, 'index'])->middleware('throttle:product-browsing')->name('products.index');
 Route::get('/category/{slug}', [ProductListingController::class, 'category'])->middleware('throttle:product-browsing')->name('category.show');
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/products/recently-viewed', [ProductController::class, 'recentlyViewed'])->middleware('throttle:product-browsing')->name('products.recently-viewed');
 Route::post('/product/{product:slug}/reviews', [ReviewController::class, 'store'])
     ->middleware(['auth', 'verified', 'throttle:review', 'auth.session', 'account.active'])
     ->name('product.reviews.store');

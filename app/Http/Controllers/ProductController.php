@@ -8,6 +8,9 @@ use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\DisplayOrderSettings;
 use App\Support\ProductCardData;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -16,6 +19,9 @@ use Inertia\Response;
 
 class ProductController extends Controller
 {
+    /** How many products the browser remembers for the Recently Viewed row. */
+    public const int RECENTLY_VIEWED_LIMIT = 10;
+
     public function show(Product $product): Response
     {
         // FSA-05: inactive, draft and future-scheduled products don't exist
@@ -186,6 +192,50 @@ class ProductController extends Controller
             'hasReviewed' => Auth::guard('web')->user()?->hasReviewedProduct($product->id) ?? false,
             'shippingMethods' => [],
         ]);
+    }
+
+    /**
+     * DISC-70: the product page's "Recently Viewed" row. The browser keeps
+     * only the ids a shopper viewed; the cards always come from here, so a
+     * product an admin hides (inactive, draft, scheduled, inactive category
+     * or brand) drops out at once and prices/stock are live. Out-of-stock
+     * products stay. Junk ids are ignored rather than rejected, since they
+     * come from old localStorage.
+     */
+    public function recentlyViewed(Request $request): JsonResponse
+    {
+        $ids = collect(Arr::wrap($request->query('ids')))
+            ->filter(fn (mixed $id): bool => is_scalar($id) && ctype_digit((string) $id))
+            ->map(fn (string|int $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->take(self::RECENTLY_VIEWED_LIMIT)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return response()->json(['products' => []]);
+        }
+
+        $products = Product::query()
+            ->visible()
+            ->whereIn('id', $ids)
+            ->with(['images', 'brand', 'variants.media'])
+            ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
+            ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
+            ->get()
+            ->sortBy(fn (Product $product): int|false => $ids->search($product->id))
+            ->values();
+
+        $flashPrices = FlashSaleItem::activePricesForProducts($products->pluck('id')->all());
+
+        foreach ($products as $product) {
+            $flash = $flashPrices[$product->id] ?? null;
+            $product->in_flash_sale = $flash !== null;
+            $product->flash_sale_price = $flash['price'] ?? null;
+            $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
+
+        return response()->json(['products' => $products->map(ProductCardData::make(...))->values()]);
     }
 
     /**
