@@ -18,6 +18,8 @@ import {
     RotateCcw,
 } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
+import bkashImg from '@/assets/bkash.png';
+import nagadImg from '@/assets/nagad.png';
 import HoneypotField from '@/components/honeypot-field';
 import GlowButton from '@/components/landing/GlowButton';
 import HeroCarousel from '@/components/landing/HeroCarousel';
@@ -1397,6 +1399,11 @@ function OrderSection({
                                                         }
                                                         className="[--control-color:var(--color-pink-600)]"
                                                     />
+                                                    <img
+                                                        src={bkashImg}
+                                                        alt=""
+                                                        className="h-6 w-9 object-contain"
+                                                    />
                                                     <span className="text-sm font-semibold text-pink-700">
                                                         {text.t('bkash')}
                                                     </span>
@@ -1419,6 +1426,11 @@ function OrderSection({
                                                             )
                                                         }
                                                         className="[--control-color:var(--color-orange-600)]"
+                                                    />
+                                                    <img
+                                                        src={nagadImg}
+                                                        alt=""
+                                                        className="h-6 w-9 object-contain"
                                                     />
                                                     <span className="text-sm font-semibold text-orange-700">
                                                         {text.t('nagad')}
