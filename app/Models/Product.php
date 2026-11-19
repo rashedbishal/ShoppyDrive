@@ -79,6 +79,10 @@ class Product extends Model
             'is_digital' => 'boolean',
             'free_delivery' => 'boolean',
             'free_delivery_min_qty' => 'integer',
+            // DISC-74: the admin form sends numbers as text; without these the
+            // just-saved model kept "5" and strict-typed stock code threw a TypeError.
+            'stock_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
             'has_color_variant' => 'boolean',
             'has_size_variant' => 'boolean',
             'variant_attribute_ids' => 'array',

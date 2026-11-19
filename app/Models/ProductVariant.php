@@ -45,6 +45,9 @@ class ProductVariant extends Model
             'price' => 'float',
             'compare_price' => 'float',
             'cost_price' => 'float',
+            // DISC-74: see Product::casts().
+            'stock_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
             'is_default' => 'boolean',
         ];
     }

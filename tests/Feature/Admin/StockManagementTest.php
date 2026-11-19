@@ -539,3 +539,61 @@ test('a new product with no stock needs no password and records no stock change'
         ->and(InventoryLog::query()->count())->toBe(0)
         ->and(Activity::query()->where('log_name', 'stock')->count())->toBe(0);
 });
+
+// ---- DISC-74: the forms send numbers as text ----
+
+test('a stock change on the edit form works when the low-stock threshold arrives as text, as the form sends it', function () {
+    $product = Product::factory()->create(['stock_quantity' => 3, 'low_stock_threshold' => 5]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->put(route('admin.products.update', $product), editPayload($product, [
+        'stock_quantity' => '20',
+        'low_stock_threshold' => '5',
+        'stock_password' => 'password',
+    ]))->assertSessionHasNoErrors();
+
+    expect($product->refresh()->stock_quantity)->toBe(20)
+        ->and($product->low_stock_threshold)->toBe(5);
+});
+
+test('a stock drop on the edit form below a text threshold still sends the low-stock alert', function () {
+    Mail::fake();
+    Setting::updateOrCreate(['key' => 'stock_alert_email'], ['value' => 'stock@shop.test', 'group' => 'general']);
+    $product = Product::factory()->create(['stock_quantity' => 10, 'low_stock_threshold' => 5]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->put(route('admin.products.update', $product), editPayload($product, [
+        'stock_quantity' => '2',
+        'low_stock_threshold' => '5',
+        'stock_password' => 'password',
+    ]))->assertSessionHasNoErrors();
+
+    Mail::assertQueued(LowStockAlertMail::class, fn (LowStockAlertMail $mail) => $mail->hasTo('stock@shop.test'));
+});
+
+test('a new product with starting stock saves when the low-stock threshold arrives as text', function () {
+    Storage::fake('public');
+    $category = Category::factory()->create();
+    $subCategory = SubCategory::factory()->create();
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.products.store'), [
+        'stock_password' => 'password',
+        'name' => 'Text Threshold Toy',
+        'slug' => 'text-threshold-toy',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
+        'category_id' => (string) $category->id,
+        'sub_category_id' => (string) $subCategory->id,
+        'price' => '500',
+        'stock_quantity' => '10',
+        'low_stock_threshold' => '5',
+        'is_active' => '1',
+    ])->assertSessionHasNoErrors();
+
+    expect(Product::where('slug', 'text-threshold-toy')->sole()->stock_quantity)->toBe(10);
+});
