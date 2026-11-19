@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
     Fragment,
+    Suspense,
     useEffect,
     useMemo,
     useRef,
@@ -30,7 +31,6 @@ import type { BrandCardData } from '@/components/shared/BrandCard';
 import { BundleCard } from '@/components/shared/BundleCard';
 import type { ProductBundle } from '@/components/shared/BundleCard';
 import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
-import NewsletterThankYouModal from '@/components/shared/NewsletterThankYouModal';
 import {
     ProductCard,
     ProductCardSkeleton,
@@ -47,6 +47,7 @@ import {
     PRODUCT_GRID_CLASS,
     PRODUCT_RAIL_CLASS,
 } from '@/lib/constants';
+import { LazyNewsletterThankYouModal, useHasOpened } from '@/lib/deferred-ui';
 import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import { isVideoUrl, cn, getSoldPercent } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
@@ -888,6 +889,8 @@ function NewsletterForm(): React.JSX.Element {
         thankYou,
         closeThankYou,
     } = useNewsletterSubscribe();
+    // DISC-73: the thank-you modal is downloaded the first time it's needed.
+    const showThankYou = useHasOpened(Boolean(thankYou));
 
     return (
         <Card className="selection-light overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
@@ -941,11 +944,15 @@ function NewsletterForm(): React.JSX.Element {
                     </p>
                 </form>
             </CardContent>
-            <NewsletterThankYouModal
-                status={thankYou?.status ?? null}
-                email={thankYou?.email ?? ''}
-                onClose={closeThankYou}
-            />
+            {showThankYou && (
+                <Suspense fallback={null}>
+                    <LazyNewsletterThankYouModal
+                        status={thankYou?.status ?? null}
+                        email={thankYou?.email ?? ''}
+                        onClose={closeThankYou}
+                    />
+                </Suspense>
+            )}
         </Card>
     );
 }

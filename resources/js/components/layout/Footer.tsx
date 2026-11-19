@@ -8,14 +8,15 @@ import {
     Phone,
     Youtube,
 } from 'lucide-react';
+import { Suspense } from 'react';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
     footerCustomerLinks,
     footerQuickLinks,
 } from '@/components/layout/navigation';
-import NewsletterThankYouModal from '@/components/shared/NewsletterThankYouModal';
 import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useNewsletterSubscribe } from '@/hooks/use-newsletter-subscribe';
+import { LazyNewsletterThankYouModal, useHasOpened } from '@/lib/deferred-ui';
 import type { SharedPageProps } from '@/types';
 
 /*
@@ -42,6 +43,8 @@ export default function Footer(): React.JSX.Element {
         thankYou,
         closeThankYou,
     } = useNewsletterSubscribe();
+    // DISC-73: the thank-you modal is downloaded the first time it's needed.
+    const showThankYou = useHasOpened(Boolean(thankYou));
 
     const socialLinks = [
         {
@@ -288,11 +291,15 @@ export default function Footer(): React.JSX.Element {
                 </div>
             </div>
 
-            <NewsletterThankYouModal
-                status={thankYou?.status ?? null}
-                email={thankYou?.email ?? ''}
-                onClose={closeThankYou}
-            />
+            {showThankYou && (
+                <Suspense fallback={null}>
+                    <LazyNewsletterThankYouModal
+                        status={thankYou?.status ?? null}
+                        email={thankYou?.email ?? ''}
+                        onClose={closeThankYou}
+                    />
+                </Suspense>
+            )}
         </footer>
     );
 }

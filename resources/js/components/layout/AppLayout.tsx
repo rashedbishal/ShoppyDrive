@@ -1,14 +1,20 @@
 import { usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import AuroraBackdrop from '@/components/layout/AuroraBackdrop';
-import CartDrawer from '@/components/layout/CartDrawer';
 import CookieConsent from '@/components/layout/CookieConsent';
 import Footer from '@/components/layout/Footer';
 import Header from '@/components/layout/Header';
-import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { MOTION } from '@/lib/constants';
+import {
+    LazyCartDrawer,
+    LazySocialChatWidget,
+    useBrowserIdle,
+    useHasOpened,
+    usePreloadDeferredUi,
+} from '@/lib/deferred-ui';
+import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type { SharedPageProps } from '@/types';
 
@@ -21,6 +27,12 @@ export default function AppLayout({
 }: AppLayoutProps): React.JSX.Element {
     const page = usePage<SharedPageProps>();
     const setWishlist = useWishlistStore((state) => state.setWishlist);
+    const cartOpen = useUiStore((state) => state.cartOpen);
+    // DISC-73: the cart drawer is downloaded and mounted on first use, the
+    // chat button once the page is idle (lib/deferred-ui.ts).
+    const showCartDrawer = useHasOpened(cartOpen);
+    const showChatWidget = useBrowserIdle();
+    usePreloadDeferredUi();
 
     // Sync wishlist from server; merge guest wishlist into account on login
     useEffect(() => {
@@ -124,9 +136,17 @@ export default function AppLayout({
             </AnimatePresence>
 
             <Footer />
-            <CartDrawer />
+            {showCartDrawer && (
+                <Suspense fallback={null}>
+                    <LazyCartDrawer />
+                </Suspense>
+            )}
             <CookieConsent />
-            <SocialChatWidget />
+            {showChatWidget && (
+                <Suspense fallback={null}>
+                    <LazySocialChatWidget />
+                </Suspense>
+            )}
         </div>
     );
 }

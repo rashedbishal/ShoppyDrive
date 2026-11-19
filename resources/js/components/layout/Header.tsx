@@ -12,9 +12,8 @@ import {
     UserCog,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import MegaMenu from '@/components/layout/MegaMenu';
-import MobileMenu from '@/components/layout/MobileMenu';
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher';
 import { LogoutConfirmDialog } from '@/components/shared/LogoutConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
@@ -30,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useInitials } from '@/hooks/use-initials';
 import { usePendingCartArrivals } from '@/lib/add-to-cart-feedback';
+import { LazyMobileMenu, useHasOpened } from '@/lib/deferred-ui';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -73,6 +73,8 @@ export default function Header(): React.JSX.Element {
     const openMobileMenu = useUiStore((state) => state.openMobileMenu);
     const closeMobileMenu = useUiStore((state) => state.closeMobileMenu);
     const mobileMenuOpen = useUiStore((state) => state.mobileMenuOpen);
+    // DISC-73: downloaded and mounted the first time the menu opens.
+    const showMobileMenu = useHasOpened(mobileMenuOpen);
     const wishlistCount = useWishlistStore((state) => state.productIds.length);
     const cartItems = useCartStore((state) => state.items);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -692,7 +694,14 @@ export default function Header(): React.JSX.Element {
                 </div>
             </header>
 
-            <MobileMenu isOpen={mobileMenuOpen} onClose={closeMobileMenu} />
+            {showMobileMenu && (
+                <Suspense fallback={null}>
+                    <LazyMobileMenu
+                        isOpen={mobileMenuOpen}
+                        onClose={closeMobileMenu}
+                    />
+                </Suspense>
+            )}
 
             <LogoutConfirmDialog
                 open={logoutConfirmOpen}

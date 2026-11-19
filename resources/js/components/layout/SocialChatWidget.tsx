@@ -1,11 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, MessageCircle, X } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { LazyAiAssistantPanel, useHasOpened } from '@/lib/deferred-ui';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type { SharedPageProps } from '@/types';
-import AiAssistantPanel from './AiAssistantPanel';
 
 function WhatsAppIcon({ className }: { className?: string }) {
     return (
@@ -83,6 +83,8 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const [open, setOpen] = useState(false);
     const [burstKey, setBurstKey] = useState(0);
     const [aiPanelOpen, setAiPanelOpen] = useState(false);
+    // DISC-73: downloaded once the chat menu opens, mounted on first use.
+    const showAiPanel = useHasOpened(aiPanelOpen);
     // Step aside while any side panel (menu, cart, filters…) is open — it would sit on top of them.
     const isPanelOpen = useUiStore(
         (state) =>
@@ -143,6 +145,10 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const handleToggle = () => {
         if (!open) {
             setBurstKey((k) => k + 1);
+
+            if (settings.ai_assistant_enabled) {
+                LazyAiAssistantPanel.preload();
+            }
         }
 
         setOpen((v) => !v);
@@ -438,10 +444,14 @@ export default function SocialChatWidget(): React.JSX.Element | null {
                 </motion.button>
             </div>
 
-            <AiAssistantPanel
-                open={aiPanelOpen}
-                onClose={() => setAiPanelOpen(false)}
-            />
+            {showAiPanel && (
+                <Suspense fallback={null}>
+                    <LazyAiAssistantPanel
+                        open={aiPanelOpen}
+                        onClose={() => setAiPanelOpen(false)}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 }
