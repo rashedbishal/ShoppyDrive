@@ -650,7 +650,7 @@ function SectionHeading({
     return (
         <div className="mx-auto mb-6 max-w-2xl text-center">
             {eyebrow && (
-                <p className="mb-1.5 text-[11px] font-bold tracking-[0.18em] text-amber-700 uppercase">
+                <p className="mb-1.5 text-xs font-bold tracking-[0.18em] text-amber-700 uppercase sm:text-sm md:text-base">
                     {eyebrow}
                 </p>
             )}
