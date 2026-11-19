@@ -57,9 +57,8 @@
         @endif
         <link rel="apple-touch-icon" href="{{ $siteFavicon && ! str_ends_with(strtolower($siteFavicon), '.ico') ? $siteFavicon : '/apple-touch-icon.png' }}">
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+        {{-- DISC-72: fonts are self-hosted (@font-face in app.css, Google's copy as fallback). The body font starts downloading now rather than after the stylesheet that names it. --}}
+        <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 
         @routes(request()->is('admin', 'admin/*') || auth('admin')->check() ? 'admin' : null, Vite::cspNonce())
         @viteReactRefresh
