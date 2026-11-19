@@ -108,7 +108,7 @@ test('a video cannot be the hover picture', function () {
     $this->post(route('admin.products.store'), mediaProductPayload([
         'images' => [
             UploadedFile::fake()->image('one.jpg'),
-            UploadedFile::fake()->create('clip.mp4', 100, 'video/mp4'),
+            fakeMp4Upload(),
         ],
         'hover_image_index' => 1,
     ]))->assertSessionHasNoErrors();

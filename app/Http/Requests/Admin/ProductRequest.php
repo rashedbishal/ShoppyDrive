@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\ProductVariant;
+use App\Rules\WebVideo;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
@@ -14,13 +15,13 @@ use Illuminate\Validation\Rule;
 
 class ProductRequest extends FormRequest
 {
-    // FSA-20: no existing precedent anywhere in this codebase for a video
-    // size limit — 50MB is a deliberate choice for a short product-demo
-    // clip, not derived from an existing convention the way the 5MB image
-    // limit is (matches BlogRequest's existing featured_image max:5120).
+    // FSA-20: the 5MB image limit matches BlogRequest's existing
+    // featured_image max:5120.
     private const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-    private const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+    // DISC-71 (owner decision 2026-11-18): product videos were capped at
+    // 50MB under FSA-20; now 10MB, H.264, 720p at most (WebVideo).
+    private const MAX_VIDEO_MEGABYTES = 10;
 
     // Newly uploaded files only, per submission — never counts existing
     // media kept as plain string paths, so editing a product that already
@@ -162,12 +163,14 @@ class ProductRequest extends FormRequest
                 // mixed-type field — a single uniform `max:` rule can't
                 // express that, so the size check lives here, after the
                 // type is already known.
-                $maxBytes = $isImage ? self::MAX_IMAGE_BYTES : self::MAX_VIDEO_BYTES;
+                if ($isVideo) {
+                    (new WebVideo(self::MAX_VIDEO_MEGABYTES, requireH264: true))->validate($attribute, $value, $fail);
 
-                if ($value->getSize() > $maxBytes) {
-                    $fail($isImage
-                        ? 'Image files must be 5MB or smaller.'
-                        : 'Video files must be 50MB or smaller.');
+                    return;
+                }
+
+                if ($value->getSize() > self::MAX_IMAGE_BYTES) {
+                    $fail('Image files must be 5MB or smaller.');
                 }
             }],
             'media_tags' => ['nullable', 'array'],

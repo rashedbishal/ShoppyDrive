@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HeroSlide;
+use App\Rules\WebVideo;
 use App\Services\ImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,9 @@ class HeroSlideController extends Controller
     private const MEDIA_EXTENSIONS = 'jpg,jpeg,png,webp,gif,mp4,webm,mov';
 
     private const MEDIA_MAX_KILOBYTES = 15360; // 15MB
+
+    /** DISC-71: the hero is the first thing a phone loads, so its video is held to far less than an image. */
+    private const VIDEO_MAX_MEGABYTES = 2;
 
     public function index(): Response
     {
@@ -37,7 +41,7 @@ class HeroSlideController extends Controller
             'title' => ['required', 'string', 'max:100'],
             'eyebrow' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:200'],
-            'image' => ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES],
+            'image' => ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES, new WebVideo(self::VIDEO_MAX_MEGABYTES, requireH264: false)],
             'primary_cta_label' => ['nullable', 'string', 'max:40'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
@@ -68,7 +72,7 @@ class HeroSlideController extends Controller
             'eyebrow' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:200'],
             'image' => $request->hasFile('image')
-                ? ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES]
+                ? ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES, new WebVideo(self::VIDEO_MAX_MEGABYTES, requireH264: false)]
                 : ['nullable'],
             'primary_cta_label' => ['nullable', 'string', 'max:40'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],

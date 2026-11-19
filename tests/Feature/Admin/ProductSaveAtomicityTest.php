@@ -122,7 +122,7 @@ test('a product is created with its variants, media and attribute values', funct
 
 test('a video upload keeps its video type', function () {
     $this->post(route('admin.products.store'), atomicProductPayload([
-        'images' => [UploadedFile::fake()->create('clip.mp4', 100, 'video/mp4')],
+        'images' => [fakeMp4Upload()],
     ]))->assertRedirect();
 
     expect(ProductMedia::query()->firstOrFail()->type)->toBe('video');

@@ -19,10 +19,15 @@ use Throwable;
  * Anything GD can't safely improve keeps working exactly as before: videos,
  * GIFs (GD would flatten an animation), animated WebP, images too large to
  * decode in the available memory, and hosts without WebP support are all
- * stored as uploaded.
+ * stored as uploaded. The one exception is an MP4/MOV video, which has its
+ * index moved in front of its data first (DISC-71, Mp4Video) so a browser
+ * can start playing it before the whole file arrives; the video itself is
+ * not re-encoded.
  */
 class ImageOptimizer
 {
+    public function __construct(private readonly Mp4Video $mp4Video) {}
+
     public const int MAX_SIDE = 1600;
 
     /** Hero slides, banners and testimonial screenshots (tall phone captures whose small text must stay legible) keep more pixels. */
@@ -59,6 +64,10 @@ class ImageOptimizer
             if (Storage::disk('public')->put($storedPath, $webp)) {
                 return $storedPath;
             }
+        }
+
+        if (in_array((string) $file->getMimeType(), ['video/mp4', 'video/quicktime'], true)) {
+            $this->moveVideoIndexToFront($path);
         }
 
         $storedPath = $file->store($directory, 'public');
@@ -107,6 +116,16 @@ class ImageOptimizer
             Log::warning('[Images] Could not make an email copy of an image', ['message' => $exception->getMessage()]);
 
             return null;
+        }
+    }
+
+    /** A video that can't be rearranged is still stored, exactly as uploaded. */
+    private function moveVideoIndexToFront(string $path): void
+    {
+        try {
+            $this->mp4Video->moveIndexToFront($path);
+        } catch (Throwable $exception) {
+            Log::warning('An uploaded video was stored without moving its index to the front.', ['exception' => $exception]);
         }
     }
 

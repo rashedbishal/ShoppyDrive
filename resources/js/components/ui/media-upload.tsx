@@ -11,6 +11,8 @@ interface MediaUploadProps {
     previewClassName?: string;
     /** Matches the server-side `max` validation rule (in KB) for this field. */
     maxSizeMb?: number;
+    /** A tighter limit for videos, matching the field's server-side WebVideo rule (DISC-71). */
+    maxVideoSizeMb?: number;
 }
 
 const DEFAULT_MAX_SIZE_MB = 15;
@@ -31,6 +33,7 @@ export function MediaUpload({
     className,
     previewClassName,
     maxSizeMb = DEFAULT_MAX_SIZE_MB,
+    maxVideoSizeMb,
 }: MediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -59,8 +62,13 @@ export function MediaUpload({
             return;
         }
 
-        if (file.size > maxSizeMb * 1024 * 1024) {
-            setSizeError(`That file is too large — the limit is ${maxSizeMb}MB.`);
+        const limitMb =
+            maxVideoSizeMb !== undefined && file.type.startsWith('video/')
+                ? maxVideoSizeMb
+                : maxSizeMb;
+
+        if (file.size > limitMb * 1024 * 1024) {
+            setSizeError(`That file is too large — the limit is ${limitMb}MB.`);
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -133,7 +141,10 @@ export function MediaUpload({
                             <ImagePlus className="size-6 text-slate-400" />
                         </div>
                         <p className="text-sm font-medium">Click to upload an image or video</p>
-                        <p className="text-xs text-slate-600">JPG, PNG, WEBP, MP4, WEBM (max {maxSizeMb}MB)</p>
+                        <p className="text-xs text-slate-600">
+                            JPG, PNG, WEBP, MP4, WEBM (max {maxSizeMb}MB
+                            {maxVideoSizeMb !== undefined && `; videos max ${maxVideoSizeMb}MB`})
+                        </p>
                     </div>
                 )}
 

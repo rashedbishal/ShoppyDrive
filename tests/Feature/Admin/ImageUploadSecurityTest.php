@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\PromotionalBanner;
 use App\Models\SubCategory;
+use App\Rules\WebVideo;
 use App\Support\ProductStockToken;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -270,7 +271,7 @@ test('a product image upload accepts a valid JPEG and still accepts a genuine vi
         'price' => 100, 'stock_quantity' => 10,
         'images' => [
             UploadedFile::fake()->image('product.jpg'),
-            UploadedFile::fake()->create('clip.mp4', 100, 'video/mp4'),
+            fakeMp4Upload(),
         ],
     ]);
 
@@ -346,7 +347,7 @@ test('a product image upload larger than 5MB is rejected', function () {
     expect(Product::where('slug', 'oversized-image')->exists())->toBeFalse();
 });
 
-test('a product video upload of exactly 50MB is accepted', function () {
+test('a product video upload of exactly 10MB is accepted', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
@@ -356,14 +357,14 @@ test('a product video upload of exactly 50MB is accepted', function () {
         'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
-        'images' => [UploadedFile::fake()->create('clip.mp4', 51200, 'video/mp4')],
+        'images' => [fakeMp4Upload(totalBytes: 10 * 1024 * 1024)],
     ]);
 
     $response->assertRedirect();
     expect(Product::where('slug', 'exact-video')->exists())->toBeTrue();
 });
 
-test('a product video upload larger than 50MB is rejected', function () {
+test('a product video upload larger than 10MB is rejected', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
@@ -373,12 +374,34 @@ test('a product video upload larger than 50MB is rejected', function () {
         'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
-        'images' => [UploadedFile::fake()->create('clip.mp4', 51201, 'video/mp4')],
+        'images' => [fakeMp4Upload(totalBytes: 10 * 1024 * 1024 + 1)],
     ]);
 
-    $response->assertSessionHasErrors(['images.0' => 'Video files must be 50MB or smaller.']);
+    $response->assertSessionHasErrors(['images.0' => 'Videos must be 10 MB or smaller. '.WebVideo::HOW_TO_FIX.' If it is still too big, shorten the clip.']);
     expect(Product::where('slug', 'oversized-video')->exists())->toBeFalse();
 });
+
+test('a product video that is not 720p H.264 MP4 is rejected with how to fix it', function (Closure $video, string $message) {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
+        'name' => 'Heavy Video', 'slug' => 'heavy-video',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [$video()],
+    ]);
+
+    $response->assertSessionHasErrors(['images.0' => $message.WebVideo::HOW_TO_FIX]);
+    expect(Product::where('slug', 'heavy-video')->exists())->toBeFalse();
+})->with([
+    'HEVC' => [fn () => fakeMp4Upload(codec: 'hvc1'), 'Videos must use H.264 video so every browser can play them. '],
+    'larger than 720p' => [fn () => fakeMp4Upload(width: 1280, height: 960), 'This video is 1280×960 pixels. Videos must be 720p or smaller (at most 1280×720, or 720×1280 upright). '],
+    'WebM' => [fn () => UploadedFile::fake()->create('clip.webm', 100, 'video/webm'), 'Videos must be MP4 files using H.264 video. '],
+    'unreadable MP4' => [fn () => UploadedFile::fake()->create('clip.mp4', 100, 'video/mp4'), 'This video could not be read. Save it again as an MP4 file. '],
+]);
 
 test('exactly 10 newly uploaded media files are accepted', function () {
     [, $category, $subCategory] = fsa20ProductFixture();

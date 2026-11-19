@@ -9,6 +9,7 @@ import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useRowKeys } from '@/hooks/use-row-keys';
+import { HERO_VIDEO_MAX_MB, VIDEO_HOW_TO } from '@/lib/upload-recommendations';
 import { maxLength, required, validate } from '@/lib/validate';
 
 /** The hero banner's stat strip is a fixed 3-column row — more wouldn't fit. */
@@ -196,7 +197,8 @@ export default function HeroSlideCreate() {
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
-                                            hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px, WebP format, under 100 KB. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or MOV format, up to 10 MB (anything up to 15MB is accepted), muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. The media fills the full-width hero and crops to this ratio on smaller screens."
+                                            hint={`Image: 1920×1080px (16:9) landscape, minimum 1600×800px, WebP format, under 100 KB. Video: 1280×720px (16:9) at most, MP4 (H.264) format, ${HERO_VIDEO_MAX_MB} MB at most, no audio needed since it autoplays muted on loop — keep clips short (5–10s). ${VIDEO_HOW_TO} The media fills the full-width hero and crops to this ratio on smaller screens.`}
+                                            maxVideoSizeMb={HERO_VIDEO_MAX_MB}
                                             previewClassName="h-56"
                                         />
                                     </div>

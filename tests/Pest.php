@@ -13,6 +13,7 @@ use App\Services\RefundCalculator;
 use App\Support\AdminSections;
 use App\Support\SmsForwarderToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 /*
@@ -236,4 +237,47 @@ function setSmsForwarderToken(?string $token = null): void
     }
 
     Setting::updateOrCreate(['key' => SmsForwarderToken::KEY], ['value' => $token, 'group' => 'sms_forwarder']);
+}
+
+/**
+ * DISC-71: a tiny MP4 with a real box structure (ftyp, mdat and a moov
+ * index holding one video track), so validation and faststart can read a
+ * size, codec and chunk offset from it. The media data starts with
+ * FIRST-FRAME, which lets a test check that the chunk offset still points
+ * at it after the file is rearranged. `$totalBytes` pads the media so the
+ * whole file is exactly that long.
+ */
+function fakeMp4Bytes(int $width = 1280, int $height = 720, string $codec = 'avc1', bool $indexFirst = false, string $brand = 'isom', int $totalBytes = 0): string
+{
+    $box = fn (string $type, string $payload): string => pack('N', 8 + strlen($payload)).$type.$payload;
+    $fullBox = fn (string $type, string $payload): string => $box($type, "\0\0\0\0".$payload);
+
+    $ftyp = $box('ftyp', $brand."\0\0\0\0".$brand.'mp41');
+    $sampleEntry = $box($codec, str_repeat("\0", 6).pack('n', 1).str_repeat("\0", 16).pack('nn', $width, $height).str_repeat("\0", 50));
+    $moov = fn (int $chunkOffset): string => $box('moov', $box('trak', $box('mdia',
+        $fullBox('hdlr', pack('N', 0).'vide'.str_repeat("\0", 13))
+        .$box('minf', $box('stbl', $fullBox('stsd', pack('N', 1).$sampleEntry).$fullBox('stco', pack('NN', 1, $chunkOffset))))
+    )));
+
+    $indexLength = strlen($moov(0));
+    $media = 'FIRST-FRAME'.str_repeat("\0", max(0, $totalBytes - strlen($ftyp) - $indexLength - 8 - 11));
+    $mdat = $box('mdat', $media);
+
+    return $indexFirst
+        ? $ftyp.$moov(strlen($ftyp) + $indexLength + 8).$mdat
+        : $ftyp.$mdat.$moov(strlen($ftyp) + 8);
+}
+
+/**
+ * fakeMp4Bytes() as an upload; the arguments are passed straight through.
+ * A real UploadedFile, not UploadedFile::fake(), whose type is guessed from
+ * the file name (`application/mp4`): this one's type is sniffed from its
+ * content, as a genuine upload's is (`video/mp4`).
+ */
+function fakeMp4Upload(string $name = 'clip.mp4', mixed ...$arguments): UploadedFile
+{
+    $path = (string) tempnam(sys_get_temp_dir(), 'fake-mp4');
+    file_put_contents($path, fakeMp4Bytes(...$arguments));
+
+    return new UploadedFile($path, $name, 'video/mp4', null, true);
 }

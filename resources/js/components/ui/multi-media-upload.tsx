@@ -1,6 +1,6 @@
 import { Film, ImagePlus, MousePointer2, Star, X } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
-import { imageRecommendation, RECOMMENDED_VIDEO } from '@/lib/upload-recommendations';
+import { imageRecommendation, RECOMMENDED_VIDEO, VIDEO_HOW_TO } from '@/lib/upload-recommendations';
 import { cn } from '@/lib/utils';
 
 // FSA-20: mirrors the backend limits in ProductRequest.php exactly (image
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 // own content-sniffed, size-checked validation remains the real boundary;
 // this only saves a legitimate admin an upload-then-rejection round trip.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 const MAX_NEW_UPLOADS = 10;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -118,7 +118,7 @@ export function MultiMediaUpload({
                 setClientError(
                     isImage
                         ? `"${file.name}" is larger than 5MB. Please choose a smaller image.`
-                        : `"${file.name}" is larger than 50MB. Please choose a smaller video.`,
+                        : `"${file.name}" is larger than 10MB. Please choose a smaller video. ${VIDEO_HOW_TO}`,
                 );
                 resetInput();
 
@@ -262,10 +262,10 @@ export function MultiMediaUpload({
             </div>
 
             <p className="mt-2 text-xs text-slate-600">
-                Images: {imageRecommendation('1200 × 900 px (4:3)')} Videos:{' '}
-                {RECOMMENDED_VIDEO}, 1280 × 960 px (4:3). Larger files are
-                accepted (images up to 5MB, videos up to 50MB), but smaller
-                files load faster.
+                Images: {imageRecommendation('1200 × 900 px (4:3)')} Larger
+                images are accepted (up to 5MB), but smaller files load
+                faster. Videos: {RECOMMENDED_VIDEO}, ideally 960 × 720 px
+                (4:3). {VIDEO_HOW_TO}
             </p>
 
             {onPrimaryChange && previews.length > 0 && (
