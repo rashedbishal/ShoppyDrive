@@ -19,8 +19,9 @@ class UpdateOrderShippingAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // The recipient name is deliberately not editable here — see
-            // Admin\OrderController::updateShippingAddress().
+            // DISC-75 (owner request 2026-11-19): the recipient name is now
+            // editable too; same limit as checkout (PlaceOrderRequest).
+            'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
             'address_line1' => ['required', 'string', 'max:200'],
             'address_line2' => ['nullable', 'string', 'max:200'],

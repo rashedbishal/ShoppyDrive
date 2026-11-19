@@ -58,6 +58,7 @@ test('admin can update the shipping address and phone, leaving other fields like
     actingAs($this->admin, 'admin');
 
     $response = $this->patch(route('admin.orders.updateShippingAddress', $this->order->id), [
+        'name' => 'Old Name',
         'phone' => '01812345678',
         'address_line1' => 'New address line',
         'address_line2' => 'Apt 4',
@@ -77,11 +78,11 @@ test('admin can update the shipping address and phone, leaving other fields like
     expect($address['email'])->toBe('customer@example.com');
 });
 
-test('the recipient name cannot be changed through this endpoint, even if submitted', function () {
+test('the recipient name can be changed, keeping the email set at checkout (DISC-75)', function () {
     actingAs($this->admin, 'admin');
 
     $response = $this->patch(route('admin.orders.updateShippingAddress', $this->order->id), [
-        'name' => 'Attempted New Name',
+        'name' => '  Rahima Begum  ',
         'phone' => '01812345678',
         'address_line1' => 'New address line',
         'city' => 'Chattogram',
@@ -89,14 +90,32 @@ test('the recipient name cannot be changed through this endpoint, even if submit
         'country' => 'Bangladesh',
     ]);
 
-    $response->assertRedirect();
-    expect($this->order->refresh()->shipping_address['name'])->toBe('Old Name');
+    $response->assertRedirect()->assertSessionHas('success');
+    $address = $this->order->refresh()->shipping_address;
+    expect($address['name'])->toBe('Rahima Begum')
+        ->and($address['email'])->toBe('customer@example.com');
 });
+
+test('a blank or too-long recipient name is rejected and nothing is saved (DISC-75)', function (string $name) {
+    actingAs($this->admin, 'admin');
+
+    $this->patch(route('admin.orders.updateShippingAddress', $this->order->id), [
+        'name' => $name,
+        'phone' => '01812345678',
+        'address_line1' => 'New address line',
+        'city' => 'Chattogram',
+        'state' => 'Chattogram',
+        'country' => 'Bangladesh',
+    ])->assertInvalid(['name']);
+
+    expect($this->order->refresh()->shipping_address)->toMatchArray(['name' => 'Old Name', 'address_line1' => 'Old address']);
+})->with(['blank' => ['   '], 'too long' => [str_repeat('a', 101)]]);
 
 test('an invalid phone number is rejected and nothing is saved', function () {
     actingAs($this->admin, 'admin');
 
     $response = $this->patch(route('admin.orders.updateShippingAddress', $this->order->id), [
+        'name' => 'Old Name',
         'phone' => '123',
         'address_line1' => 'New address line',
         'city' => 'Chattogram',
@@ -112,6 +131,7 @@ test('order items, status and pricing are never touched by the shipping-address 
     actingAs($this->admin, 'admin');
 
     $this->patch(route('admin.orders.updateShippingAddress', $this->order->id), [
+        'name' => 'Old Name',
         'phone' => '01812345678',
         'address_line1' => 'New address line',
         'city' => 'Chattogram',

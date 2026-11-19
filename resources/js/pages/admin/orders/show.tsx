@@ -238,6 +238,7 @@ export default function OrderShow({
         errors: addressErrors,
         clearErrors: clearAddressErrors,
     } = useForm({
+        name: order.shipping_address.name,
         phone: order.shipping_address.phone,
         address_line1: order.shipping_address.address_line1,
         address_line2: order.shipping_address.address_line2 ?? '',
@@ -253,6 +254,7 @@ export default function OrderShow({
     // this component never remounts.
     const seedAddressForm = () => {
         setAddressData({
+            name: order.shipping_address.name,
             phone: order.shipping_address.phone,
             address_line1: order.shipping_address.address_line1,
             address_line2: order.shipping_address.address_line2 ?? '',
@@ -760,21 +762,21 @@ export default function OrderShow({
                                                     onSubmit={handleSaveAddress}
                                                     className="space-y-3"
                                                 >
-                                                    <div>
-                                                        <p className="mb-1 text-xs font-medium text-slate-600">
-                                                            Recipient name
-                                                        </p>
-                                                        <p className="text-sm font-semibold text-slate-800">
-                                                            {
-                                                                order
-                                                                    .shipping_address
-                                                                    .name
-                                                            }
-                                                        </p>
-                                                        <p className="mt-0.5 text-xs text-slate-600">
-                                                            Not editable here.
-                                                        </p>
-                                                    </div>
+                                                    <Input
+                                                        maxLength={100}
+                                                        showCount
+                                                        label="Recipient name"
+                                                        value={addressData.name}
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'name',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.name
+                                                        }
+                                                    />
                                                     <Input
                                                         maxLength={11}
                                                         showCount

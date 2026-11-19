@@ -380,7 +380,7 @@ describe('L3: shipping address during a courier submission', function () {
         ($state === 'unknown' ? $factory->unknown() : $factory)->create();
 
         actingAs($this->admin, 'admin')->patch(route('admin.orders.updateShippingAddress', $order), [
-            'phone' => '01812345678', 'address_line1' => 'New House 9', 'city' => 'Chattogram', 'state' => 'Chattogram', 'country' => 'Bangladesh',
+            'name' => 'Rafiq Islam', 'phone' => '01812345678', 'address_line1' => 'New House 9', 'city' => 'Chattogram', 'state' => 'Chattogram', 'country' => 'Bangladesh',
         ])->assertSessionHas('error', "The shipping address can't be changed while a courier submission is in progress or its outcome is unresolved. Resolve it in the Courier panel first.");
 
         expect($order->refresh()->shipping_address['address_line1'])->toBe('House 1');
@@ -392,7 +392,7 @@ describe('L3: shipping address during a courier submission', function () {
         app(CourierSubmissionService::class)->confirmNotCreated($submission, $this->admin, 'Not in the Steadfast portal.');
 
         actingAs($this->admin, 'admin')->patch(route('admin.orders.updateShippingAddress', $order), [
-            'phone' => '01812345678', 'address_line1' => 'New House 9', 'city' => 'Chattogram', 'state' => 'Chattogram', 'country' => 'Bangladesh',
+            'name' => 'Rafiq Islam', 'phone' => '01812345678', 'address_line1' => 'New House 9', 'city' => 'Chattogram', 'state' => 'Chattogram', 'country' => 'Bangladesh',
         ])->assertSessionHas('success');
 
         expect($order->refresh()->shipping_address)->toMatchArray(['address_line1' => 'New House 9', 'name' => 'Rafiq Islam']);

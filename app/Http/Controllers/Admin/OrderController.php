@@ -630,9 +630,8 @@ class OrderController extends Controller
      * (items, pricing, status) stays frozen once the order exists. Merges
      * into the existing `shipping_address` JSON instead of replacing it, so
      * an email key set at checkout (used by Order::booted() for the
-     * customer notification) survives an address-only edit — the same
-     * reason the recipient `name` is left out of the request's validated
-     * data: it's never in the merge, so it can never change here either.
+     * customer notification) survives an address edit. The recipient
+     * `name`, phone and address are editable (DISC-75); the email is not.
      */
     public function updateShippingAddress(UpdateOrderShippingAddressRequest $request, Order $order): RedirectResponse
     {
