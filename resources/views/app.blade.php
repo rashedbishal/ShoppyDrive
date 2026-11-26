@@ -79,6 +79,8 @@
         <meta property="og:title" content="{{ $seoTags['title'] }}">
         <meta property="og:description" content="{{ $seoTags['description'] }}">
         <meta property="og:image" content="{{ $seoTags['image'] }}">
+        {{-- DISC-78: X (Twitter) reads og:title, og:description and og:image itself; it only needs the card type. Every page has an og:image (the site default at worst), so the large card always has a picture. --}}
+        <meta name="twitter:card" content="summary_large_image">
         @if($seoTags['jsonLd'])
             {{-- DISC-04: the JSON_HEX_* flags write < > & and both quote characters as Unicode escape sequences, so a product name or description containing </script> or HTML can never break out of this script element; the JSON value crawlers read is unchanged. --}}
             <script type="application/ld+json">{!! json_encode($seoTags['jsonLd'], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) !!}</script>

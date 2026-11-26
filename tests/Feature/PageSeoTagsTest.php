@@ -121,6 +121,14 @@ test('the about and contact descriptions follow the intro text the admin saved',
     'contact' => ['contact_page_hero_description', '/contact'],
 ]);
 
+test('every public page asks for the large Twitter card once and leaves the rest to Open Graph', function (string $path) {
+    $html = $this->get($path)->assertOk()->getContent();
+
+    expect(substr_count($html, 'name="twitter:'))->toBe(1)
+        ->and($html)->toContain('<meta name="twitter:card" content="summary_large_image">')
+        ->toContain('property="og:image" content="');
+})->with(['/', '/products', '/about']);
+
 test('long descriptions are cut to what a search result shows', function () {
     $category = Category::factory()->create(['description' => str_repeat('word ', 100), 'is_active' => true]);
 
