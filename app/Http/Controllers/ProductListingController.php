@@ -23,6 +23,8 @@ class ProductListingController extends Controller
 {
     public function index(Request $request): Response
     {
+        PageSeo::share('All Products', 'Browse all products at ShoppyDrive and narrow them down by category, brand, price and availability.');
+
         return $this->catalogResponse($request, null, null, route('products.index'));
     }
 

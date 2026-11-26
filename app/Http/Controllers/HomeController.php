@@ -14,9 +14,9 @@ use App\Models\ProductBundle;
 use App\Services\BundleService;
 use App\Support\DisplayOrderSettings;
 use App\Support\LayoutCache;
+use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use App\Support\SiteJsonLd;
-use Illuminate\Support\Facades\View;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -234,7 +234,8 @@ class HomeController extends Controller
 
         // DISC-61/DISC-64: business JSON-LD plus the products (with the
         // prices their cards show) of every section a visitor can actually
-        // see; title, description and image keep PageSeo's site defaults.
+        // see. DISC-76: its own title (matching Home.tsx's <Head>); the
+        // description and image keep PageSeo's site defaults.
         $shownCards = collect([
             'flash_sale' => collect($flashSaleData['items'] ?? [])->pluck('product'),
             'featured_products' => $featuredCards,
@@ -244,7 +245,7 @@ class HomeController extends Controller
             ->flatten(1)
             ->all();
 
-        View::share('seo', ['jsonLd' => SiteJsonLd::forHome($shownCards)]);
+        PageSeo::share('Online Shopping in Bangladesh', jsonLd: SiteJsonLd::forHome($shownCards));
 
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,

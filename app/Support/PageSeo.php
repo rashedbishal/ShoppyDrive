@@ -25,15 +25,27 @@ class PageSeo
 
     /**
      * Set this response's tags. Blank values fall back to the site defaults.
+     *
+     * @param  array<string, mixed>|null  $jsonLd
      */
-    public static function share(string $title, ?string $description = null, ?string $image = null, string $type = 'website'): void
+    public static function share(string $title, ?string $description = null, ?string $image = null, string $type = 'website', ?array $jsonLd = null): void
     {
         View::share('seo', [
-            'title' => $title.' - '.config('app.name'),
+            'title' => self::title($title),
             'description' => $description,
             'image' => $image,
             'type' => $type,
+            'jsonLd' => $jsonLd,
         ]);
+    }
+
+    /**
+     * DISC-76/77: the one title format, "Page - Site", matching what the
+     * browser's Inertia title callback (app.tsx) shows after JavaScript runs.
+     */
+    public static function title(string $title): string
+    {
+        return $title.' - '.config('app.name');
     }
 
     public static function shareForPage(Page $page): void

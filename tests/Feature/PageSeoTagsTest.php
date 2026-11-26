@@ -6,6 +6,7 @@ use App\Models\Blog;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Page;
+use App\Models\Setting;
 use App\Models\SubCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -84,6 +85,41 @@ test('any other public page gets the site defaults, with a share picture that re
         ->toContain('rel="canonical" href="'.url('/').'"')
         ->and(file_exists(public_path('images/brand/og-image.jpg')))->toBeTrue();
 });
+
+test('each main shop page has its own title, description and canonical in the first HTML', function () {
+    $pages = [
+        '/' => 'Online Shopping in Bangladesh',
+        '/products' => 'All Products',
+        '/brands' => 'All Brands',
+        '/about' => 'About Us',
+        '/contact' => 'Contact Us',
+        '/flash-sales' => 'Flash Sale',
+        '/bundle-deals' => 'Bundle Deals',
+    ];
+    $descriptions = [];
+
+    foreach ($pages as $path => $title) {
+        $html = $this->get($path)->assertOk()->getContent();
+
+        expect($html)->toContain('<title>'.$title.' - '.config('app.name').'</title>')
+            ->toContain('property="og:title" content="'.$title.' - '.config('app.name').'"')
+            ->toContain('rel="canonical" href="'.url($path).'"');
+
+        preg_match('/name="description" content="([^"]*)"/', $html, $tag);
+        $descriptions[$path] = $tag[1];
+    }
+
+    expect(array_unique($descriptions))->toHaveCount(count($pages));
+});
+
+test('the about and contact descriptions follow the intro text the admin saved', function (string $key, string $path) {
+    Setting::updateOrCreate(['key' => $key], ['value' => 'Our own <b>intro</b> text', 'group' => 'general']);
+
+    expect($this->get($path)->assertOk()->getContent())->toContain('name="description" content="Our own intro text"');
+})->with([
+    'about' => ['about_hero_description', '/about'],
+    'contact' => ['contact_page_hero_description', '/contact'],
+]);
 
 test('long descriptions are cut to what a search result shows', function () {
     $category = Category::factory()->create(['description' => str_repeat('word ', 100), 'is_active' => true]);

@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductBundle;
 use App\Services\BundleService;
 use App\Support\DisplayOrderSettings;
+use App\Support\PageSeo;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,6 +36,8 @@ class BundleController extends Controller
             ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
             ->each(fn (ProductBundle $bundle) => $bundle->setAttribute('available_sets', app(BundleService::class)->availableSets($bundle)))
             ->values();
+
+        PageSeo::share('Bundle Deals', 'Product bundles at ShoppyDrive: buy selected items together for a bundle price or free delivery.');
 
         return Inertia::render('catalog/BundleDeals', [
             'bundles' => $bundles,

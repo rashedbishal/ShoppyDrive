@@ -24,6 +24,8 @@ class BrandController extends Controller
             ]);
         $brands = DisplayOrderSettings::applyToQuery($brandsQuery, 'brands_listing')->get();
 
+        PageSeo::share('All Brands', 'Shop by brand at ShoppyDrive: browse every brand we carry and the products each one offers.');
+
         return Inertia::render('catalog/BrandListing', [
             'brands' => $brands,
         ]);

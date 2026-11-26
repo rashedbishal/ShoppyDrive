@@ -9,6 +9,7 @@ use App\Models\Admin;
 use App\Models\ContactMessage;
 use App\Models\Setting;
 use App\Support\LayoutCache;
+use App\Support\PageSeo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -26,23 +27,26 @@ class ContactController extends Controller
     {
         $settings = Setting::whereIn('key', self::keys())->pluck('value', 'key');
 
-        return Inertia::render('static/Contact', [
-            'content' => [
-                'hero_eyebrow' => $settings['contact_page_hero_eyebrow'] ?? 'Get in touch',
-                'hero_title' => $settings['contact_page_hero_title'] ?? "We're here to",
-                'hero_title_highlight' => $settings['contact_page_hero_title_highlight'] ?? 'help',
-                'hero_description' => $settings['contact_page_hero_description'] ?? 'Have a question, complaint, or just want to say hello? Our team is ready to assist you.',
-                'phone' => $settings['contact_phone'] ?? '+880 1700-000000',
-                'email' => $settings['contact_email'] ?? 'support@shoppydrive.com',
-                'address' => $settings['contact_address'] ?? 'Dhaka, Bangladesh',
-                'support_hours' => $settings['contact_page_support_hours'] ?? 'Every day, 9 AM–9 PM',
-                'social_links' => $settings['social_links'] ?? [
-                    'facebook' => 'https://facebook.com/shoppydrive',
-                    'instagram' => 'https://instagram.com/shoppydrive',
-                    'twitter' => 'https://twitter.com/shoppydrive',
-                ],
+        $content = [
+            'hero_eyebrow' => $settings['contact_page_hero_eyebrow'] ?? 'Get in touch',
+            'hero_title' => $settings['contact_page_hero_title'] ?? "We're here to",
+            'hero_title_highlight' => $settings['contact_page_hero_title_highlight'] ?? 'help',
+            'hero_description' => $settings['contact_page_hero_description'] ?? 'Have a question, complaint, or just want to say hello? Our team is ready to assist you.',
+            'phone' => $settings['contact_phone'] ?? '+880 1700-000000',
+            'email' => $settings['contact_email'] ?? 'support@shoppydrive.com',
+            'address' => $settings['contact_address'] ?? 'Dhaka, Bangladesh',
+            'support_hours' => $settings['contact_page_support_hours'] ?? 'Every day, 9 AM–9 PM',
+            'social_links' => $settings['social_links'] ?? [
+                'facebook' => 'https://facebook.com/shoppydrive',
+                'instagram' => 'https://instagram.com/shoppydrive',
+                'twitter' => 'https://twitter.com/shoppydrive',
             ],
-        ]);
+        ];
+
+        // DISC-76: the page's own intro text is its search description.
+        PageSeo::share('Contact Us', is_string($content['hero_description']) ? $content['hero_description'] : null);
+
+        return Inertia::render('static/Contact', ['content' => $content]);
     }
 
     public function store(Request $request): RedirectResponse

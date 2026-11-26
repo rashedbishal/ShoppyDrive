@@ -8,6 +8,7 @@ use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\DisplayOrderSettings;
+use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -78,6 +79,8 @@ class FlashSaleController extends Controller
             $product->flash_sale_price = $flash['price'] ?? null;
             $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
         }
+
+        PageSeo::share('Flash Sale', 'Limited-time flash sale prices at ShoppyDrive, for as long as each sale and its stock last.');
 
         return Inertia::render('catalog/FlashSales', [
             'activeSale' => $activeSale === null ? null : [

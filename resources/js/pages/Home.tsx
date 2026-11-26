@@ -1349,7 +1349,7 @@ function Home(): React.JSX.Element {
 
     return (
         <>
-            <Head title="Premium BDT shopping" />
+            <Head title="Online Shopping in Bangladesh" />
             {/* DISC-63: the page's one top-level heading, for screen readers and agents; visually hidden, so the design is unchanged. */}
             <h1 className="sr-only">{settings.site_name}</h1>
 

@@ -70,7 +70,7 @@ test('the homepage describes the business and the site from saved settings', fun
     expect($website['potentialAction']['target']['urlTemplate'])->toBe(url('/search').'?q={search_term_string}');
 });
 
-test('unsaved contact details are left out instead of the storefront placeholders, and the page tags are unchanged', function () {
+test('unsaved contact details are left out instead of the storefront placeholders, and the page keeps its own title', function () {
     [$html, $jsonLd] = homepageJsonLd();
 
     expect($jsonLd['@graph'][0])->toBe([
@@ -79,7 +79,7 @@ test('unsaved contact details are left out instead of the storefront placeholder
         'name' => config('app.name'),
         'url' => url('/'),
     ]);
-    expect($html)->toContain('<title>'.config('app.name').'</title>');
+    expect($html)->toContain('<title>Online Shopping in Bangladesh - '.config('app.name').'</title>');
 });
 
 test('a business name with </script> or HTML cannot break out of the JSON-LD script', function () {

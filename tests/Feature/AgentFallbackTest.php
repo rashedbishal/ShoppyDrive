@@ -24,12 +24,12 @@ function noscriptBlock(string $html): string
     return $match[1];
 }
 
-test('the homepage has exactly one h1 naming the site, plus about, contact and legal links', function () {
+test('the homepage has exactly one h1 naming the page and the site, plus about, contact and legal links', function () {
     $html = $this->get(route('home'))->assertOk()->getContent();
     $fallback = noscriptBlock($html);
 
     expect(substr_count($html, '<h1'))->toBe(1)
-        ->and($fallback)->toContain('<h1>'.config('app.name').'</h1>')
+        ->and($fallback)->toContain('<h1>Online Shopping in Bangladesh - '.config('app.name').'</h1>')
         ->toContain('href="'.url('/about').'"')
         ->toContain('href="'.url('/contact').'"')
         ->toContain('href="'.url('/terms').'"')
