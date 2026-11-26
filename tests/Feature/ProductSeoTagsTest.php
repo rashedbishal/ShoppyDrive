@@ -39,11 +39,36 @@ test('a product page response carries real SEO tags, not the generic site title'
 
     $html = $this->get(route('product.show', $product->slug))->assertOk()->getContent();
 
-    expect($html)->toContain('<title>Comfy T-Shirt</title>');
+    expect($html)->toContain('<title>Comfy T-Shirt - '.config('app.name').'</title>');
     expect($html)->toContain('name="description" content="A very comfy t-shirt."');
-    expect($html)->toContain('property="og:title" content="Comfy T-Shirt"');
+    expect($html)->toContain('property="og:title" content="Comfy T-Shirt - '.config('app.name').'"');
     expect($html)->toContain('property="og:image" content="'.url('/storage/products/comfy.jpg').'"');
     expect($html)->toContain(route('product.show', $product->slug));
     expect($html)->toContain('"@type":"Product"');
     expect($html)->not->toContain('<title>Laravel</title>');
+});
+
+test('a product search title follows the same page - site format, and the page has one description', function () {
+    config(['inertia.ssr.enabled' => false]);
+
+    $product = Product::factory()->create([
+        'name' => 'Comfy T-Shirt',
+        'meta_title' => 'Cotton T-Shirt for Summer',
+        'meta_description' => 'Breathable cotton.',
+        'is_active' => true,
+        'published_at' => now()->subDay(),
+    ]);
+
+    $html = $this->get(route('product.show', $product->slug))->assertOk()->getContent();
+
+    expect($html)->toContain('<title>Cotton T-Shirt for Summer - '.config('app.name').'</title>')
+        ->and(substr_count($html, 'name="description"'))->toBe(1)
+        ->and($html)->toContain('name="description" content="Breathable cotton."');
+});
+
+test('the product page adds no second description after it loads in the browser (DISC-77)', function () {
+    $source = (string) file_get_contents(resource_path('js/pages/catalog/ProductDetail.tsx'));
+
+    expect($source)->not->toContain('name="description"')
+        ->toContain('<Head title={product.meta_title || product.name} />');
 });

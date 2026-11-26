@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\DisplayOrderSettings;
+use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -161,7 +162,9 @@ class ProductController extends Controller
         $description = $product->meta_description ?: $product->short_description;
 
         View::share('seo', [
-            'title' => $product->meta_title ?: $product->name,
+            // DISC-77: "Product - Site", like every other page and like the
+            // title the browser shows after ProductDetail's <Head> runs.
+            'title' => PageSeo::title($product->meta_title ?: $product->name),
             'description' => $description,
             'canonical' => route('product.show', $product->slug),
             'image' => $imageUrl,

@@ -684,16 +684,9 @@ export default function ProductDetail({
 
     return (
         <div className="min-h-screen bg-[var(--color-surface-alt)] pb-6">
-            <Head title={product.meta_title || product.name}>
-                <meta
-                    name="description"
-                    content={
-                        (product.meta_description ||
-                            product.short_description) ??
-                        undefined
-                    }
-                />
-            </Head>
+            {/* DISC-77: the description comes only from the server's first
+                HTML (app.blade.php); a second one here duplicated it. */}
+            <Head title={product.meta_title || product.name} />
 
             <div className="py-4 lg:py-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
