@@ -184,6 +184,19 @@ class ProductController extends Controller
 
         $jsonLd['offers'] = [...$this->jsonLdOffers($product, $flashSaleItems), 'url' => $productUrl];
 
+        // DISC-82: the same approved-review count and average the page's
+        // rating header shows (loadCount/loadAvg above: is_approved only,
+        // soft-deleted reviews excluded). Left out until one exists.
+        if ($product->reviews_count > 0) {
+            $jsonLd['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => round((float) $product->average_rating, 1),
+                'reviewCount' => (int) $product->reviews_count,
+                'bestRating' => 5,
+                'worstRating' => 1,
+            ];
+        }
+
         View::share('seo', [
             // DISC-77: "Product - Site", like every other page and like the
             // title the browser shows after ProductDetail's <Head> runs.

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\Brand;
 use App\Models\Product;
+use App\Models\Review;
+use App\Models\User;
 
 /*
  * DISC-04: the product JSON-LD is printed inside <script type="application/ld+json">
@@ -108,4 +110,34 @@ test('a product without a SKU or brand leaves both out instead of printing empty
     $decoded = json_decode($jsonLd, true, flags: JSON_THROW_ON_ERROR);
 
     expect($decoded)->not->toHaveKey('sku')->not->toHaveKey('brand');
+});
+
+test('the rating in the JSON-LD counts only approved, not deleted reviews (DISC-82)', function () {
+    [, , $product] = disc04ProductPage([]);
+    $review = fn (int $rating, bool $approved): Review => Review::create([
+        'product_id' => $product->id, 'user_id' => User::factory()->create()->id,
+        'rating' => $rating, 'body' => 'A genuine review.', 'is_approved' => $approved,
+    ]);
+    $review(5, true);
+    $review(4, true);
+    $review(1, false);
+    $review(1, true)->delete();
+
+    preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $this->get(route('product.show', $product->slug))->assertOk()->getContent(), $match);
+
+    expect(json_decode($match[1], true, flags: JSON_THROW_ON_ERROR)['aggregateRating'])->toBe([
+        '@type' => 'AggregateRating', 'ratingValue' => 4.5, 'reviewCount' => 2, 'bestRating' => 5, 'worstRating' => 1,
+    ]);
+});
+
+test('a product with no approved review has no rating in its JSON-LD', function () {
+    [, , $product] = disc04ProductPage([]);
+    Review::create([
+        'product_id' => $product->id, 'user_id' => User::factory()->create()->id,
+        'rating' => 5, 'body' => 'Waiting for approval.', 'is_approved' => false,
+    ]);
+
+    preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $this->get(route('product.show', $product->slug))->getContent(), $match);
+
+    expect(json_decode($match[1], true, flags: JSON_THROW_ON_ERROR))->not->toHaveKey('aggregateRating')->not->toHaveKey('review');
 });
