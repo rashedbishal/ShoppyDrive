@@ -160,23 +160,39 @@ class ProductController extends Controller
         $imagePath = $product->primaryImagePath();
         $imageUrl = $imagePath ? (Str::startsWith($imagePath, ['http://', 'https://']) ? $imagePath : url($imagePath)) : null;
         $description = $product->meta_description ?: $product->short_description;
+        $productUrl = route('product.show', $product->slug);
+
+        // DISC-81: url, sku and brand join the existing fields; sku and brand
+        // are left out when the product has none. The offer's price, currency
+        // and availability are exactly what jsonLdOffers() already returned.
+        $jsonLd = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $product->name,
+            'description' => $description,
+            'image' => $imageUrl ? [$imageUrl] : [],
+            'url' => $productUrl,
+        ];
+
+        if (filled($product->sku)) {
+            $jsonLd['sku'] = $product->sku;
+        }
+
+        if ($product->brand !== null) {
+            $jsonLd['brand'] = ['@type' => 'Brand', 'name' => $product->brand->name];
+        }
+
+        $jsonLd['offers'] = [...$this->jsonLdOffers($product, $flashSaleItems), 'url' => $productUrl];
 
         View::share('seo', [
             // DISC-77: "Product - Site", like every other page and like the
             // title the browser shows after ProductDetail's <Head> runs.
             'title' => PageSeo::title($product->meta_title ?: $product->name),
             'description' => $description,
-            'canonical' => route('product.show', $product->slug),
+            'canonical' => $productUrl,
             'image' => $imageUrl,
             'type' => 'product',
-            'jsonLd' => [
-                '@context' => 'https://schema.org',
-                '@type' => 'Product',
-                'name' => $product->name,
-                'description' => $description,
-                'image' => $imageUrl ? [$imageUrl] : [],
-                'offers' => $this->jsonLdOffers($product, $flashSaleItems),
-            ],
+            'jsonLd' => $jsonLd,
         ]);
 
         return Inertia::render('catalog/ProductDetail', [

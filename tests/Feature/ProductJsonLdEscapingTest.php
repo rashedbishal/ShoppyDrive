@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Brand;
 use App\Models\Product;
 
 /*
@@ -76,11 +77,35 @@ test('the existing Product JSON-LD fields are unchanged for an ordinary product'
         'name' => 'Comfy T-Shirt',
         'description' => 'A very comfy t-shirt.',
         'image' => [],
+        'url' => route('product.show', $product->slug),
+        'sku' => $product->sku,
         'offers' => [
             '@type' => 'Offer',
             'priceCurrency' => 'BDT',
             'price' => (string) $product->price,
             'availability' => 'https://schema.org/InStock',
+            'url' => route('product.show', $product->slug),
         ],
     ])->and($jsonLd)->toContain('"@context":"https://schema.org"');
+});
+
+test('the product JSON-LD names its brand, SKU and canonical URL, and the offer links to the same page (DISC-81)', function () {
+    $brand = Brand::factory()->create(['name' => 'Acme </script><b>', 'is_active' => true]);
+
+    [$html, $jsonLd, $product] = disc04ProductPage(['sku' => 'TS-1001', 'brand_id' => $brand->id]);
+    $decoded = json_decode($jsonLd, true, flags: JSON_THROW_ON_ERROR);
+
+    expect($decoded['url'])->toBe(route('product.show', $product->slug))
+        ->and($decoded['sku'])->toBe('TS-1001')
+        ->and($decoded['brand'])->toBe(['@type' => 'Brand', 'name' => 'Acme </script><b>'])
+        ->and($decoded['offers']['url'])->toBe(route('product.show', $product->slug))
+        ->and($html)->toContain('rel="canonical" href="'.route('product.show', $product->slug).'"')
+        ->and($jsonLd)->not->toContain('</script>');
+});
+
+test('a product without a SKU or brand leaves both out instead of printing empty values', function () {
+    [, $jsonLd] = disc04ProductPage(['sku' => null, 'brand_id' => null]);
+    $decoded = json_decode($jsonLd, true, flags: JSON_THROW_ON_ERROR);
+
+    expect($decoded)->not->toHaveKey('sku')->not->toHaveKey('brand');
 });

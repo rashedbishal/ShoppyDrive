@@ -66,6 +66,7 @@ test('a variant product with some stock is InStock with an AggregateOffer over t
         'highPrice' => '1500.00',
         'offerCount' => 3,
         'availability' => 'https://schema.org/InStock',
+        'url' => route('product.show', $product->slug),
     ]);
 });
 
@@ -98,6 +99,7 @@ test('a simple product on an active flash sale shows the sale price; an expired 
         'priceCurrency' => 'BDT',
         'price' => (string) $sale->fresh()->sale_price,
         'availability' => 'https://schema.org/InStock',
+        'url' => route('product.show', $product->slug),
     ])->and((float) disc14Offers($product)['price'])->toBe(750.0);
 });
 
@@ -107,5 +109,6 @@ test('a simple product without a sale keeps exactly the previous Offer, includin
 
     expect(disc14Offers($inStock))->toBe([
         '@type' => 'Offer', 'priceCurrency' => 'BDT', 'price' => (string) $inStock->price, 'availability' => 'https://schema.org/InStock',
+        'url' => route('product.show', $inStock->slug),
     ])->and(disc14Offers($soldOut)['availability'])->toBe('https://schema.org/OutOfStock');
 });
