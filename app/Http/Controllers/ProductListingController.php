@@ -45,7 +45,16 @@ class ProductListingController extends Controller
         }
 
         $listing = $category ?? $subCategory;
-        PageSeo::share($listing->meta_title ?: $listing->name, $listing->meta_description ?: $listing->description, $listing->image);
+
+        // DISC-83: Home, then a sub-category's real parent category, then
+        // this listing. The parent is active (checked by the query above).
+        $breadcrumbs = PageSeo::breadcrumbList([
+            ['Home', route('home')],
+            ...($subCategory ? [[$subCategory->category->name, route('category.show', $subCategory->category->slug)]] : []),
+            [$listing->name, route('category.show', $listing->slug)],
+        ]);
+
+        PageSeo::share($listing->meta_title ?: $listing->name, $listing->meta_description ?: $listing->description, $listing->image, breadcrumbs: $breadcrumbs);
 
         return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug));
     }

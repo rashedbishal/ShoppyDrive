@@ -206,6 +206,13 @@ class ProductController extends Controller
             'image' => $imageUrl,
             'type' => 'product',
             'jsonLd' => $jsonLd,
+            // DISC-83: the same trail as the page's visible breadcrumb
+            // (ProductDetail.tsx): Home, the product's category, the product.
+            'breadcrumbs' => PageSeo::breadcrumbList([
+                ['Home', route('home')],
+                ...($product->category ? [[$product->category->name, route('category.show', $product->category->slug)]] : []),
+                [$product->name, $productUrl],
+            ]),
         ]);
 
         return Inertia::render('catalog/ProductDetail', [

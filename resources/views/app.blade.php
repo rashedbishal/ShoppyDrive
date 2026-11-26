@@ -85,6 +85,10 @@
             {{-- DISC-04: the JSON_HEX_* flags write < > & and both quote characters as Unicode escape sequences, so a product name or description containing </script> or HTML can never break out of this script element; the JSON value crawlers read is unchanged. --}}
             <script type="application/ld+json">{!! json_encode($seoTags['jsonLd'], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) !!}</script>
         @endif
+        @if($seoTags['breadcrumbs'])
+            {{-- DISC-83: its own block, after the main one, so the main block's shape is unchanged. Same escaping as above. --}}
+            <script type="application/ld+json">{!! json_encode($seoTags['breadcrumbs'], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) !!}</script>
+        @endif
 
         {{-- Custom Header: the admin pastes any vendor's code verbatim (Admin
         › Marketing & Tracking), not just Facebook's, so a future vendor or a
