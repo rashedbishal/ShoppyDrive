@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Blog;
 use App\Support\PageSeo;
+use App\Support\SiteJsonLd;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,7 +41,7 @@ class BlogController extends Controller
             ->limit(3)
             ->get();
 
-        PageSeo::share($blog->meta_title ?: $blog->title, $blog->meta_description ?: $blog->excerpt, $blog->featured_image, 'article');
+        PageSeo::share($blog->meta_title ?: $blog->title, $blog->meta_description ?: $blog->excerpt, $blog->featured_image, 'article', SiteJsonLd::forBlogPost($blog));
 
         return Inertia::render('blog/Show', [
             'blog' => $blog,

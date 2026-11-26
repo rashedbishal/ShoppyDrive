@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\Blog;
 use Illuminate\Support\Str;
 
 /**
@@ -66,6 +67,43 @@ class SiteJsonLd
         }
 
         return ['@context' => 'https://schema.org', '@graph' => $graph];
+    }
+
+    /**
+     * DISC-84: a published blog post as a BlogPosting. Only values the post
+     * really has are included: no published date, image, description or
+     * author is made up when it is blank. The publisher is the same
+     * Organization the homepage describes (same @id, saved settings only).
+     *
+     * @return array<string, mixed>
+     */
+    public static function forBlogPost(Blog $blog): array
+    {
+        $settings = LayoutCache::settings();
+        $url = route('blog.show', $blog->slug);
+        $description = self::text(strip_tags((string) ($blog->meta_description ?: $blog->excerpt)));
+        $image = self::absoluteUrl($blog->featured_image);
+        $author = self::text($blog->author_name);
+
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'BlogPosting',
+            'headline' => self::text($blog->title),
+            'description' => $description,
+            'url' => $url,
+            'mainEntityOfPage' => $url,
+            'image' => $image !== null ? [$image] : null,
+            'datePublished' => $blog->published_at?->toIso8601String(),
+            'dateModified' => $blog->updated_at?->toIso8601String(),
+            'author' => $author !== null ? ['@type' => 'Person', 'name' => $author] : null,
+            'publisher' => array_filter([
+                '@type' => 'Organization',
+                '@id' => url('/').'#organization',
+                'name' => self::text($settings['site_name'] ?? null) ?? config('app.name'),
+                'url' => url('/'),
+                'logo' => self::absoluteUrl($settings['logo'] ?? null),
+            ], fn (mixed $value): bool => $value !== null),
+        ], fn (mixed $value): bool => $value !== null);
     }
 
     /**
