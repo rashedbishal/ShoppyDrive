@@ -28,6 +28,13 @@ Route::post('/client-errors', ClientErrorController::class)->middleware('throttl
 Route::get('/page/{page:slug}', function (Page $page) {
     abort_unless($page->is_published, 404);
 
+    // DISC-80: a page that also has its own top-level URL (route named after
+    // its slug) is served only there, so the two URLs don't compete. Those
+    // routes never redirect back, so there is no loop.
+    if (in_array($page->slug, GenerateSitemapCommand::TOP_LEVEL_PAGES, true)) {
+        return redirect()->route($page->slug, status: 301);
+    }
+
     PageSeo::shareForPage($page);
 
     return inertia('static/Page', ['page' => $page]);

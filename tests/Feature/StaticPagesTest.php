@@ -92,3 +92,24 @@ it('renders the about page with admin-configured content', function (): void {
             ->where('content.cta_title', 'Ready to start shopping?')
         );
 });
+
+it('sends /page/{slug} to the page\'s own top-level URL, which then loads without redirecting again', function (string $slug): void {
+    Page::updateOrCreate(['slug' => $slug], ['title' => 'Policy', 'content' => '<p>Text</p>', 'is_published' => true]);
+
+    $this->get('/page/'.$slug)->assertStatus(301)->assertRedirect(url('/'.$slug));
+    $this->get('/'.$slug)->assertOk();
+})->with(['privacy-policy', 'terms', 'faq', 'return-policy', 'refund-policy', 'shipping-policy']);
+
+it('keeps serving any other page at /page/{slug}', function (): void {
+    Page::create(['title' => 'Size Guide', 'slug' => 'size-guide', 'content' => '<p>Sizes</p>', 'is_published' => true]);
+
+    $this->get('/page/size-guide')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('static/Page')->where('page.slug', 'size-guide'));
+});
+
+it('still returns 404, not a redirect, for an unpublished top-level page under /page', function (): void {
+    Page::updateOrCreate(['slug' => 'terms'], ['title' => 'Terms', 'content' => '<p>Text</p>', 'is_published' => false]);
+
+    $this->get('/page/terms')->assertNotFound();
+});
