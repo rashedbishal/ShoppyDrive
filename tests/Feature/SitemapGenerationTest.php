@@ -11,6 +11,7 @@ use App\Models\HomepageSetting;
 use App\Models\Page;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\SubCategory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -117,6 +118,31 @@ test('active brands, published blogs and the main listing pages are included, hi
         ->toContain(url('/about'))
         ->toContain(url('/contact'));
     expect(implode(' ', $locs))->not->toContain('hidden-brand')->not->toContain('draft-post');
+});
+
+test('an active sub-category under an active category is included, hidden or unreachable ones are not', function () {
+    $activeParent = Category::factory()->create(['slug' => 'kitchen', 'is_active' => true]);
+    $inactiveParent = Category::factory()->create(['slug' => 'garden', 'is_active' => false]);
+    SubCategory::factory()->create(['slug' => 'pots-and-pans', 'category_id' => $activeParent->id, 'is_active' => true]);
+    SubCategory::factory()->create(['slug' => 'hidden-sub', 'category_id' => $activeParent->id, 'is_active' => false]);
+    SubCategory::factory()->create(['slug' => 'orphan-sub', 'category_id' => $inactiveParent->id, 'is_active' => true]);
+    SubCategory::factory()->create(['slug' => 'deleted-sub', 'category_id' => $activeParent->id, 'is_active' => true])->delete();
+
+    $locs = sitemapLocs();
+
+    expect($locs)->toContain(url('/category/pots-and-pans'));
+    expect(implode(' ', $locs))->not->toContain('hidden-sub')->not->toContain('orphan-sub')->not->toContain('deleted-sub');
+});
+
+test('a sub-category whose slug an active category already uses is not listed a second time', function () {
+    $category = Category::factory()->create(['slug' => 'phones', 'is_active' => true]);
+    SubCategory::factory()->create(['slug' => 'phones', 'category_id' => $category->id, 'is_active' => true]);
+
+    expect(array_count_values(sitemapLocs())[url('/category/phones')])->toBe(1);
+});
+
+test('the flash sale and bundle deal pages are listed', function () {
+    expect(sitemapLocs())->toContain(url('/flash-sales'))->toContain(url('/bundle-deals'));
 });
 
 test('every legal page in the sitemap uses its real top-level URL', function () {

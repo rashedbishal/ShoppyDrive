@@ -9,12 +9,15 @@ use App\Http\Controllers\ContactController;
 use App\Models\Blog;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\FlashSale;
 use App\Models\HeroSlide;
 use App\Models\HomepageSetting;
 use App\Models\Page;
 use App\Models\Product;
+use App\Models\ProductBundle;
 use App\Models\PromotionalBanner;
 use App\Models\Setting;
+use App\Models\SubCategory;
 use DateTimeInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -62,9 +65,23 @@ class GenerateSitemapCommand extends Command
             PromotionalBanner::max('updated_at'),
         ))->setPriority(1.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
 
-        Category::active()->get()->each(function (Category $category) use ($sitemap) {
+        $categories = Category::active()->get();
+
+        $categories->each(function (Category $category) use ($sitemap) {
             $sitemap->add($this->url('/category/'.$category->slug, $category->updated_at));
         });
+
+        // DISC-79: sub-categories share the /category/{slug} URL. Listed only
+        // when that URL would show them: active, under an active category,
+        // and not shadowed by an active category with the same slug
+        // (ProductListingController::category() looks categories up first).
+        SubCategory::active()
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->whereNotIn('slug', $categories->pluck('slug'))
+            ->get()
+            ->each(function (SubCategory $subCategory) use ($sitemap) {
+                $sitemap->add($this->url('/category/'.$subCategory->slug, $subCategory->updated_at));
+            });
 
         $products->each(function (Product $product) use ($sitemap) {
             $sitemap->add($this->url('/product/'.$product->slug, $product->updated_at));
@@ -76,6 +93,8 @@ class GenerateSitemapCommand extends Command
 
         $sitemap->add($this->url('/products', $newestProduct));
         $sitemap->add($this->url('/brands', $brands->max('updated_at')));
+        $sitemap->add($this->url('/flash-sales', FlashSale::max('updated_at')));
+        $sitemap->add($this->url('/bundle-deals', ProductBundle::max('updated_at')));
         $sitemap->add($this->url('/blog', $blogs->max('updated_at')));
         $sitemap->add($this->url('/about', Setting::whereIn('key', AboutController::keys())->max('updated_at')));
         $sitemap->add($this->url('/contact', Setting::whereIn('key', ContactController::keys())->max('updated_at')));
