@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { Modal } from '@/components/ui/modal';
 import { useAppearance } from '@/hooks/use-appearance';
-import { useFlashToast } from '@/hooks/use-flash-toast';
+import { markToasterMounted } from '@/lib/toast';
 import { useUiStore } from '@/stores/uiStore';
 
 function isAdminPath(path: string): boolean {
@@ -88,7 +88,12 @@ function Toaster({ ...props }: ToasterProps) {
         (state) => state.hideBlockedDeleteProducts,
     );
 
-    useFlashToast();
+    // F1-04: runs after the <Sonner> below has subscribed (child effects
+    // run first), so queued toasts (lib/toast.ts) are shown from here on.
+    // The flash-message listener lives in app.tsx, loaded with the page.
+    useEffect(() => {
+        markToasterMounted();
+    }, []);
 
     return (
         <>

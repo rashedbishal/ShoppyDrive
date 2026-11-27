@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { m as motion, useInView, useReducedMotion } from 'framer-motion';
 import { Heart, ShoppingBag } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 
@@ -11,6 +11,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { useCanHover } from '@/hooks/use-can-hover';
 import { MOTION, PRODUCT_CARD_HEIGHT } from '@/lib/constants';
 import { IMAGE_SIZES } from '@/lib/image-sizes';
+import { isMotionReady } from '@/lib/motion-ready';
 import { cn, formatCurrency, getDiscountPercent } from '@/lib/utils';
 import productRoutes from '@/routes/product';
 import { useCartStore } from '@/stores/cartStore';
@@ -136,6 +137,10 @@ export function ProductCard({
     const prefersReducedMotion = useReducedMotion();
     const cardRef = useRef<HTMLElement>(null);
     const isInView = useInView(cardRef, { once: true, amount: 0.2 });
+    // F1-02: the scroll-in reveal needs the lazily loaded animation features
+    // (lib/motion-ready.ts). A card on screen before they arrive just shows,
+    // as with reduced motion; cards mounted afterwards keep the reveal.
+    const [canReveal] = useState(isMotionReady);
     const [isHovered, setIsHovered] = useState(false);
     // The slow, staggered reveal belongs to the first appearance only; once
     // it has played, hovering in and out uses the quick hover timing.
@@ -568,7 +573,7 @@ export function ProductCard({
             )}
             initial={false}
             animate={
-                prefersReducedMotion
+                prefersReducedMotion || !canReveal
                     ? undefined
                     : isInView
                       ? { opacity: 1, y: 0, scale: 1 }

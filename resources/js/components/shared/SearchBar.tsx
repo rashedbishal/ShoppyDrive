@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import {
     ArrowRight,
     Layers,

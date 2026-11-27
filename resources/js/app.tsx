@@ -1,15 +1,15 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import type { ResolvedComponent } from '@inertiajs/react';
-import React from 'react';
-import { toast } from 'sonner';
+import { LazyMotion } from 'framer-motion';
+import React, { lazy, Suspense } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { route as ziggyRoute } from 'ziggy-js';
 import ErrorBoundary from '@/components/error-boundary';
-import AccountLayout from '@/components/layout/AccountLayout';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
-import { Toaster } from '@/components/ui/sonner';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { useFlashToast } from '@/hooks/use-flash-toast';
 import { initializeSiteTheme } from '@/hooks/use-theme';
 import AppLayout from '@/layouts/app-layout';
 
@@ -20,8 +20,10 @@ import {
     preserveScrollOnErrors,
     registerFormErrorScroll,
 } from '@/lib/form-error-scroll';
+import { markMotionReady } from '@/lib/motion-ready';
 import { takePurchasedLines } from '@/lib/purchased-cart-lines';
 import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
+import { toast } from '@/lib/toast';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import {
@@ -896,6 +898,37 @@ router.on('navigate', (event) => {
     }
 });
 
+// F1-04: sonner and the Toaster load as their own chunk; toasts raised
+// before it arrives are queued (lib/toast.ts). The flash-message listener
+// stays here so a flash on the very first page is still caught.
+// If its chunk can't be fetched (flaky network, a deploy changed its
+// name), render nothing rather than throw outside the page's error boundary.
+const LazyToaster = lazy(() =>
+    import('@/components/ui/sonner')
+        .then((module): { default: ComponentType } => ({
+            default: module.Toaster,
+        }))
+        .catch(() => ({ default: () => null })),
+);
+
+function FlashToastListener(): null {
+    useFlashToast();
+
+    return null;
+}
+
+let AccountLayout: ComponentType<{ children: ReactNode }> | null = null;
+
+const loadMotionFeatures = () =>
+    import('@/lib/motion-features').then((module) => {
+        // After <LazyMotion> has registered the features (its own `then`
+        // runs after this one), so a component that sees "ready" can rely
+        // on them.
+        setTimeout(markMotionReady, 0);
+
+        return module.default;
+    });
+
 const storefrontPages = import.meta.glob<{ default: ResolvedComponent }>([
     './pages/**/*.tsx',
     '!./pages/admin/**',
@@ -915,6 +948,14 @@ createInertiaApp({
             const { resolveAdminPage } = await import('@/lib/admin-pages');
 
             return resolveAdminPage(name);
+        }
+
+        // F1-04: the account sidebar layout is only downloaded for account
+        // pages. Inertia resolves the layout after this returns, so it is
+        // always loaded by the time `layout` below needs it.
+        if (ACCOUNT_PAGES.has(name) && AccountLayout === null) {
+            AccountLayout = (await import('@/components/layout/AccountLayout'))
+                .default;
         }
 
         const page = await storefrontPages[`./pages/${name}.tsx`]?.();
@@ -941,7 +982,7 @@ createInertiaApp({
             case ACCOUNT_PAGES.has(name):
                 // Persistent nested layout: the account sidebar stays mounted
                 // while switching tabs, so only the content swaps.
-                return [AppLayout, AccountLayout];
+                return AccountLayout ? [AppLayout, AccountLayout] : AppLayout;
             default:
                 return AppLayout;
         }
@@ -949,12 +990,20 @@ createInertiaApp({
     strictMode: true,
     withApp(app) {
         return (
-            <TooltipProvider delayDuration={0}>
-                {/* FE-010: a crashing page shows a message, not a white screen. */}
-                <ErrorBoundary>{app}</ErrorBoundary>
-                <Toaster />
-                <PageLoadingOverlay />
-            </TooltipProvider>
+            // F1-02: animation features load as their own chunk (see
+            // lib/motion-features.ts); not `strict`, so admin components
+            // that still use the full `motion` keep working inside it.
+            <LazyMotion features={loadMotionFeatures}>
+                <TooltipProvider delayDuration={0}>
+                    {/* FE-010: a crashing page shows a message, not a white screen. */}
+                    <ErrorBoundary>{app}</ErrorBoundary>
+                    <FlashToastListener />
+                    <Suspense fallback={null}>
+                        <LazyToaster />
+                    </Suspense>
+                    <PageLoadingOverlay />
+                </TooltipProvider>
+            </LazyMotion>
         );
     },
     progress: false,

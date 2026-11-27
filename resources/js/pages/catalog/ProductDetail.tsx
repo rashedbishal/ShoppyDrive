@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import {
     ChevronLeft,
     ChevronRight,
@@ -29,8 +29,8 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { CharCount } from '@/components/ui/char-count';
+import { LazySelect } from '@/components/ui/lazy-select';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
-import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { STORAGE_KEYS } from '@/lib/constants';
@@ -1501,7 +1501,7 @@ export default function ProductDetail({
                                                 <span className="hidden text-sm font-medium text-[var(--color-text-secondary)] sm:inline">
                                                     Sort by:
                                                 </span>
-                                                <Select
+                                                <LazySelect
                                                     aria-label="Sort reviews"
                                                     containerClassName="min-w-36"
                                                     selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
@@ -1522,7 +1522,7 @@ export default function ProductDetail({
                                                     <option value="lowest">
                                                         Lowest Rated
                                                     </option>
-                                                </Select>
+                                                </LazySelect>
                                             </div>
                                         </div>
 

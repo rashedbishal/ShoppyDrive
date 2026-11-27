@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';

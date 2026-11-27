@@ -162,6 +162,26 @@ export function SubcategoryShowcase({
         startTime: number;
     } | null>(null);
     const [shouldLoop, setShouldLoop] = useState(false);
+    // F1-08: the per-frame loop below only runs while the row is on screen.
+    // A performance trace showed it writing scrollLeft (and so recalculating
+    // style and firing scroll listeners) every frame for as long as the page
+    // stayed open, even after the visitor had scrolled far past it.
+    const [isOnScreen, setIsOnScreen] = useState(true);
+
+    useEffect(() => {
+        const container = scrollRef.current;
+
+        if (!container || typeof IntersectionObserver === 'undefined') {
+            return;
+        }
+
+        const observer = new IntersectionObserver(([entry]) => {
+            setIsOnScreen(entry.isIntersecting);
+        });
+        observer.observe(container);
+
+        return () => observer.disconnect();
+    }, []);
 
     // Overflow detection: does one set of cards exceed the visible width?
     // Runs at any size — there's no viewport-width gate — so this behaves
@@ -206,7 +226,7 @@ export function SubcategoryShowcase({
     // touch/trackpad scrolling even under reduced motion), but only actually
     // advances the position on its own when autoplay is allowed.
     useEffect(() => {
-        if (!shouldLoop) {
+        if (!shouldLoop || !isOnScreen) {
             return;
         }
 
@@ -300,7 +320,15 @@ export function SubcategoryShowcase({
                     singleSetWidth;
             }
 
-            container.scrollLeft = scrollPositionRef.current;
+            // F1-08: only write when it would actually move the row (it
+            // stays put under reduced motion or while paused), so an idle
+            // frame no longer fires scroll events and a style recalculation.
+            if (
+                Math.abs(container.scrollLeft - scrollPositionRef.current) >=
+                0.5
+            ) {
+                container.scrollLeft = scrollPositionRef.current;
+            }
 
             frameId = requestAnimationFrame(tick);
         };
@@ -310,7 +338,7 @@ export function SubcategoryShowcase({
         return () => {
             cancelAnimationFrame(frameId);
         };
-    }, [shouldLoop, prefersReducedMotion]);
+    }, [shouldLoop, prefersReducedMotion, isOnScreen]);
 
     if (subCategories.length === 0) {
         return null;

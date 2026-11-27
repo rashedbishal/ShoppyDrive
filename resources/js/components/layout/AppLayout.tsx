@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import { Suspense, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import AuroraBackdrop from '@/components/layout/AuroraBackdrop';

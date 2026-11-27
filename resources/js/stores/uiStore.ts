@@ -1,6 +1,6 @@
-import { toast as showToast } from 'sonner';
 import { create } from 'zustand';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { toast as showToast } from '@/lib/toast';
 import type { FlashToast, UiState, UiStateToast } from '@/types';
 
 type ToastInput = Omit<FlashToast, 'id'> & {

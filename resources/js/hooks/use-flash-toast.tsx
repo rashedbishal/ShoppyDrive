@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useUiStore } from '@/stores/uiStore';
 import type { FlashToast } from '@/types/ui';
 

@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import { ChevronDown, HelpCircle, MessageCircle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 

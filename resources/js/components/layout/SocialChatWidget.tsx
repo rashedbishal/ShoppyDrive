@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import { Bot, MessageCircle, X } from 'lucide-react';
 import { Suspense, useState } from 'react';
 import { LazyAiAssistantPanel, useHasOpened } from '@/lib/deferred-ui';

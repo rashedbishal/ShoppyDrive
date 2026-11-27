@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import React from 'react';
 

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m as motion } from 'framer-motion';
 import { Bot, Send, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { getXsrfToken } from '@/lib/csrf';

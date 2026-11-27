@@ -28,8 +28,8 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { LazySelect } from '@/components/ui/lazy-select';
 import { Pagination } from '@/components/ui/pagination';
-import { Select } from '@/components/ui/select';
 import { useLiveSearch } from '@/hooks/use-live-search';
 import {
     PRODUCT_GRID_BESIDE_SIDEBAR_CLASS,
@@ -718,7 +718,7 @@ function ProductListingPage({
                                         Filters
                                     </Button>
 
-                                    <Select
+                                    <LazySelect
                                         value={draftFilters.sort}
                                         onChange={(event) => {
                                             const next = {
