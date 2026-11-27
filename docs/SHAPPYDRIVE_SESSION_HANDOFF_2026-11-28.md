@@ -2,6 +2,8 @@
 
 Prepared at the end of a long Claude Code session covering SEO batches DISC-76 to DISC-96, the image and JavaScript performance work, and the Phase 1/2 CMS content cleanup.
 
+> **Update (end of session, 28 Nov 2026):** everything in this file was committed and pushed after it was written. `main` = `origin/main` = the commit that records this update (pushed after `985b697`). **DISC-96 is now committed (`b495b05`), deployed (Deploy to Hostinger run 46071182325; Run Tests 46071182338, Lint 46071182408 green; Nothing to migrate; health check passed) and live-verified** (the homepage renders exactly one h1). The working tree is clean; the three docs that §1 lists as untracked are now committed (`985b697`). Where §1, §2 and §4 below say DISC-96 is uncommitted or undeployed, or list untracked files, read them as historical; the rest still holds.
+
 **The authoritative status source is still `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md`.** This file is a snapshot to help the next session start; where the two disagree, verify against the tracker, git and the live site rather than trusting either.
 
 ---
