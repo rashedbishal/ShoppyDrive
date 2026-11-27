@@ -148,6 +148,8 @@ export interface Brand extends Timestamped {
     slug: string;
     logo?: string | null;
     description?: string | null;
+    meta_title?: string | null;
+    meta_description?: string | null;
     is_active: boolean;
     products_count?: number;
 }

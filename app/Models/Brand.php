@@ -30,6 +30,8 @@ class Brand extends Model
         'slug',
         'logo',
         'description',
+        'meta_title',
+        'meta_description',
         'is_active',
     ];
 

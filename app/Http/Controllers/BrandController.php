@@ -38,7 +38,9 @@ class BrandController extends Controller
         // just be hidden from the /brands index.
         abort_unless($brand->is_active, 404);
 
-        PageSeo::share($brand->name, $brand->description, $brand->logo);
+        // DISC-86: the admin's SEO title/description, else the name and
+        // description as before (BrandDetail.tsx shows the same title).
+        PageSeo::share($brand->meta_title ?: $brand->name, $brand->meta_description ?: $brand->description, $brand->logo);
 
         $productsQuery = Product::query()
             ->visible()

@@ -48,6 +48,8 @@ export default function BrandCreate() {
             slug: '',
             logo: null as File | string | null,
             description: '',
+            meta_title: '',
+            meta_description: '',
             is_active: true,
         });
     const [slugTouched, setSlugTouched] = useState(false);
@@ -59,6 +61,8 @@ export default function BrandCreate() {
         const clientErrors = validate(data, {
             name: [required(), maxLength(80)],
             slug: [required(), maxLength(100)],
+            meta_title: [maxLength(70)],
+            meta_description: [maxLength(160)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -155,6 +159,48 @@ export default function BrandCreate() {
                                 <CharCount
                                     value={data.description}
                                     max={2000}
+                                    className="mt-1 block text-right"
+                                />
+                            </Field>
+                            <Field
+                                label="SEO Meta Title"
+                                hint="Shown in Google results and the browser tab. Aim for 50–60 characters; the site name is added after it. Leave blank to use the brand name."
+                                error={errors.meta_title}
+                            >
+                                <input
+                                    maxLength={70}
+                                    className={inputClass(errors.meta_title)}
+                                    value={data.meta_title}
+                                    onChange={(e) =>
+                                        setData('meta_title', e.target.value)
+                                    }
+                                />
+                                <CharCount
+                                    value={data.meta_title}
+                                    max={70}
+                                    className="mt-1 block text-right"
+                                />
+                            </Field>
+                            <Field
+                                label="SEO Meta Description"
+                                hint="Shown under the title in Google results. Aim for 120–160 characters. Leave blank to use the description."
+                                error={errors.meta_description}
+                            >
+                                <textarea
+                                    maxLength={160}
+                                    rows={2}
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-brand focus:outline-none"
+                                    value={data.meta_description}
+                                    onChange={(e) =>
+                                        setData(
+                                            'meta_description',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <CharCount
+                                    value={data.meta_description}
+                                    max={160}
                                     className="mt-1 block text-right"
                                 />
                             </Field>

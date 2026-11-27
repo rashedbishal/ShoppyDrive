@@ -27,6 +27,9 @@ class BrandRequest extends FormRequest
             // character length.
             'logo' => ['nullable', new RasterImageOrUrl, Rule::when($this->hasFile('logo'), ['max:1024'])],
             'description' => ['nullable', 'string', 'max:2000'],
+            // DISC-86: same limits as categories (CategoryRequest).
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
             'is_active' => ['boolean'],
         ];
     }
