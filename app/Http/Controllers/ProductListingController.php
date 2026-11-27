@@ -54,12 +54,17 @@ class ProductListingController extends Controller
             [$listing->name, route('category.show', $listing->slug)],
         ]);
 
-        PageSeo::share($listing->meta_title ?: $listing->name, $listing->meta_description ?: $listing->description, $listing->image, breadcrumbs: $breadcrumbs);
+        $seoTitle = $listing->meta_title ?: $listing->name;
+        PageSeo::share($seoTitle, $listing->meta_description ?: $listing->description, $listing->image, breadcrumbs: $breadcrumbs);
 
-        return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug));
+        return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug), $seoTitle);
     }
 
-    private function catalogResponse(Request $request, ?Category $category, ?SubCategory $subCategory, string $listingUrl): Response
+    /**
+     * @param  string|null  $seoTitle  DISC-88: the title PageSeo printed, so the browser tab (set by
+     *                                 ProductListing.tsx after JavaScript runs) shows the same one
+     */
+    private function catalogResponse(Request $request, ?Category $category, ?SubCategory $subCategory, string $listingUrl, ?string $seoTitle = null): Response
     {
         $query = Product::query()
             ->visible()
@@ -223,6 +228,7 @@ class ProductListingController extends Controller
             ],
             'title' => $banner?->title ?? $category?->name ?? $subCategory?->name ?? 'All Products',
             'description' => $banner?->description ?? $category?->description ?? $subCategory?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
+            'seoTitle' => $seoTitle,
         ]);
     }
 }

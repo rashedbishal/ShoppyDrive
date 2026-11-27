@@ -80,6 +80,8 @@ type ProductListingFilters = {
 type ProductListingPageProps = {
     title: string;
     description: string;
+    /** DISC-88: the server's <title> for a category page (its SEO title, else its name); null elsewhere. */
+    seoTitle?: string | null;
     category: Category | null;
     /** The category's chosen colour (a sub-category uses its parent's); null = theme colour. */
     bannerColor: string | null;
@@ -113,6 +115,7 @@ const DEFAULT_GRID_COUNT = 12;
 function ProductListingPage({
     title,
     description,
+    seoTitle,
     category,
     bannerColor,
     categories,
@@ -558,7 +561,7 @@ function ProductListingPage({
 
     return (
         <>
-            <Head title={title} />
+            <Head title={seoTitle || title} />
 
             <div className="space-y-6 py-6 lg:py-8">
                 {showSubcategoryShowcase && activeTopCategory ? (
