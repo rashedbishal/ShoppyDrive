@@ -26,6 +26,8 @@ type AboutContent = {
 
 type Props = {
     content: AboutContent;
+    // DISC-87: the admin's SEO title, else the default below.
+    seo_title?: string;
 };
 
 /** Long figures ("১২,০০০+ orders delivered") step down in size so they stay inside their card. */
@@ -41,10 +43,10 @@ function statValueSize(value: string): string {
     return 'text-xl sm:text-2xl';
 }
 
-function AboutPage({ content }: Props): React.JSX.Element {
+function AboutPage({ content, seo_title }: Props): React.JSX.Element {
     return (
         <>
-            <Head title="About Us" />
+            <Head title={seo_title || 'About Us'} />
 
             {/* Hero */}
             <div className="py-3 lg:py-4">
@@ -256,6 +258,9 @@ function AboutPage({ content }: Props): React.JSX.Element {
     );
 }
 
-export default function About({ content }: Props): React.JSX.Element {
-    return <AboutPage content={content} />;
+export default function About({
+    content,
+    seo_title,
+}: Props): React.JSX.Element {
+    return <AboutPage content={content} seo_title={seo_title} />;
 }

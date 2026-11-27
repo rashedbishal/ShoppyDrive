@@ -110,6 +110,8 @@ type HomePageProps = SharedPageProps & {
     bundleDeals: ProductBundle[];
     brands: Brand[];
     categories: Category[];
+    // DISC-87: Admin › Homepage SEO title, else the default below.
+    seo_title?: string;
 };
 
 type SectionHeadingProps = {
@@ -970,6 +972,7 @@ function Home(): React.JSX.Element {
         bundleDeals,
         brands,
         categories,
+        seo_title,
     } = usePage<HomePageProps>().props;
 
     const categoryCards: HomeCategoryCard[] = (categories ?? []).map(
@@ -1349,7 +1352,7 @@ function Home(): React.JSX.Element {
 
     return (
         <>
-            <Head title="Online Shopping in Bangladesh" />
+            <Head title={seo_title || 'Online Shopping in Bangladesh'} />
             {/* DISC-63: the page's one top-level heading, for screen readers and agents; visually hidden, so the design is unchanged. */}
             <h1 className="sr-only">{settings.site_name}</h1>
 

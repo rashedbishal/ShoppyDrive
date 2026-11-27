@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Plus, Trash2 } from 'lucide-react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { SeoSettingsCard } from '@/components/admin/seo-settings-card';
 import {
     SettingsField,
     settingsInputClass,
@@ -35,33 +36,41 @@ type Props = {
         about_team?: AboutTeamMember[] | null;
         about_cta_title?: string | null;
         about_cta_description?: string | null;
+        about_meta_title?: string | null;
+        about_meta_description?: string | null;
     };
 };
 
 export default function AboutPageConfig({ settings }: Props) {
-    const { data, setData, put, processing, recentlySuccessful } = useForm({
-        about_hero_eyebrow: settings.about_hero_eyebrow ?? 'Our Story',
-        about_hero_title: settings.about_hero_title ?? "Bangladesh's Smartest",
-        about_hero_title_highlight:
-            settings.about_hero_title_highlight ?? 'Shopping Experience',
-        about_hero_description:
-            settings.about_hero_description ??
-            'ShoppyDrive was built to make premium shopping accessible to every Bangladeshi — with honest prices, genuine products, and world-class delivery.',
-        about_stats: settings.about_stats ?? ([] as AboutStat[]),
-        about_mission_eyebrow: settings.about_mission_eyebrow ?? 'Our Mission',
-        about_mission_title:
-            settings.about_mission_title ??
-            'Empowering Bangladeshis to shop with confidence',
-        about_mission_body: settings.about_mission_body ?? '',
-        about_mission_features:
-            settings.about_mission_features ?? ([] as AboutFeature[]),
-        about_values: settings.about_values ?? ([] as AboutValue[]),
-        about_team: settings.about_team ?? ([] as AboutTeamMember[]),
-        about_cta_title: settings.about_cta_title ?? 'Ready to start shopping?',
-        about_cta_description:
-            settings.about_cta_description ??
-            "Join thousands of happy customers and discover why ShoppyDrive is Bangladesh's most trusted online store.",
-    });
+    const { data, setData, put, processing, recentlySuccessful, errors } =
+        useForm({
+            about_hero_eyebrow: settings.about_hero_eyebrow ?? 'Our Story',
+            about_hero_title:
+                settings.about_hero_title ?? "Bangladesh's Smartest",
+            about_hero_title_highlight:
+                settings.about_hero_title_highlight ?? 'Shopping Experience',
+            about_hero_description:
+                settings.about_hero_description ??
+                'ShoppyDrive was built to make premium shopping accessible to every Bangladeshi — with honest prices, genuine products, and world-class delivery.',
+            about_stats: settings.about_stats ?? ([] as AboutStat[]),
+            about_mission_eyebrow:
+                settings.about_mission_eyebrow ?? 'Our Mission',
+            about_mission_title:
+                settings.about_mission_title ??
+                'Empowering Bangladeshis to shop with confidence',
+            about_mission_body: settings.about_mission_body ?? '',
+            about_mission_features:
+                settings.about_mission_features ?? ([] as AboutFeature[]),
+            about_values: settings.about_values ?? ([] as AboutValue[]),
+            about_team: settings.about_team ?? ([] as AboutTeamMember[]),
+            about_cta_title:
+                settings.about_cta_title ?? 'Ready to start shopping?',
+            about_cta_description:
+                settings.about_cta_description ??
+                "Join thousands of happy customers and discover why ShoppyDrive is Bangladesh's most trusted online store.",
+            about_meta_title: settings.about_meta_title ?? '',
+            about_meta_description: settings.about_meta_description ?? '',
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -664,6 +673,23 @@ export default function AboutPageConfig({ settings }: Props) {
                         </SettingsField>
                     </CardContent>
                 </Card>
+
+                <SeoSettingsCard
+                    metaTitle={data.about_meta_title}
+                    metaDescription={data.about_meta_description}
+                    onMetaTitleChange={(value) =>
+                        setData('about_meta_title', value)
+                    }
+                    onMetaDescriptionChange={(value) =>
+                        setData('about_meta_description', value)
+                    }
+                    titleFallback="About Us"
+                    descriptionFallback="the hero description"
+                    errors={{
+                        title: errors.about_meta_title,
+                        description: errors.about_meta_description,
+                    }}
+                />
 
                 <div className="flex items-center gap-3">
                     <Button

@@ -35,9 +35,11 @@ type ContactContentProps = {
 
 type Props = {
     content: ContactContentProps;
+    // DISC-87: the admin's SEO title, else the default below.
+    seo_title?: string;
 };
 
-function ContactContent({ content }: Props): React.JSX.Element {
+function ContactContent({ content, seo_title }: Props): React.JSX.Element {
     const {
         data,
         setData,
@@ -115,7 +117,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
 
     return (
         <>
-            <Head title="Contact Us" />
+            <Head title={seo_title || 'Contact Us'} />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">
@@ -355,6 +357,9 @@ function ContactContent({ content }: Props): React.JSX.Element {
     );
 }
 
-export default function Contact({ content }: Props): React.JSX.Element {
-    return <ContactContent content={content} />;
+export default function Contact({
+    content,
+    seo_title,
+}: Props): React.JSX.Element {
+    return <ContactContent content={content} seo_title={seo_title} />;
 }

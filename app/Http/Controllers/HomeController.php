@@ -11,6 +11,7 @@ use App\Models\FlashSaleItem;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
+use App\Models\Setting;
 use App\Services\BundleService;
 use App\Support\DisplayOrderSettings;
 use App\Support\LayoutCache;
@@ -235,7 +236,7 @@ class HomeController extends Controller
         // DISC-61/DISC-64: business JSON-LD plus the products (with the
         // prices their cards show) of every section a visitor can actually
         // see. DISC-76: its own title (matching Home.tsx's <Head>); the
-        // description and image keep PageSeo's site defaults.
+        // image keeps PageSeo's site default.
         $shownCards = collect([
             'flash_sale' => collect($flashSaleData['items'] ?? [])->pluck('product'),
             'featured_products' => $featuredCards,
@@ -245,7 +246,12 @@ class HomeController extends Controller
             ->flatten(1)
             ->all();
 
-        PageSeo::share('Online Shopping in Bangladesh', jsonLd: SiteJsonLd::forHome($shownCards));
+        // DISC-87: the admin's SEO title/description (Admin › Homepage), else
+        // the title above and the site default description.
+        $seoSettings = Setting::whereIn('key', ['home_meta_title', 'home_meta_description'])->pluck('value', 'key');
+        $seoTitle = $this->filledText($seoSettings['home_meta_title'] ?? null) ?? 'Online Shopping in Bangladesh';
+
+        PageSeo::share($seoTitle, $this->filledText($seoSettings['home_meta_description'] ?? null), jsonLd: SiteJsonLd::forHome($shownCards));
 
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,
@@ -266,6 +272,12 @@ class HomeController extends Controller
             'homepage_settings' => $homepageSettings,
             'hero_slides' => LayoutCache::heroSlides(),
             'promotional_banners' => LayoutCache::promotionalBanners(),
+            'seo_title' => $seoTitle,
         ]);
+    }
+
+    private function filledText(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? $value : null;
     }
 }

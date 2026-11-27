@@ -49,6 +49,8 @@ class SettingController extends Controller
             'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
             'about_stats', 'about_mission_eyebrow', 'about_mission_title', 'about_mission_body',
             'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
+            // DISC-87: the page's search-engine title and description.
+            'about_meta_title', 'about_meta_description',
         ],
         'contact_page' => [
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
@@ -56,6 +58,13 @@ class SettingController extends Controller
             'contact_phone', 'contact_email', 'contact_address',
             // BIZ-034: seller identity shown in the storefront footer.
             'legal_business_name', 'trade_licence_number',
+            // DISC-87: the page's search-engine title and description.
+            'contact_page_meta_title', 'contact_page_meta_description',
+        ],
+        // DISC-87: the homepage's search-engine title and description, edited
+        // on Admin › Homepage, so they follow that section's permission.
+        'homepage' => [
+            'home_meta_title', 'home_meta_description',
         ],
         'referral_program' => [
             'referral_enabled', 'referral_discount_type', 'referral_discount_value',
@@ -238,6 +247,13 @@ class SettingController extends Controller
             'contact_page_hero_title_highlight' => ['nullable', 'string', 'max:60'],
             'contact_page_hero_description' => ['nullable', 'string', 'max:400'],
             'contact_page_support_hours' => ['nullable', 'string', 'max:60'],
+            // DISC-87: same limits as every other meta title/description.
+            'about_meta_title' => ['nullable', 'string', 'max:70'],
+            'about_meta_description' => ['nullable', 'string', 'max:160'],
+            'contact_page_meta_title' => ['nullable', 'string', 'max:70'],
+            'contact_page_meta_description' => ['nullable', 'string', 'max:160'],
+            'home_meta_title' => ['nullable', 'string', 'max:70'],
+            'home_meta_description' => ['nullable', 'string', 'max:160'],
             'referral_enabled' => ['nullable', 'boolean'],
             'referral_discount_type' => ['nullable', 'in:percent,fixed'],
             'referral_discount_value' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
@@ -328,6 +344,9 @@ class SettingController extends Controller
             'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
             'contact_page_hero_description', 'contact_page_support_hours',
+            'about_meta_title', 'about_meta_description',
+            'contact_page_meta_title', 'contact_page_meta_description',
+            'home_meta_title', 'home_meta_description',
             'referral_enabled', 'referral_discount_type', 'referral_discount_value',
             'referral_min_order_amount', 'referral_reward_points', 'referral_reward_delay_days',
             'referral_unlock_order_count', 'referral_reward_cap_amount', 'referral_reward_cap_period',
@@ -498,6 +517,7 @@ class SettingController extends Controller
             in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
             in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url']) => 'courier',
             in_array($key, ['shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka']) => 'shipping',
+            str_starts_with($key, 'home_meta_') => 'homepage',
             str_starts_with($key, 'about_') => 'about_page',
             str_starts_with($key, 'contact_page_') => 'contact_page',
             str_starts_with($key, 'referral_') => 'referral',

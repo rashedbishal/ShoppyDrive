@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Support\CatalogFilterCache;
 use App\Support\LayoutCache;
 use App\Support\SearchSuggestionCache;
@@ -26,6 +27,9 @@ class HomepageController extends Controller
 
         return Inertia::render('admin/homepage/index', [
             'sections' => $sections,
+            // DISC-87: saved through admin.settings.update, which checks the
+            // `homepage` permission for these keys.
+            'seo' => Setting::whereIn('key', ['home_meta_title', 'home_meta_description'])->pluck('value', 'key'),
         ]);
     }
 

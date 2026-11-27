@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import { AdminFade } from '@/components/admin/admin-motion';
+import { SeoSettingsCard } from '@/components/admin/seo-settings-card';
 import {
     SettingsField,
     settingsInputClass,
@@ -22,28 +23,34 @@ type Props = {
         contact_address?: string | null;
         legal_business_name?: string | null;
         trade_licence_number?: string | null;
+        contact_page_meta_title?: string | null;
+        contact_page_meta_description?: string | null;
     };
 };
 
 export default function ContactPageConfig({ settings }: Props) {
-    const { data, setData, put, processing, recentlySuccessful } = useForm({
-        contact_page_hero_eyebrow:
-            settings.contact_page_hero_eyebrow ?? 'Get in touch',
-        contact_page_hero_title:
-            settings.contact_page_hero_title ?? "We're here to",
-        contact_page_hero_title_highlight:
-            settings.contact_page_hero_title_highlight ?? 'help',
-        contact_page_hero_description:
-            settings.contact_page_hero_description ??
-            'Have a question, complaint, or just want to say hello? Our team is ready to assist you.',
-        contact_page_support_hours:
-            settings.contact_page_support_hours ?? 'Every day, 9 AM–9 PM',
-        contact_phone: settings.contact_phone ?? '',
-        contact_email: settings.contact_email ?? '',
-        contact_address: settings.contact_address ?? '',
-        legal_business_name: settings.legal_business_name ?? '',
-        trade_licence_number: settings.trade_licence_number ?? '',
-    });
+    const { data, setData, put, processing, recentlySuccessful, errors } =
+        useForm({
+            contact_page_hero_eyebrow:
+                settings.contact_page_hero_eyebrow ?? 'Get in touch',
+            contact_page_hero_title:
+                settings.contact_page_hero_title ?? "We're here to",
+            contact_page_hero_title_highlight:
+                settings.contact_page_hero_title_highlight ?? 'help',
+            contact_page_hero_description:
+                settings.contact_page_hero_description ??
+                'Have a question, complaint, or just want to say hello? Our team is ready to assist you.',
+            contact_page_support_hours:
+                settings.contact_page_support_hours ?? 'Every day, 9 AM–9 PM',
+            contact_phone: settings.contact_phone ?? '',
+            contact_email: settings.contact_email ?? '',
+            contact_address: settings.contact_address ?? '',
+            legal_business_name: settings.legal_business_name ?? '',
+            trade_licence_number: settings.trade_licence_number ?? '',
+            contact_page_meta_title: settings.contact_page_meta_title ?? '',
+            contact_page_meta_description:
+                settings.contact_page_meta_description ?? '',
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -318,6 +325,23 @@ export default function ContactPageConfig({ settings }: Props) {
                         </div>
                     </CardContent>
                 </Card>
+
+                <SeoSettingsCard
+                    metaTitle={data.contact_page_meta_title}
+                    metaDescription={data.contact_page_meta_description}
+                    onMetaTitleChange={(value) =>
+                        setData('contact_page_meta_title', value)
+                    }
+                    onMetaDescriptionChange={(value) =>
+                        setData('contact_page_meta_description', value)
+                    }
+                    titleFallback="Contact Us"
+                    descriptionFallback="the hero description"
+                    errors={{
+                        title: errors.contact_page_meta_title,
+                        description: errors.contact_page_meta_description,
+                    }}
+                />
 
                 <div className="flex items-center gap-3">
                     <Button

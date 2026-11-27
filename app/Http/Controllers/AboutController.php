@@ -55,10 +55,21 @@ class AboutController extends Controller
             'cta_description' => $settings['about_cta_description'] ?? "Join thousands of happy customers and discover why ShoppyDrive is Bangladesh's most trusted online store.",
         ];
 
-        // DISC-76: the page's own intro text is its search description.
-        PageSeo::share('About Us', is_string($content['hero_description']) ? $content['hero_description'] : null);
+        // DISC-87: the admin's SEO title/description (Admin › About Page),
+        // else the title and intro text (DISC-76). About.tsx shows the same
+        // title in the browser tab.
+        $seoTitle = self::filledText($settings['about_meta_title'] ?? null) ?? 'About Us';
+        PageSeo::share(
+            $seoTitle,
+            self::filledText($settings['about_meta_description'] ?? null) ?? self::filledText($content['hero_description']),
+        );
 
-        return Inertia::render('static/About', ['content' => $content]);
+        return Inertia::render('static/About', ['content' => $content, 'seo_title' => $seoTitle]);
+    }
+
+    private static function filledText(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? $value : null;
     }
 
     /**
@@ -72,6 +83,7 @@ class AboutController extends Controller
             'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
             'about_stats', 'about_mission_eyebrow', 'about_mission_title', 'about_mission_body',
             'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
+            'about_meta_title', 'about_meta_description',
         ];
     }
 }

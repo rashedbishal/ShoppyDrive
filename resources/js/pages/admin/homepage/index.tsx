@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import {
     Check,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { AdminFade } from '@/components/admin/admin-motion';
+import { SeoSettingsCard } from '@/components/admin/seo-settings-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,9 +25,65 @@ import type { HomepageSetting } from '@/types';
 
 type Props = {
     sections: HomepageSetting[];
+    seo: {
+        home_meta_title?: string | null;
+        home_meta_description?: string | null;
+    };
 };
 
-export default function HomepageIndex({ sections }: Props) {
+/** DISC-87: the homepage's own search-engine title and description. */
+function HomepageSeoForm({ seo }: { seo: Props['seo'] }) {
+    const { data, setData, put, processing, recentlySuccessful, errors } =
+        useForm({
+            home_meta_title: seo.home_meta_title ?? '',
+            home_meta_description: seo.home_meta_description ?? '',
+        });
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                put(route('admin.settings.update'), { preserveScroll: true });
+            }}
+            className="space-y-3"
+        >
+            <SeoSettingsCard
+                metaTitle={data.home_meta_title}
+                metaDescription={data.home_meta_description}
+                onMetaTitleChange={(value) => setData('home_meta_title', value)}
+                onMetaDescriptionChange={(value) =>
+                    setData('home_meta_description', value)
+                }
+                titleFallback="Online Shopping in Bangladesh"
+                descriptionFallback="the site's default description"
+                errors={{
+                    title: errors.home_meta_title,
+                    description: errors.home_meta_description,
+                }}
+            />
+            <div className="flex items-center gap-3">
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
+                >
+                    {processing ? 'Saving…' : 'Save SEO'}
+                </Button>
+                <AnimatePresence initial={false}>
+                    {recentlySuccessful && (
+                        <AdminFade key="seo-saved">
+                            <span className="text-xs font-medium text-emerald-600">
+                                Saved.
+                            </span>
+                        </AdminFade>
+                    )}
+                </AnimatePresence>
+            </div>
+        </form>
+    );
+}
+
+export default function HomepageIndex({ sections, seo }: Props) {
     // Persists a confirmed reorder locally so the new order shows immediately
     // without an Inertia round-trip back to this page — only ever replaced by
     // a confirmed save, never by `sections` itself (that prop is only fresh
@@ -272,6 +329,8 @@ export default function HomepageIndex({ sections }: Props) {
                         </CardContent>
                     </Card>
                 </div>
+
+                <HomepageSeoForm seo={seo} />
 
                 <Card
                     className={cn(

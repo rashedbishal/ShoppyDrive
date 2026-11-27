@@ -43,10 +43,16 @@ class ContactController extends Controller
             ],
         ];
 
-        // DISC-76: the page's own intro text is its search description.
-        PageSeo::share('Contact Us', is_string($content['hero_description']) ? $content['hero_description'] : null);
+        // DISC-87: the admin's SEO title/description (Admin › Contact Page),
+        // else the title and intro text (DISC-76). Contact.tsx shows the
+        // same title in the browser tab.
+        $seoTitle = self::filledText($settings['contact_page_meta_title'] ?? null) ?? 'Contact Us';
+        PageSeo::share(
+            $seoTitle,
+            self::filledText($settings['contact_page_meta_description'] ?? null) ?? self::filledText($content['hero_description']),
+        );
 
-        return Inertia::render('static/Contact', ['content' => $content]);
+        return Inertia::render('static/Contact', ['content' => $content, 'seo_title' => $seoTitle]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -83,6 +89,11 @@ class ContactController extends Controller
         }
     }
 
+    private static function filledText(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? $value : null;
+    }
+
     /**
      * The Setting rows this page reads; the sitemap dates the page by them.
      *
@@ -94,6 +105,7 @@ class ContactController extends Controller
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
             'contact_page_hero_description', 'contact_page_support_hours',
             'contact_phone', 'contact_email', 'contact_address', 'social_links',
+            'contact_page_meta_title', 'contact_page_meta_description',
         ];
     }
 }

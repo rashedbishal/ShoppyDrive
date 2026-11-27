@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Admin;
 use App\Models\Brand;
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -10,10 +12,10 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 /*
- * DISC-86 (brand pages): optional admin-written search titles and
- * descriptions, printed in the first HTML (production has no SSR, so SSR is
- * forced off) and falling back to what each page showed before when left
- * blank.
+ * DISC-86 (brand pages) and DISC-87 (home, about, contact): optional
+ * admin-written search titles and descriptions, printed in the first HTML
+ * (production has no SSR, so SSR is forced off) and falling back to what
+ * each page showed before when left blank.
  */
 beforeEach(function () {
     config(['inertia.ssr.enabled' => false]);
@@ -108,4 +110,108 @@ test('a brand\'s SEO text is limited to what a search result shows', function ()
     ])->assertSessionHasErrors(['meta_title', 'meta_description']);
 
     expect($brand->fresh())->meta_title->toBe('Old')->meta_description->toBe('Old');
+});
+
+// ── DISC-87: home, about and contact ────────────────────────────────────────
+
+dataset('cms pages', [
+    'home' => ['/', 'home_meta_title', 'home_meta_description'],
+    'about' => ['/about', 'about_meta_title', 'about_meta_description'],
+    'contact' => ['/contact', 'contact_page_meta_title', 'contact_page_meta_description'],
+]);
+
+test('a page uses the SEO title and description the admin saved, once each', function (string $path, string $titleKey, string $descriptionKey) {
+    Setting::updateOrCreate(['key' => $titleKey], ['value' => 'Custom & <b>SEO</b> title', 'group' => 'general']);
+    Setting::updateOrCreate(['key' => $descriptionKey], ['value' => 'Custom <i>SEO</i> description', 'group' => 'general']);
+
+    $head = seoHead($path);
+
+    expect($head['title'])->toBe(siteTitle('Custom & <b>SEO</b> title'))
+        ->and($head['ogTitle'])->toBe(siteTitle('Custom & <b>SEO</b> title'))
+        ->and($head['descriptions'])->toBe(['Custom SEO description'])
+        ->and($head['ogDescription'])->toBe('Custom SEO description')
+        ->and($head['twitterTags'])->toBe(1)
+        ->and($head['canonical'])->toBe(url($path));
+
+    $this->get($path)->assertInertia(fn ($page) => $page->where('seo_title', 'Custom & <b>SEO</b> title'));
+})->with('cms pages');
+
+test('blank SEO settings fall back to the page\'s usual title and description', function (string $path, string $titleKey, string $descriptionKey, string $title, string $descriptionStart) {
+    Setting::updateOrCreate(['key' => $titleKey], ['value' => null, 'group' => 'general']);
+    Setting::updateOrCreate(['key' => $descriptionKey], ['value' => '   ', 'group' => 'general']);
+
+    $head = seoHead($path);
+
+    expect($head['title'])->toBe(siteTitle($title))
+        ->and($head['descriptions'])->toHaveCount(1)
+        ->and($head['descriptions'][0])->toStartWith($descriptionStart);
+})->with([
+    'home' => ['/', 'home_meta_title', 'home_meta_description', 'Online Shopping in Bangladesh', 'Premium e-commerce'],
+    'about' => ['/about', 'about_meta_title', 'about_meta_description', 'About Us', 'ShoppyDrive was built'],
+    'contact' => ['/contact', 'contact_page_meta_title', 'contact_page_meta_description', 'Contact Us', 'Have a question'],
+]);
+
+test('the homepage keeps its business JSON-LD alongside a custom SEO title', function () {
+    Setting::updateOrCreate(['key' => 'home_meta_title'], ['value' => 'Shop Online', 'group' => 'homepage']);
+
+    $html = $this->get('/')->assertOk()->getContent();
+
+    expect(substr_count($html, 'application/ld+json'))->toBe(1);
+});
+
+test('admins can save and clear the SEO text of each page', function (string $path, string $titleKey, string $descriptionKey) {
+    actingAs(createAdmin(), 'admin');
+
+    $this->put(route('admin.settings.update'), [$titleKey => 'Page title', $descriptionKey => 'Page description'])
+        ->assertSessionHasNoErrors();
+
+    expect(Setting::where('key', $titleKey)->value('value'))->toBe('Page title')
+        ->and(Setting::where('key', $descriptionKey)->value('value'))->toBe('Page description');
+
+    $this->put(route('admin.settings.update'), [$titleKey => '', $descriptionKey => ''])->assertSessionHasNoErrors();
+
+    expect(Setting::where('key', $titleKey)->value('value'))->toBeNull();
+})->with('cms pages');
+
+test('a page\'s SEO text is limited to what a search result shows', function (string $path, string $titleKey, string $descriptionKey) {
+    actingAs(createAdmin(), 'admin');
+
+    $this->put(route('admin.settings.update'), [$titleKey => str_repeat('a', 71), $descriptionKey => str_repeat('b', 161)])
+        ->assertSessionHasErrors([$titleKey, $descriptionKey]);
+
+    expect(Setting::whereIn('key', [$titleKey, $descriptionKey])->count())->toBe(0);
+})->with('cms pages');
+
+test('each page\'s SEO text needs that page\'s own permission', function () {
+    $homepageEditor = Admin::create([
+        'name' => 'Staff', 'email' => 'homepage-editor@example.com', 'password' => bcrypt('password'),
+        'permissions' => ['homepage' => ['view', 'update']],
+    ]);
+    actingAs($homepageEditor, 'admin');
+
+    $this->put(route('admin.settings.update'), ['home_meta_title' => 'Shop Online'])->assertSessionHasNoErrors();
+    $this->put(route('admin.settings.update'), ['about_meta_title' => 'Hacked'])->assertForbidden();
+    $this->put(route('admin.settings.update'), ['contact_page_meta_title' => 'Hacked'])->assertForbidden();
+
+    $aboutEditor = Admin::create([
+        'name' => 'Staff', 'email' => 'about-editor@example.com', 'password' => bcrypt('password'),
+        'permissions' => ['about_page' => ['view', 'update']],
+    ]);
+    actingAs($aboutEditor, 'admin');
+
+    $this->put(route('admin.settings.update'), ['home_meta_title' => 'Hacked'])->assertForbidden();
+
+    expect(Setting::where('key', 'home_meta_title')->value('value'))->toBe('Shop Online')
+        ->and(Setting::where('key', 'about_meta_title')->exists())->toBeFalse();
+});
+
+test('the admin pages that edit the SEO text receive its saved values', function () {
+    actingAs(createAdmin(), 'admin');
+    Setting::updateOrCreate(['key' => 'home_meta_title'], ['value' => 'Home SEO', 'group' => 'homepage']);
+    Setting::updateOrCreate(['key' => 'about_meta_title'], ['value' => 'About SEO', 'group' => 'about_page']);
+    Setting::updateOrCreate(['key' => 'contact_page_meta_title'], ['value' => 'Contact SEO', 'group' => 'contact_page']);
+
+    $this->get(route('admin.homepage.index'))->assertInertia(fn ($page) => $page->where('seo.home_meta_title', 'Home SEO'));
+    $this->get(route('admin.settings.about-page'))->assertInertia(fn ($page) => $page->where('settings.about_meta_title', 'About SEO'));
+    $this->get(route('admin.settings.contact-page'))->assertInertia(fn ($page) => $page->where('settings.contact_page_meta_title', 'Contact SEO'));
 });
