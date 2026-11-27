@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveCategoryColor } from '@/lib/category-colors';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { cn } from '@/lib/utils';
 import type { Id, SharedPageProps } from '@/types';
 
@@ -332,6 +333,18 @@ export default function MegaMenu({
                                                                     src={
                                                                         activeCategory.image
                                                                     }
+                                                                    srcSet={
+                                                                        activeCategory.image_srcset ??
+                                                                        undefined
+                                                                    }
+                                                                    sizes={
+                                                                        activeCategory.image_srcset
+                                                                            ? IMAGE_SIZES.thumbnail
+                                                                            : undefined
+                                                                    }
+                                                                    width={44}
+                                                                    height={44}
+                                                                    decoding="async"
                                                                     alt=""
                                                                     onError={(
                                                                         e,

@@ -10,7 +10,9 @@ use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
 use App\Concerns\RecordsSlugRedirects;
+use App\Support\ImageVariants;
 use App\Support\LayoutCache;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -47,6 +49,9 @@ class Category extends Model
         'is_active',
         'sort_order',
     ];
+
+    /** IMG-F5: see ImageVariants. */
+    protected $appends = ['image_srcset'];
 
     protected function casts(): array
     {
@@ -106,5 +111,11 @@ class Category extends Model
     public function currentPublicUrl(): ?string
     {
         return $this->is_active ? route('category.show', $this->slug) : null;
+    }
+
+    /** IMG-F5: the smaller WebP copies of the category image, if any. */
+    protected function imageSrcset(): Attribute
+    {
+        return Attribute::get(fn (): ?string => app(ImageVariants::class)->srcset($this->attributes['image'] ?? null));
     }
 }

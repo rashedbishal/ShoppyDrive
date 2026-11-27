@@ -7,7 +7,9 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesLayoutCache;
+use App\Support\ImageVariants;
 use App\Support\LayoutCache;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -32,6 +34,9 @@ class PromotionalBanner extends Model
         'sort_order',
     ];
 
+    /** IMG-F5: see ImageVariants. */
+    protected $appends = ['image_srcset'];
+
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
@@ -40,5 +45,11 @@ class PromotionalBanner extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'promotional_banner_product')->withPivot('sort_order')->orderByPivot('sort_order');
+    }
+
+    /** IMG-F5: the smaller WebP copies of the banner image, if any. */
+    protected function imageSrcset(): Attribute
+    {
+        return Attribute::get(fn (): ?string => app(ImageVariants::class)->srcset($this->attributes['image'] ?? null));
     }
 }

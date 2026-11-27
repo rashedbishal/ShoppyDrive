@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ArrowRight, Newspaper } from 'lucide-react';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import type { Blog } from '@/types';
 
 export function formatBlogDate(value: string | null): string {
@@ -24,6 +25,14 @@ export function BlogCard({ blog }: { blog: Blog }): React.JSX.Element {
                 {blog.featured_image ? (
                     <img
                         src={blog.featured_image}
+                        srcSet={blog.featured_image_srcset ?? undefined}
+                        sizes={
+                            blog.featured_image_srcset
+                                ? IMAGE_SIZES.blogCard
+                                : undefined
+                        }
+                        width={800}
+                        height={450}
                         alt={blog.title}
                         loading="lazy"
                         decoding="async"

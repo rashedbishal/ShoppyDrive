@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
+import { useCanHover } from '@/hooks/use-can-hover';
 import { MOTION, PRODUCT_CARD_HEIGHT } from '@/lib/constants';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { cn, formatCurrency, getDiscountPercent } from '@/lib/utils';
 import productRoutes from '@/routes/product';
 import { useCartStore } from '@/stores/cartStore';
@@ -157,7 +159,10 @@ export function ProductCard({
         (image) => image.is_hover && !image.is_primary,
     );
     const primaryUrl = primaryImage?.path ?? product.primary_image_url ?? '';
-    const secondaryUrl = secondaryImage?.path ?? '';
+    // IMG-F7: the hover photo only exists for a pointer that can hover;
+    // phones never download a photo they could never show.
+    const canHover = useCanHover();
+    const secondaryUrl = canHover ? (secondaryImage?.path ?? '') : '';
     const productUrl = productRoutes.show.url(product.slug);
 
     const isFlashPriced =
@@ -305,6 +310,10 @@ export function ProductCard({
             {primaryUrl ? (
                 <img
                     src={primaryUrl}
+                    srcSet={primaryImage?.srcset ?? undefined}
+                    sizes={primaryImage?.srcset ? IMAGE_SIZES.card : undefined}
+                    width={400}
+                    height={300}
                     alt={primaryImage?.alt ?? product.name}
                     loading="lazy"
                     decoding="async"
@@ -324,6 +333,12 @@ export function ProductCard({
             {secondaryUrl ? (
                 <img
                     src={secondaryUrl}
+                    srcSet={secondaryImage?.srcset ?? undefined}
+                    sizes={
+                        secondaryImage?.srcset ? IMAGE_SIZES.card : undefined
+                    }
+                    width={400}
+                    height={300}
                     alt=""
                     aria-hidden="true"
                     loading="lazy"

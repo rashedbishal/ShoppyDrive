@@ -404,6 +404,14 @@ export function SearchBar({
                                                                         alt={
                                                                             product.name
                                                                         }
+                                                                        width={
+                                                                            44
+                                                                        }
+                                                                        height={
+                                                                            44
+                                                                        }
+                                                                        loading="lazy"
+                                                                        decoding="async"
                                                                         className="size-full object-cover"
                                                                     />
                                                                 ) : (

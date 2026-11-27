@@ -1,6 +1,7 @@
 import { useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { cn, getInitials } from '@/lib/utils';
 
 export type SubcategoryShowcaseItem = {
@@ -8,6 +9,8 @@ export type SubcategoryShowcaseItem = {
     name: string;
     slug: string;
     image?: string | null;
+    /** IMG-F5: smaller copies of the image, if any. */
+    image_srcset?: string | null;
 };
 
 type SubcategoryShowcaseProps = {
@@ -64,6 +67,14 @@ function SubcategoryCard({
                 {showImage ? (
                     <img
                         src={subCategory.image ?? ''}
+                        srcSet={subCategory.image_srcset ?? undefined}
+                        sizes={
+                            subCategory.image_srcset
+                                ? IMAGE_SIZES.tile
+                                : undefined
+                        }
+                        width={96}
+                        height={96}
                         alt=""
                         loading="lazy"
                         decoding="async"

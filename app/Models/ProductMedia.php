@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\FlushesSearchSuggestions;
+use App\Support\ImageVariants;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +31,9 @@ class ProductMedia extends Model
         'is_primary',
         'is_hover',
     ];
+
+    /** IMG-F5: see ImageVariants. */
+    protected $appends = ['srcset'];
 
     protected function casts(): array
     {
@@ -55,5 +60,11 @@ class ProductMedia extends Model
     public function attributeValue(): BelongsTo
     {
         return $this->belongsTo(AttributeValue::class, 'attribute_value_id');
+    }
+
+    /** IMG-F5: the smaller WebP copies of this image, if any (null for a video). */
+    protected function srcset(): Attribute
+    {
+        return Attribute::get(fn (): ?string => ($this->attributes['type'] ?? null) === 'image' ? app(ImageVariants::class)->srcset($this->attributes['path'] ?? null) : null);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\ImageVariants;
 use GdImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -62,6 +63,8 @@ class ImageOptimizer
             $storedPath = $directory.'/'.Str::random(40).'.webp';
 
             if (Storage::disk('public')->put($storedPath, $webp)) {
+                $this->storeVariants($storedPath);
+
                 return $storedPath;
             }
         }
@@ -76,7 +79,62 @@ class ImageOptimizer
             throw new RuntimeException('An uploaded file could not be stored.');
         }
 
+        $this->storeVariants($storedPath);
+
         return $storedPath;
+    }
+
+    /**
+     * IMG-F5: the smaller WebP copies of a stored storefront image (see
+     * ImageVariants), each only when narrower than the original and not
+     * already there. Never fails the caller: an image whose copies can't be
+     * made (video, GIF, animated WebP, too big for memory, no WebP support)
+     * is simply served at its one size, as before.
+     *
+     * @return int the number of copies written
+     */
+    public function storeVariants(string $path): int
+    {
+        if (! ImageVariants::supports($path) || ! function_exists('imagewebp')) {
+            return 0;
+        }
+
+        $disk = Storage::disk('public');
+
+        try {
+            $absolutePath = $disk->path($path);
+            $originalWidth = (int) (@getimagesize($absolutePath)[0] ?? 0);
+            $missing = array_values(array_filter(
+                ImageVariants::WIDTHS,
+                fn (int $width): bool => $width < $originalWidth && ! $disk->exists(ImageVariants::variantPath($path, $width)),
+            ));
+
+            if ($missing === []) {
+                return 0;
+            }
+
+            $image = $this->load($absolutePath);
+
+            if ($image === null) {
+                return 0;
+            }
+
+            $written = 0;
+
+            foreach ($missing as $width) {
+                $bytes = $this->toBytes($this->scaleToWidth($image, $width), IMAGETYPE_WEBP);
+
+                if ($bytes !== null && $disk->put(ImageVariants::variantPath($path, $width), $bytes)) {
+                    $written++;
+                }
+            }
+
+            return $written;
+        } catch (Throwable $exception) {
+            Log::warning('[Images] Could not make smaller copies of an image', ['path' => $path, 'message' => $exception->getMessage()]);
+
+            return 0;
+        }
     }
 
     /**
@@ -233,6 +291,18 @@ class ImageOptimizer
         imagealphablending($resized, false);
         imagesavealpha($resized, true);
         imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        return $resized;
+    }
+
+    /** Exactly $width wide (the srcset descriptor promises it), height in proportion. */
+    private function scaleToWidth(GdImage $image, int $width): GdImage
+    {
+        $height = max(1, (int) round(imagesy($image) * $width / imagesx($image)));
+        $resized = imagecreatetruecolor($width, $height);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, imagesx($image), imagesy($image));
 
         return $resized;
     }

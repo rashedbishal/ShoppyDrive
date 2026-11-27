@@ -36,6 +36,8 @@ class UnusedUploadRemover
                 try {
                     if (Storage::disk('public')->exists($path) && ! $this->references->isReferenced($path)) {
                         Storage::disk('public')->delete($path);
+                        // IMG-F5: its smaller copies go with it.
+                        ImageVariants::delete($path);
                     }
                 } catch (Throwable $exception) {
                     Log::warning('[Uploads] Could not remove an unused file', ['path' => $path, 'message' => $exception->getMessage()]);

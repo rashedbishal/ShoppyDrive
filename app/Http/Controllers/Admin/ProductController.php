@@ -23,6 +23,7 @@ use App\Services\ImageOptimizer;
 use App\Services\StockAdjustmentService;
 use App\Support\AdminListUrl;
 use App\Support\CatalogFilterCache;
+use App\Support\ImageVariants;
 use App\Support\MotherPasswordGate;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
@@ -515,6 +516,8 @@ class ProductController extends Controller
             DB::transaction(fn () => $save($media));
         } catch (Throwable $e) {
             Storage::disk('public')->delete($storedFiles);
+            // IMG-F5: and the smaller copies made with each upload.
+            array_map(ImageVariants::delete(...), $storedFiles);
 
             throw $e;
         }

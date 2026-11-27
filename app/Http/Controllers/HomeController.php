@@ -14,8 +14,10 @@ use App\Models\ProductBundle;
 use App\Models\Setting;
 use App\Services\BundleService;
 use App\Support\DisplayOrderSettings;
+use App\Support\ImageVariants;
 use App\Support\LayoutCache;
 use App\Support\PageSeo;
+use App\Support\PreloadImage;
 use App\Support\ProductCardData;
 use App\Support\SiteJsonLd;
 use Illuminate\Support\Collection;
@@ -254,6 +256,19 @@ class HomeController extends Controller
 
         PageSeo::share($seoTitle, self::filledText($seoSettings['home_meta_description'] ?? null), jsonLd: SiteJsonLd::forHome($shownCards));
 
+        // IMG-F3: the hero slider opens on its first slide (Home.tsx); its
+        // image, or a video's poster, is the page's largest early paint, but
+        // only while the hero is the first visible section (an admin may
+        // move it down the page, where a high-priority preload would compete
+        // with what is really at the top).
+        $openingSlide = $this->heroIsFirstSection($homepageSettings) ? (LayoutCache::heroSlides()[0] ?? null) : null;
+
+        if ($openingSlide !== null && ImageVariants::publicPath($openingSlide['image'] ?? null) !== null) {
+            PreloadImage::share($openingSlide['image'], $openingSlide['image_srcset'] ?? null, PreloadImage::HERO_SIZES);
+        } else {
+            PreloadImage::share($openingSlide['poster'] ?? null, $openingSlide['poster_srcset'] ?? null, PreloadImage::HERO_SIZES);
+        }
+
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,
             'featuredProducts' => $featuredCards,
@@ -276,6 +291,25 @@ class HomeController extends Controller
             'seo_title' => $seoTitle,
             'intro' => self::intro($seoSettings),
         ]);
+    }
+
+    /**
+     * IMG-F3: whether the hero slider is the first of Home.tsx's ordered
+     * section blocks that is switched on. Conservative: a visible section
+     * that happens to render nothing (no active flash sale) still counts,
+     * so the hero is then simply not preloaded.
+     *
+     * @param  array<string, mixed>  $homepageSettings
+     */
+    private function heroIsFirstSection(array $homepageSettings): bool
+    {
+        $orderedBlocks = ['hero_slider', 'flash_sale', 'categories', 'featured_products', 'promotional_banners', 'new_arrivals', 'brands', 'best_sellers', 'bundle_deals'];
+        $first = collect($orderedBlocks)
+            ->filter(fn (string $key): bool => (bool) ($homepageSettings[$key]['is_visible'] ?? false))
+            ->sortBy(fn (string $key): int => (int) ($homepageSettings[$key]['sort_order'] ?? 0))
+            ->first();
+
+        return $first === 'hero_slider';
     }
 
     /**

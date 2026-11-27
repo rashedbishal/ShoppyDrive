@@ -49,6 +49,7 @@ import {
 } from '@/lib/constants';
 import { LazyNewsletterThankYouModal, useHasOpened } from '@/lib/deferred-ui';
 import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { isVideoUrl, cn, getSoldPercent } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
 import type {
@@ -84,6 +85,10 @@ type HeroSlide = {
         href: string;
     };
     image: string;
+    /** IMG-F5: smaller copies of the image, if any. */
+    imageSrcset: string | null;
+    /** IMG-F3: still shown while a video slide loads, if any. */
+    poster: string | null;
     stats: HeroStat[];
 };
 
@@ -302,6 +307,8 @@ function HeroSlider({
                         {isVideoUrl(activeSlide.image) ? (
                             <video
                                 src={activeSlide.image}
+                                // IMG-F3: the still shows at once (and is preloaded by the server for the first slide) while the video loads.
+                                poster={activeSlide.poster ?? undefined}
                                 aria-hidden="true"
                                 className="absolute inset-0 h-full w-full object-cover"
                                 autoPlay
@@ -312,10 +319,17 @@ function HeroSlider({
                         ) : (
                             <img
                                 src={activeSlide.image}
+                                srcSet={activeSlide.imageSrcset ?? undefined}
+                                sizes={
+                                    activeSlide.imageSrcset
+                                        ? IMAGE_SIZES.fullWidth
+                                        : undefined
+                                }
                                 alt=""
                                 aria-hidden="true"
                                 className="absolute inset-0 h-full w-full object-cover"
                                 loading="eager"
+                                fetchPriority="high"
                                 decoding="async"
                             />
                         )}
@@ -1074,6 +1088,8 @@ function Home(): React.JSX.Element {
                                     href: s.primary_cta_href || '#',
                                 },
                                 image: s.image,
+                                imageSrcset: s.image_srcset ?? null,
+                                poster: s.poster ?? null,
                                 stats: s.stats || [],
                             }))}
                             autoplaySeconds={
@@ -1177,6 +1193,14 @@ function Home(): React.JSX.Element {
                                 >
                                     <img
                                         src={banner.image}
+                                        srcSet={
+                                            banner.image_srcset ?? undefined
+                                        }
+                                        sizes={
+                                            banner.image_srcset
+                                                ? '(min-width: 1024px) 50vw, 100vw'
+                                                : undefined
+                                        }
                                         alt={banner.title}
                                         loading="lazy"
                                         decoding="async"

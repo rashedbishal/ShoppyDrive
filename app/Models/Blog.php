@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\RecordsSlugRedirects;
+use App\Support\ImageVariants;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +35,9 @@ class Blog extends Model
         'is_published',
         'published_at',
     ];
+
+    /** IMG-F5: see ImageVariants. */
+    protected $appends = ['featured_image_srcset'];
 
     protected function casts(): array
     {
@@ -73,5 +77,11 @@ class Blog extends Model
         $isLive = $this->is_published && ($this->published_at === null || $this->published_at->lessThanOrEqualTo(now()));
 
         return $isLive ? route('blog.show', $this->slug) : null;
+    }
+
+    /** IMG-F5: the smaller WebP copies of the cover image, if any. */
+    protected function featuredImageSrcset(): Attribute
+    {
+        return Attribute::get(fn (): ?string => app(ImageVariants::class)->srcset($this->attributes['featured_image'] ?? null));
     }
 }

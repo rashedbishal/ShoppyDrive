@@ -36,6 +36,7 @@ import {
     SIDEBAR_LAYOUT_CLASS,
 } from '@/lib/constants';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { cn } from '@/lib/utils';
 import type {
     Attribute,
@@ -597,6 +598,13 @@ function ProductListingPage({
                             {category?.image ? (
                                 <img
                                     src={category.image}
+                                    srcSet={category.image_srcset ?? undefined}
+                                    sizes={
+                                        category.image_srcset
+                                            ? IMAGE_SIZES.fullWidth
+                                            : undefined
+                                    }
+                                    decoding="async"
                                     alt=""
                                     aria-hidden="true"
                                     className="absolute inset-0 -z-20 size-full object-cover"

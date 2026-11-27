@@ -144,6 +144,9 @@ export function VariantSelectionModal({
                                                 <img
                                                     src={thumbnailUrl}
                                                     alt=""
+                                                    width={64}
+                                                    height={64}
+                                                    decoding="async"
                                                     className="size-full object-cover"
                                                 />
                                             ) : null}

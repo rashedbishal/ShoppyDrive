@@ -57,6 +57,14 @@ export function SiteLogo({
             >
                 <img
                     src={logo}
+                    // IMG-F6: the shared logo's small WebP copies; a logo
+                    // passed in as `src` has none.
+                    srcSet={
+                        src === undefined
+                            ? (settings?.logo_srcset ?? undefined)
+                            : undefined
+                    }
+                    decoding="async"
                     alt={siteName}
                     className={cn(
                         'w-auto max-w-full object-contain',

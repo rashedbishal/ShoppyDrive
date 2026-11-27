@@ -75,6 +75,8 @@ export interface Auth {
 export interface AppSettings {
     site_name: string;
     logo?: string | null;
+    /** IMG-F6: "copy 1x, copy 2x, copy 3x" small WebP copies of the logo for the header; null = only the original. */
+    logo_srcset?: string | null;
     loading_logo?: string | null;
     loading_spin_seconds?: number;
     loading_ring_size?: number;
@@ -117,6 +119,8 @@ export interface Category extends Timestamped, SoftDeletable {
     name: string;
     slug: string;
     image?: string | null;
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    image_srcset?: string | null;
     icon?: string | null;
     color?: string | null;
     description?: string | null;
@@ -134,6 +138,8 @@ export interface SubCategory extends Timestamped, SoftDeletable {
     name: string;
     slug: string;
     image?: string | null;
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    image_srcset?: string | null;
     description?: string | null;
     meta_title?: string | null;
     meta_description?: string | null;
@@ -177,6 +183,8 @@ export interface ProductMedia extends Timestamped {
     attribute_value_id?: Id | null;
     path: string;
     type: 'image' | 'video';
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    srcset?: string | null;
     alt?: string | null;
     sort_order: number;
     is_primary: boolean;
@@ -550,6 +558,8 @@ export interface Blog extends Timestamped {
     excerpt: string | null;
     content: string;
     featured_image: string | null;
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    featured_image_srcset?: string | null;
     author_name: string | null;
     meta_title: string | null;
     meta_description: string | null;
@@ -649,6 +659,8 @@ export interface NavCategory {
     icon?: string | null;
     color?: string | null;
     image?: string | null;
+    /** IMG-F5: smaller copies of the image, if any. */
+    image_srcset?: string | null;
     sub_categories: NavSubCategory[];
 }
 
@@ -672,6 +684,11 @@ export interface HeroSlide {
     title: string;
     description?: string | null;
     image: string;
+    /** IMG-F3: still shown while a video slide loads. */
+    poster?: string | null;
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    image_srcset?: string | null;
+    poster_srcset?: string | null;
     primary_cta_label?: string | null;
     primary_cta_href?: string | null;
     stats?: { label: string; value: string }[] | null;
@@ -684,6 +701,8 @@ export interface PromotionalBanner {
     title: string;
     description?: string | null;
     image: string;
+    /** IMG-F5: smaller WebP copies ("url 400w, ..."), null when there are none. */
+    image_srcset?: string | null;
     href?: string | null;
     badge?: string | null;
     accent?: string | null;

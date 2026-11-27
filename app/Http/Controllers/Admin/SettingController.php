@@ -11,6 +11,7 @@ use App\Services\LoyaltyPointsService;
 use App\Services\PathaoCourierService;
 use App\Services\ReferralService;
 use App\Services\SteadfastCourierService;
+use App\Support\ImageVariants;
 use App\Support\LoadingScreenSettings;
 use App\Support\ReviewImageSettings;
 use Closure;
@@ -285,11 +286,14 @@ class SettingController extends Controller
             $existing = Setting::where('key', 'logo')->first();
             if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
                 Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+                ImageVariants::delete(substr((string) $existing->value, strlen('/storage/')));
             }
 
             // Deliberately not through ImageOptimizer: this logo heads every
-            // email, and Outlook on desktop can't show WebP.
+            // email, and Outlook on desktop can't show WebP. IMG-F6: the
+            // storefront header gets small WebP copies beside it instead.
             $path = $request->file('logo')->store('logos', 'public');
+            app(ImageOptimizer::class)->storeVariants($path);
             Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
         }
 
@@ -400,6 +404,7 @@ class SettingController extends Controller
 
         if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
             Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+            ImageVariants::delete(substr((string) $existing->value, strlen('/storage/')));
         }
 
         if ($isRemoval) {
@@ -433,6 +438,7 @@ class SettingController extends Controller
 
         if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
             Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+            ImageVariants::delete(substr((string) $existing->value, strlen('/storage/')));
         }
 
         if ($isRemoval) {

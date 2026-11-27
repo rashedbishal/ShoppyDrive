@@ -6,8 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Models\ProductMedia;
 use App\Support\DisplayOrderSettings;
 use App\Support\PageSeo;
+use App\Support\PreloadImage;
 use App\Support\ProductCardData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -215,6 +217,11 @@ class ProductController extends Controller
             ]),
         ]);
 
+        // IMG-F2: preload the photo the gallery opens on, when it's an image.
+        $openingMedia = $this->galleryOpeningMedia($product);
+        $opensOnImage = $openingMedia?->type === 'image';
+        PreloadImage::share($opensOnImage ? $openingMedia->path : null, $opensOnImage ? $openingMedia->srcset : null, PreloadImage::PRODUCT_GALLERY_SIZES);
+
         return Inertia::render('catalog/ProductDetail', [
             'product' => array_merge($product->toArray(), [
                 'attributes' => $attributes,
@@ -313,5 +320,41 @@ class ProductController extends Controller
             'offerCount' => $prices->count(),
             'availability' => $availability,
         ];
+    }
+
+    /**
+     * IMG-F2: the media ProductDetail.tsx opens its gallery on (its
+     * openingMediaIndex(), which the variant effect then keeps): the default
+     * variant's own photo, else the first image of one of its values (in the
+     * variant's value order), else the primary media, else the first. Null
+     * for variants with no default flagged (legacy data): the page then picks
+     * a variant from attribute order, which isn't worth guessing here.
+     */
+    private function galleryOpeningMedia(Product $product): ?ProductMedia
+    {
+        $media = $product->media->values();
+        $defaultVariant = $product->variants->firstWhere('is_default', true);
+
+        if ($defaultVariant === null && $product->variants->isNotEmpty()) {
+            return null;
+        }
+
+        if ($defaultVariant !== null) {
+            $own = $media->first(fn (ProductMedia $item): bool => $item->variant_id !== null && (int) $item->variant_id === (int) $defaultVariant->id);
+
+            if ($own !== null) {
+                return $own;
+            }
+
+            foreach ($defaultVariant->valueIds() as $valueId) {
+                $valueImage = $media->first(fn (ProductMedia $item): bool => $item->type === 'image' && $item->attribute_value_id !== null && (int) $item->attribute_value_id === $valueId);
+
+                if ($valueImage !== null) {
+                    return $valueImage;
+                }
+            }
+        }
+
+        return $media->firstWhere('is_primary', true) ?? $media->first();
     }
 }

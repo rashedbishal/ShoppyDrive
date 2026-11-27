@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Services\OrderPermanentDeletionService;
 use App\Support\Health\DiskSpaceCheck;
+use App\Support\ImageVariants;
 use App\Support\PasswordPolicy;
 use App\Support\SecurityRateLimits;
 use App\Support\SmsForwarderToken;
@@ -45,7 +46,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // IMG-F5: remembers each image's srcset for one request only, so a
+        // page listing the same image many times checks the disk once.
+        $this->app->scoped(ImageVariants::class);
     }
 
     /**

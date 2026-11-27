@@ -59,6 +59,10 @@
 
         {{-- DISC-72: fonts are self-hosted (@font-face in app.css, Google's copy as fallback). The body font starts downloading now rather than after the stylesheet that names it. --}}
         <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+        {{-- IMG-F2/F3: the page's main image (product photo, hero image or video poster) starts downloading with the HTML instead of after the JavaScript (App\Support\PreloadImage). --}}
+        @if(! empty($preloadImage))
+            <link rel="preload" as="image" href="{{ $preloadImage['href'] }}" @if($preloadImage['srcset']) imagesrcset="{{ $preloadImage['srcset'] }}" imagesizes="{{ $preloadImage['sizes'] }}" @endif fetchpriority="high">
+        @endif
 
         @routes(request()->is('admin', 'admin/*') || auth('admin')->check() ? 'admin' : null, Vite::cspNonce())
         @viteReactRefresh

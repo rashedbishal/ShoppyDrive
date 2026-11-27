@@ -35,6 +35,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { trackMetaProductEvent } from '@/lib/meta-tracking';
 import { formatCurrency, getDiscountPercent } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -42,6 +43,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type {
     Product,
+    ProductMedia,
     ProductVariant,
     Review,
     AttributeValue,
@@ -56,6 +58,48 @@ function variantValueIds(variant: ProductVariant): number[] {
             (id): id is number => id != null,
         )
     ).map(Number);
+}
+
+/**
+ * IMG-F2: the photo the gallery opens on, chosen exactly as the variant
+ * effect below would after the default variant is selected (its own photo,
+ * else its first value's image, else the primary). Starting there means the
+ * opening photo is never swapped (and downloaded twice) right after load, and
+ * it's the one ProductController::galleryOpeningMedia() preloads.
+ */
+function openingMediaIndex(
+    media: ProductMedia[],
+    variants: ProductVariant[],
+): number {
+    const defaultVariant = variants.find((variant) => variant.is_default);
+
+    if (defaultVariant) {
+        const ownIdx = media.findIndex(
+            (m) => m.variant_id === defaultVariant.id,
+        );
+
+        if (ownIdx !== -1) {
+            return ownIdx;
+        }
+
+        const valueIdx = variantValueIds(defaultVariant)
+            .map((valueId) =>
+                media.findIndex(
+                    (m) =>
+                        m.attribute_value_id === valueId && m.type === 'image',
+                ),
+            )
+            .find((found) => found !== -1);
+
+        if (valueIdx !== undefined) {
+            return valueIdx;
+        }
+    }
+
+    return Math.max(
+        media.findIndex((m) => m.is_primary),
+        0,
+    );
 }
 
 /** How many viewed products the browser remembers (ProductController::RECENTLY_VIEWED_LIMIT). */
@@ -186,10 +230,7 @@ export default function ProductDetail({
     >({});
     const [quantity, setQuantity] = useState(1);
     const [currentImageIndex, setCurrentImageIndex] = useState(() =>
-        Math.max(
-            (product.media ?? []).findIndex((m) => m.is_primary),
-            0,
-        ),
+        openingMediaIndex(product.media ?? [], product.variants ?? []),
     );
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [storedRecentlyViewed, setStoredRecentlyViewed] = useLocalStorage<
@@ -724,9 +765,21 @@ export default function ProductDetail({
                                             ) : (
                                                 <img
                                                     src={item.path}
+                                                    srcSet={
+                                                        item.srcset ?? undefined
+                                                    }
+                                                    sizes={
+                                                        item.srcset
+                                                            ? IMAGE_SIZES.thumbnail
+                                                            : undefined
+                                                    }
+                                                    width={96}
+                                                    height={96}
                                                     alt={
                                                         item.alt || product.name
                                                     }
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="h-full w-full object-cover"
                                                 />
                                             )}
@@ -736,7 +789,11 @@ export default function ProductDetail({
 
                                 {/* Main Media */}
                                 <div className="group relative order-1 aspect-[4/3] flex-1 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm md:order-2">
-                                    <AnimatePresence mode="wait">
+                                    {/* IMG-F2: initial={false} shows the opening photo at once (it is the page's LCP); switching photos still fades. */}
+                                    <AnimatePresence
+                                        mode="wait"
+                                        initial={false}
+                                    >
                                         {currentMedia ? (
                                             <motion.div
                                                 key={currentMedia.id}
@@ -758,6 +815,19 @@ export default function ProductDetail({
                                                 ) : (
                                                     <img
                                                         src={currentMedia.path}
+                                                        srcSet={
+                                                            currentMedia.srcset ??
+                                                            undefined
+                                                        }
+                                                        sizes={
+                                                            currentMedia.srcset
+                                                                ? IMAGE_SIZES.productGallery
+                                                                : undefined
+                                                        }
+                                                        width={800}
+                                                        height={600}
+                                                        fetchPriority="high"
+                                                        decoding="async"
                                                         alt={
                                                             currentMedia.alt ||
                                                             product.name
@@ -1723,7 +1793,17 @@ export default function ProductDetail({
                                     ) : (
                                         <img
                                             src={item.path}
+                                            srcSet={item.srcset ?? undefined}
+                                            sizes={
+                                                item.srcset
+                                                    ? IMAGE_SIZES.thumbnail
+                                                    : undefined
+                                            }
+                                            width={96}
+                                            height={96}
                                             alt={item.alt || product.name}
+                                            loading="lazy"
+                                            decoding="async"
                                             className="h-full w-full object-cover"
                                         />
                                     )}

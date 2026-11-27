@@ -180,6 +180,10 @@ export function BundleCard({
                                     <img
                                         src={thumbUrl(item)}
                                         alt={item.product.name}
+                                        width={48}
+                                        height={48}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="size-full object-cover"
                                     />
                                 </div>

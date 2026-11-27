@@ -76,6 +76,9 @@ function BrandDetailContent({
                                     <img
                                         src={brand.logo ?? ''}
                                         alt={`${brand.name} logo`}
+                                        width={56}
+                                        height={56}
+                                        decoding="async"
                                         onError={() => setHasLogoError(true)}
                                         className="size-12 object-contain lg:size-14"
                                     />

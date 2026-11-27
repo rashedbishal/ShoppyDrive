@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
@@ -22,6 +23,7 @@ export default function HeroSlideCreate() {
             eyebrow: '',
             description: '',
             image: null as File | null,
+            poster: null as File | string | null,
             primary_cta_label: '',
             primary_cta_href: '',
             is_active: true,
@@ -200,6 +202,29 @@ export default function HeroSlideCreate() {
                                             hint={`Image: 1920×1080px (16:9) landscape, minimum 1600×800px, WebP format, under 100 KB. Video: 1280×720px (16:9) at most, MP4 (H.264) format, ${HERO_VIDEO_MAX_MB} MB at most, no audio needed since it autoplays muted on loop — keep clips short (5–10s). ${VIDEO_HOW_TO} The media fills the full-width hero and crops to this ratio on smaller screens.`}
                                             maxVideoSizeMb={HERO_VIDEO_MAX_MB}
                                             previewClassName="h-56"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-text-primary">
+                                            Poster image (video slides)
+                                        </p>
+                                        <p className="text-xs text-slate-600">
+                                            A still from the video, shown
+                                            straight away while the video loads,
+                                            so phones see the slide sooner. Only
+                                            used when the slide is a video;
+                                            optional.
+                                        </p>
+                                        <ImageUpload
+                                            value={data.poster}
+                                            onChange={(file) => {
+                                                setData('poster', file);
+                                                clearErrors('poster');
+                                            }}
+                                            error={errors.poster}
+                                            hint="Same size and crop as the video (16:9, e.g. 1280×720 px). JPG, PNG or WebP, 5 MB at most; it is converted to WebP automatically."
+                                            maxSizeMb={5}
+                                            previewClassName="h-40"
                                         />
                                     </div>
                                 </CardContent>

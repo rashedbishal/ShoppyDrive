@@ -12,6 +12,7 @@ use App\Services\BundleService;
 use App\Support\AdminListUrl;
 use App\Support\BrandColor;
 use App\Support\CartManager;
+use App\Support\ImageVariants;
 use App\Support\LayoutCache;
 use App\Support\LoadingScreenSettings;
 use App\Support\PasswordPolicy;
@@ -23,6 +24,9 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    /** IMG-F6: the tallest the site logo is drawn (SiteLogo's h-12). */
+    private const int LOGO_MAX_CSS_HEIGHT = 48;
+
     /**
      * Routes that should not use SSR — these are authenticated or browser-heavy pages.
      *
@@ -119,7 +123,7 @@ class HandleInertiaRequests extends Middleware
         $announcementBar = ['announcement_bar' => $homepageSettings['announcement_bar'] ?? null];
         $settingsData = $this->resolveSettings($homepageSettings);
         $brand = array_intersect_key($settingsData, array_flip([
-            'site_name', 'logo', 'loading_logo',
+            'site_name', 'logo', 'logo_srcset', 'loading_logo',
             ...array_keys(LoadingScreenSettings::FIELDS),
         ]));
         $popularKeywords = LayoutCache::popularKeywords();
@@ -258,6 +262,9 @@ class HandleInertiaRequests extends Middleware
         return [
             'site_name' => $db->get('site_name', config('app.name', 'ShoppyDrive')),
             'logo' => $db->get('logo'),
+            // IMG-F6: small WebP copies for the storefront header (the
+            // largest SiteLogo is 48 px tall); null means only the original.
+            'logo_srcset' => app(ImageVariants::class)->densitySrcset($db->get('logo'), self::LOGO_MAX_CSS_HEIGHT),
             // Shown by the page-loading overlay; null means it uses `logo`.
             'loading_logo' => $db->get('loading_logo'),
             // The loader's speed and sizes, defaulted and clamped (LoadingScreenSettings).

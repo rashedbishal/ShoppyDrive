@@ -34,7 +34,7 @@ class ProductCardData
     private const array RELATED_FIELDS = ['id', 'name', 'slug'];
 
     /** @var list<string> */
-    private const array IMAGE_FIELDS = ['id', 'path', 'alt', 'type', 'is_primary', 'is_hover', 'sort_order'];
+    private const array IMAGE_FIELDS = ['id', 'path', 'srcset', 'alt', 'type', 'is_primary', 'is_hover', 'sort_order'];
 
     /**
      * Relations come through only if the caller loaded them.

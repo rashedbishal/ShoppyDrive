@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Newspaper, User } from 'lucide-react';
 import { BlogCard } from '@/components/shared/BlogCard';
+import { IMAGE_SIZES } from '@/lib/image-sizes';
 import type { Blog } from '@/types';
 
 type BlogShowProps = {
@@ -62,6 +63,16 @@ export default function BlogShow({
                         <div className="mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[var(--color-surface-alt)] shadow-[var(--shadow-card)]">
                             <img
                                 src={blog.featured_image}
+                                srcSet={blog.featured_image_srcset ?? undefined}
+                                sizes={
+                                    blog.featured_image_srcset
+                                        ? IMAGE_SIZES.blogCover
+                                        : undefined
+                                }
+                                width={1600}
+                                height={900}
+                                fetchPriority="high"
+                                decoding="async"
                                 alt={blog.title}
                                 className="h-full w-full object-cover"
                             />

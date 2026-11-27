@@ -10,7 +10,9 @@ use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
 use App\Concerns\RecordsSlugRedirects;
+use App\Support\ImageVariants;
 use App\Support\LayoutCache;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +49,9 @@ class SubCategory extends Model
         'is_active',
         'sort_order',
     ];
+
+    /** IMG-F5: see ImageVariants. */
+    protected $appends = ['image_srcset'];
 
     protected function casts(): array
     {
@@ -109,5 +114,11 @@ class SubCategory extends Model
             && ! Category::where('slug', $this->slug)->where('is_active', true)->exists();
 
         return $reachable ? route('category.show', $this->slug) : null;
+    }
+
+    /** IMG-F5: the smaller WebP copies of the sub-category image, if any. */
+    protected function imageSrcset(): Attribute
+    {
+        return Attribute::get(fn (): ?string => app(ImageVariants::class)->srcset($this->attributes['image'] ?? null));
     }
 }

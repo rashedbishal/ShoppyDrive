@@ -47,7 +47,8 @@ test('the brand carries no other settings', function () {
         'brand',
         fn ($brand): bool => collect($brand)->keys()->sort()->values()->all() === [
             'loading_logo', 'loading_logo_size', 'loading_ring_size', 'loading_ring_thickness',
-            'loading_spin_seconds', 'logo', 'site_name',
+            // IMG-F6: the logo's own small WebP copies (URLs only, not a setting).
+            'loading_spin_seconds', 'logo', 'logo_srcset', 'site_name',
         ],
     ));
 });
