@@ -62,9 +62,12 @@ test('admin pages get no fallback', function () {
     expect($this->get('/admin/login')->getContent())->not->toContain('<nav aria-label="Site">');
 });
 
-test('the homepage component carries one visually hidden h1', function () {
+test('the homepage component carries one visible h1 with the intro heading (DISC-90)', function () {
     $source = (string) file_get_contents(resource_path('js/pages/Home.tsx'));
 
+    preg_match('#<h1 className="([^"]*)">\s*\{intro\.heading\}\s*</h1>#', $source, $h1);
+
     expect(substr_count($source, '<h1'))->toBe(1)
-        ->and($source)->toContain('<h1 className="sr-only">{settings.site_name}</h1>');
+        ->and($h1)->not->toBeEmpty()
+        ->and($h1[1])->not->toContain('sr-only')->not->toContain('hidden');
 });

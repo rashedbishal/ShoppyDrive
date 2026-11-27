@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\HomeController;
 use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
@@ -30,6 +31,8 @@ class HomepageController extends Controller
             // DISC-87: saved through admin.settings.update, which checks the
             // `homepage` permission for these keys.
             'seo' => Setting::whereIn('key', ['home_meta_title', 'home_meta_description'])->pluck('value', 'key'),
+            // DISC-90: what the homepage shows now, so saving unchanged keeps it.
+            'intro' => HomeController::intro(),
         ]);
     }
 

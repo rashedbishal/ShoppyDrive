@@ -18,6 +18,7 @@ use App\Support\LayoutCache;
 use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use App\Support\SiteJsonLd;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -248,10 +249,10 @@ class HomeController extends Controller
 
         // DISC-87: the admin's SEO title/description (Admin › Homepage), else
         // the title above and the site default description.
-        $seoSettings = Setting::whereIn('key', ['home_meta_title', 'home_meta_description'])->pluck('value', 'key');
-        $seoTitle = $this->filledText($seoSettings['home_meta_title'] ?? null) ?? 'Online Shopping in Bangladesh';
+        $seoSettings = Setting::whereIn('key', ['home_meta_title', 'home_meta_description', 'home_h1', 'home_intro'])->pluck('value', 'key');
+        $seoTitle = self::filledText($seoSettings['home_meta_title'] ?? null) ?? 'Online Shopping in Bangladesh';
 
-        PageSeo::share($seoTitle, $this->filledText($seoSettings['home_meta_description'] ?? null), jsonLd: SiteJsonLd::forHome($shownCards));
+        PageSeo::share($seoTitle, self::filledText($seoSettings['home_meta_description'] ?? null), jsonLd: SiteJsonLd::forHome($shownCards));
 
         return Inertia::render('welcome', [
             'activeFlashSale' => $flashSaleData,
@@ -273,10 +274,39 @@ class HomeController extends Controller
             'hero_slides' => LayoutCache::heroSlides(),
             'promotional_banners' => LayoutCache::promotionalBanners(),
             'seo_title' => $seoTitle,
+            'intro' => self::intro($seoSettings),
         ]);
     }
 
-    private function filledText(mixed $value): ?string
+    /**
+     * DISC-90: the visible H1 and intro line at the top of the homepage
+     * (Admin › Homepage). The heading always has text. The intro uses the
+     * default until an admin saves one; saving it empty hides it (a cleared
+     * field is stored as null, so the saved row is what tells the two
+     * apart). Defaults claim only what the site already says elsewhere
+     * (sections on the page, BDT prices, nationwide delivery in the trust
+     * card).
+     *
+     * Admin › Homepage pre-fills its form with this, so saving it unchanged
+     * keeps what visitors already see.
+     *
+     * @param  Collection<string, mixed>|null  $settings  Setting values by key; read here when not given
+     * @return array{heading: string, text: string|null}
+     */
+    public static function intro(?Collection $settings = null): array
+    {
+        $settings ??= Setting::whereIn('key', ['home_h1', 'home_intro'])->pluck('value', 'key');
+        $siteName = self::filledText(LayoutCache::settings()['site_name'] ?? null) ?? config('app.name');
+
+        return [
+            'heading' => self::filledText($settings['home_h1'] ?? null) ?? 'Online Shopping in Bangladesh',
+            'text' => $settings->has('home_intro')
+                ? self::filledText($settings['home_intro'])
+                : "Shop new arrivals, best sellers, flash sales and bundle deals at {$siteName}, with prices in taka and delivery across Bangladesh.",
+        ];
+    }
+
+    private static function filledText(mixed $value): ?string
     {
         return is_string($value) && trim($value) !== '' ? $value : null;
     }

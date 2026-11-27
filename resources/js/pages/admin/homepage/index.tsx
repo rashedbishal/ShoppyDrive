@@ -15,9 +15,15 @@ import {
 import { useRef, useState } from 'react';
 import { AdminFade } from '@/components/admin/admin-motion';
 import { SeoSettingsCard } from '@/components/admin/seo-settings-card';
+import {
+    SettingsField,
+    settingsInputClass,
+} from '@/components/admin/settings-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
+import { Textarea } from '@/components/ui/textarea';
 import { getXsrfToken } from '@/lib/csrf';
 import { useTouchReorder } from '@/lib/hooks/useTouchReorder';
 import { cn } from '@/lib/utils';
@@ -29,7 +35,102 @@ type Props = {
         home_meta_title?: string | null;
         home_meta_description?: string | null;
     };
+    intro: { heading: string; text: string | null };
 };
+
+/** DISC-90: the visible heading and intro line at the top of the storefront homepage. */
+function HomepageIntroForm({ intro }: { intro: Props['intro'] }) {
+    const { data, setData, put, processing, recentlySuccessful, errors } =
+        useForm({
+            home_h1: intro.heading,
+            home_intro: intro.text ?? '',
+        });
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                put(route('admin.settings.update'), { preserveScroll: true });
+            }}
+            className="space-y-3"
+        >
+            <Card className="gap-3 py-4 shadow-sm">
+                <CardHeader className="border-b border-slate-100 pb-3">
+                    <CardTitle className="text-sm font-semibold text-slate-700">
+                        Homepage heading &amp; intro
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 pt-0">
+                    <p className="text-xs text-slate-600">
+                        The main heading (H1) and the short line under it, at
+                        the top of the homepage. Search engines read both, so
+                        describe what you sell in plain words.
+                    </p>
+                    <SettingsField
+                        label="Heading (H1)"
+                        hint="One short line, about 3–8 words. Left blank, it shows “Online Shopping in Bangladesh”."
+                    >
+                        <input
+                            maxLength={80}
+                            className={settingsInputClass}
+                            value={data.home_h1}
+                            placeholder="Online Shopping in Bangladesh"
+                            onChange={(e) => setData('home_h1', e.target.value)}
+                        />
+                        <CharCount
+                            value={data.home_h1}
+                            max={80}
+                            className="mt-0.5 block text-right text-[11px] leading-none"
+                        />
+                        {errors.home_h1 && (
+                            <p className="mt-1 text-xs text-red-500">
+                                {errors.home_h1}
+                            </p>
+                        )}
+                    </SettingsField>
+                    <SettingsField
+                        label="Intro text"
+                        hint="One or two sentences, about 120–250 characters. Leave it empty to show the heading alone."
+                    >
+                        <Textarea
+                            maxLength={300}
+                            showCount
+                            textareaClassName={settingsInputClass}
+                            rows={2}
+                            value={data.home_intro}
+                            onChange={(e) =>
+                                setData('home_intro', e.target.value)
+                            }
+                        />
+                        {errors.home_intro && (
+                            <p className="mt-1 text-xs text-red-500">
+                                {errors.home_intro}
+                            </p>
+                        )}
+                    </SettingsField>
+                </CardContent>
+            </Card>
+            <div className="flex items-center gap-3">
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="bg-brand text-brand-foreground hover:bg-brand-hover"
+                >
+                    {processing ? 'Saving…' : 'Save heading & intro'}
+                </Button>
+                <AnimatePresence initial={false}>
+                    {recentlySuccessful && (
+                        <AdminFade key="intro-saved">
+                            <span className="text-xs font-medium text-emerald-600">
+                                Saved.
+                            </span>
+                        </AdminFade>
+                    )}
+                </AnimatePresence>
+            </div>
+        </form>
+    );
+}
 
 /** DISC-87: the homepage's own search-engine title and description. */
 function HomepageSeoForm({ seo }: { seo: Props['seo'] }) {
@@ -83,7 +184,7 @@ function HomepageSeoForm({ seo }: { seo: Props['seo'] }) {
     );
 }
 
-export default function HomepageIndex({ sections, seo }: Props) {
+export default function HomepageIndex({ sections, seo, intro }: Props) {
     // Persists a confirmed reorder locally so the new order shows immediately
     // without an Inertia round-trip back to this page — only ever replaced by
     // a confirmed save, never by `sections` itself (that prop is only fresh
@@ -329,6 +430,8 @@ export default function HomepageIndex({ sections, seo }: Props) {
                         </CardContent>
                     </Card>
                 </div>
+
+                <HomepageIntroForm intro={intro} />
 
                 <HomepageSeoForm seo={seo} />
 

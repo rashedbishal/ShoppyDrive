@@ -112,6 +112,8 @@ type HomePageProps = SharedPageProps & {
     categories: Category[];
     // DISC-87: Admin › Homepage SEO title, else the default below.
     seo_title?: string;
+    // DISC-90: the visible H1 and intro line (Admin › Homepage); text null = hidden.
+    intro: { heading: string; text: string | null };
 };
 
 type SectionHeadingProps = {
@@ -973,6 +975,7 @@ function Home(): React.JSX.Element {
         brands,
         categories,
         seo_title,
+        intro,
     } = usePage<HomePageProps>().props;
 
     const categoryCards: HomeCategoryCard[] = (categories ?? []).map(
@@ -1353,10 +1356,19 @@ function Home(): React.JSX.Element {
     return (
         <>
             <Head title={seo_title || 'Online Shopping in Bangladesh'} />
-            {/* DISC-63: the page's one top-level heading, for screen readers and agents; visually hidden, so the design is unchanged. */}
-            <h1 className="sr-only">{settings.site_name}</h1>
+            {/* DISC-90: the page's one top-level heading and intro line, visible to everyone (DISC-63 had it screen-reader only). Same type as the category page heading; compact so the first section stays near the top. */}
+            <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+                <h1 className="font-display text-2xl leading-tight font-semibold tracking-tight break-words text-[var(--color-text-primary)] sm:text-3xl">
+                    {intro.heading}
+                </h1>
+                {intro.text ? (
+                    <p className="mt-1.5 max-w-3xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base">
+                        {intro.text}
+                    </p>
+                ) : null}
+            </section>
 
-            <div className="space-y-16 py-8 lg:py-12">
+            <div className="space-y-16 pt-6 pb-8 lg:pt-8 lg:pb-12">
                 {orderedSectionBlocks.map((block) => (
                     <Fragment key={block.key}>{block.node}</Fragment>
                 ))}
