@@ -66,10 +66,47 @@ class PageSeo
     /**
      * DISC-76/77: the one title format, "Page - Site", matching what the
      * browser's Inertia title callback (app.tsx) shows after JavaScript runs.
+     * DISC-95: a title that already names the site (an SEO title saved as
+     * "Watches | ShoppyDrive") is kept as it is rather than getting a second
+     * " - ShoppyDrive"; app.tsx applies the same rule.
      */
     public static function title(string $title): string
     {
-        return $title.' - '.config('app.name');
+        $title = trim($title);
+        $siteName = (string) config('app.name');
+
+        if ($title === '') {
+            return $siteName;
+        }
+
+        if ($siteName !== '' && Str::contains($title, $siteName, ignoreCase: true)) {
+            return $title;
+        }
+
+        return $title.' - '.$siteName;
+    }
+
+    /**
+     * DISC-95: a page's own content used as its description when no search
+     * description was saved. Category and brand descriptions are often
+     * written as a heading line ("Toys in Bangladesh | Shop Online") over the
+     * text itself; that heading would otherwise run straight into the first
+     * sentence, so it's left out when real text follows it.
+     */
+    public static function descriptionFromContent(?string $content): ?string
+    {
+        $lines = array_values(array_filter(
+            array_map(trim(...), preg_split('/\R/u', self::plainText($content)) ?: []),
+            fn (string $line): bool => $line !== '',
+        ));
+
+        if (count($lines) > 1 && self::isHeadingLine($lines[0])) {
+            array_shift($lines);
+        }
+
+        $text = implode(' ', $lines);
+
+        return $text === '' ? null : $text;
     }
 
     public static function shareForPage(Page $page): void
@@ -96,11 +133,70 @@ class PageSeo
         ];
     }
 
+    /**
+     * DISC-95: plain text, the same sentence pasted twice in a row said once,
+     * and cut at the end of a sentence (or at least of a word) rather than
+     * mid-word.
+     */
     private static function description(?string $description): string
     {
-        $text = Str::squish(strip_tags((string) $description));
+        $text = Str::squish(self::plainText($description));
+        $text = self::withoutRepeatedSentences($text);
 
-        return Str::limit($text !== '' ? $text : self::DEFAULT_DESCRIPTION, self::MAX_DESCRIPTION_LENGTH);
+        return self::shorten($text !== '' ? $text : self::DEFAULT_DESCRIPTION);
+    }
+
+    /**
+     * Rich text without its markup: block ends become line breaks (so two
+     * paragraphs don't run together into one word) and entities such as
+     * &amp; are decoded once, because the view escapes the result again.
+     */
+    private static function plainText(?string $html): string
+    {
+        $text = preg_replace('#<br\s*/?>|</(p|div|li|h[1-6]|tr|blockquote)>#i', "\n", (string) $html) ?? '';
+
+        return html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    /** A short line without closing punctuation: a heading, not a sentence. */
+    private static function isHeadingLine(string $line): bool
+    {
+        return mb_strlen($line) <= 90 && ! preg_match('/[.!?।:]$/u', $line);
+    }
+
+    private static function withoutRepeatedSentences(string $text): string
+    {
+        $sentences = preg_split('/(?<=[.!?।])\s+/u', $text) ?: [$text];
+        $kept = [];
+
+        foreach ($sentences as $sentence) {
+            if ($kept === [] || mb_strtolower(end($kept)) !== mb_strtolower($sentence)) {
+                $kept[] = $sentence;
+            }
+        }
+
+        return implode(' ', $kept);
+    }
+
+    private static function shorten(string $text): string
+    {
+        if (mb_strlen($text) <= self::MAX_DESCRIPTION_LENGTH) {
+            return $text;
+        }
+
+        $cut = mb_substr($text, 0, self::MAX_DESCRIPTION_LENGTH);
+
+        // A whole sentence that fills at least half the space reads better than a cut one.
+        if (preg_match('/^.*[.!?।](?=\s)/us', $cut.' ', $match) && mb_strlen($match[0]) >= self::MAX_DESCRIPTION_LENGTH / 2) {
+            return $match[0];
+        }
+
+        $lastSpace = mb_strrpos($cut, ' ');
+        $words = $lastSpace !== false && $lastSpace > 0 ? mb_substr($cut, 0, $lastSpace) : mb_substr($cut, 0, self::MAX_DESCRIPTION_LENGTH - 1);
+
+        // Unicode-aware: a byte-based rtrim() with "–—" in its list would
+        // strip the last byte off a Bangla letter that ends in the same byte.
+        return (preg_replace('/[\s,;:|\-–—]+$/u', '', $words) ?? $words).'…';
     }
 
     /**

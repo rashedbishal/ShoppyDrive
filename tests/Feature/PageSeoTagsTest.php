@@ -179,3 +179,77 @@ test('admins can save search text on categories and sub-categories, within the c
         'name' => $category->name, 'slug' => $category->slug, 'meta_description' => str_repeat('x', 256),
     ])->assertSessionHasErrors('meta_description');
 });
+
+test('a saved title that already names the site is not given a second site name (DISC-95)', function (string $saved, string $printed) {
+    Category::factory()->create(['name' => 'Watches', 'slug' => 'watches', 'meta_title' => $saved, 'is_active' => true]);
+
+    $html = $this->get(route('category.show', 'watches'))->assertOk()->getContent();
+
+    expect($html)->toContain('<title>'.e($printed).'</title>')
+        ->toContain('property="og:title" content="'.e($printed).'"');
+})->with([
+    'ends with the site name' => [fn () => 'Watches | '.config('app.name'), fn () => 'Watches | '.config('app.name')],
+    'site name in another case' => [fn () => 'Watches at '.mb_strtolower(config('app.name')), fn () => 'Watches at '.mb_strtolower(config('app.name'))],
+    'no site name' => ['Premium watches', fn () => 'Premium watches - '.config('app.name')],
+]);
+
+test('the browser title rule matches the server one (DISC-95)', function () {
+    expect(file_get_contents(resource_path('js/app.tsx')))
+        ->toContain('title.toLowerCase().includes(appName.toLowerCase())');
+});
+
+test('a description written as a heading line over its text leaves the heading out (DISC-95)', function (Category|Brand $owner, string $url) {
+    preg_match('/name="description" content="([^"]*)"/', $this->get($url)->assertOk()->getContent(), $tag);
+
+    expect(html_entity_decode($tag[1]))->toBe('Lamps & lights for every room. Delivered across Bangladesh.');
+})->with([
+    'category' => fn () => [$c = Category::factory()->create(['slug' => 'lamps', 'is_active' => true, 'meta_description' => null,
+        'description' => "Lamps in Bangladesh | Shop Online\r\n\r\nLamps &amp; lights for every room. Delivered across Bangladesh."]), route('category.show', 'lamps')],
+    'brand' => fn () => [$b = Brand::factory()->create(['slug' => 'lumen', 'is_active' => true, 'meta_description' => null,
+        'description' => '<h2>Lumen Lighting</h2><p>Lamps &amp; lights for every room.</p><p>Delivered across Bangladesh.</p>']), route('brand.show', 'lumen')],
+]);
+
+test('a saved search description is used as written, and a one-line description keeps its first words (DISC-95)', function () {
+    Category::factory()->create(['slug' => 'toys', 'is_active' => true, 'description' => 'Toys for kids', 'meta_description' => 'Fun toys in Bangladesh']);
+    Category::factory()->create(['slug' => 'games', 'is_active' => true, 'description' => 'Board games', 'meta_description' => null]);
+
+    expect($this->get(route('category.show', 'toys'))->getContent())->toContain('name="description" content="Fun toys in Bangladesh"')
+        ->and($this->get(route('category.show', 'games'))->getContent())->toContain('name="description" content="Board games"');
+});
+
+test('the same sentence pasted several times in a row is said once (DISC-95)', function () {
+    Setting::updateOrCreate(['key' => 'contact_page_hero_description'], ['value' => str_repeat('Our team is ready to help. ', 4), 'group' => 'general']);
+
+    preg_match('/name="description" content="([^"]*)"/', $this->get(route('contact'))->assertOk()->getContent(), $tag);
+
+    expect($tag[1])->toBe('Our team is ready to help.');
+});
+
+function savedDescriptionShown(string $description): string
+{
+    Category::factory()->create(['slug' => 'long', 'is_active' => true, 'meta_description' => $description]);
+    preg_match('/name="description" content="([^"]*)"/', test()->get(route('category.show', 'long'))->getContent(), $tag);
+
+    return html_entity_decode($tag[1]);
+}
+
+test('a long description ends at the last whole sentence that fits (DISC-95)', function () {
+    $sentences = 'Warm lamps for bedrooms and living rooms. Soft light that is easy on the eyes. Delivered anywhere in Bangladesh.';
+
+    expect(savedDescriptionShown($sentences.' Order today and pay cash when the parcel arrives at your door.'))->toBe($sentences);
+});
+
+test('a long description without a sentence end is cut after a whole word (DISC-95)', function () {
+    $shown = savedDescriptionShown(str_repeat('lamp ', 40));
+
+    expect($shown)->toMatch('/^(lamp )+lamp…$/u')
+        ->and(mb_strlen($shown))->toBeLessThanOrEqual(161);
+});
+
+test('cutting a long Bangla description keeps every letter whole (DISC-95)', function () {
+    // ও (U+0993) ends in the same byte as an en dash; a byte-based trim would break it.
+    $shown = savedDescriptionShown(str_repeat('ও ', 100));
+
+    expect(mb_check_encoding($shown, 'UTF-8'))->toBeTrue()
+        ->and($shown)->toMatch('/^(ও )+ও…$/u');
+});

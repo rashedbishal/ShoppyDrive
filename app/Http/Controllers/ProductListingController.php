@@ -66,7 +66,7 @@ class ProductListingController extends Controller
         ]);
 
         $seoTitle = $listing->meta_title ?: $listing->name;
-        PageSeo::share($seoTitle, $listing->meta_description ?: $listing->description, $listing->image, breadcrumbs: $breadcrumbs);
+        PageSeo::share($seoTitle, $listing->meta_description ?: PageSeo::descriptionFromContent($listing->description), $listing->image, breadcrumbs: $breadcrumbs);
 
         return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug), $seoTitle);
     }

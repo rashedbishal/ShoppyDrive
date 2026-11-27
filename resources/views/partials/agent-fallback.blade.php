@@ -2,8 +2,10 @@
     DISC-63: production has no SSR, so without JavaScript the page is only
     the boot loader. AI agents and simple crawlers that don't run JavaScript
     read this instead: one <h1> naming the page, the footer's own links
-    (About, Contact, policies) and the saved contact details as tel:/mailto:
-    links. Browsers with JavaScript never render <noscript>, so visitors see
+    (About, Contact, policies), every active category and sub-category
+    (DISC-95: the header menu only puts those links in the page once it is
+    opened) and the saved contact details as tel:/mailto: links. Browsers
+    with JavaScript never render <noscript>, so visitors see
     no change. Saved settings only: the footer's display placeholders are
     never shown here.
 --}}
@@ -24,6 +26,7 @@
         'Shipping Policy' => '/shipping-policy',
         'FAQ' => '/faq',
     ];
+    $fallbackCategories = \App\Support\LayoutCache::navCategories();
 @endphp
 <noscript>
     <header>
@@ -37,6 +40,24 @@
             @endforeach
         </ul>
     </nav>
+    @if($fallbackCategories !== [])
+        <nav aria-label="Categories">
+            <ul>
+                @foreach($fallbackCategories as $fallbackCategory)
+                    <li>
+                        <a href="{{ route('category.show', $fallbackCategory['slug']) }}">{{ $fallbackCategory['name'] }}</a>
+                        @if(! empty($fallbackCategory['sub_categories']))
+                            <ul>
+                                @foreach($fallbackCategory['sub_categories'] as $fallbackSubCategory)
+                                    <li><a href="{{ route('category.show', $fallbackSubCategory['slug']) }}">{{ $fallbackSubCategory['name'] }}</a></li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </nav>
+    @endif
     @if($fallbackEmail !== '' || $fallbackPhone !== '')
         <address>
             @if($fallbackPhone !== '')

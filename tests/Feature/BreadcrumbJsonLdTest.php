@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
@@ -85,4 +86,14 @@ test('pages outside the catalog hierarchy have no breadcrumb block', function ()
     $types = array_column(jsonLdBlocks(route('home')), '@type');
 
     expect($types)->not->toContain('BreadcrumbList');
+});
+
+test('a brand page is home, all brands, then the brand (DISC-95)', function () {
+    Brand::factory()->create(['name' => 'Acme', 'slug' => 'acme', 'is_active' => true]);
+
+    expect(breadcrumbTrail(route('brand.show', 'acme')))->toBe([
+        ['Home', route('home')],
+        ['Brands', route('brands.index')],
+        ['Acme', route('brand.show', 'acme')],
+    ]);
 });

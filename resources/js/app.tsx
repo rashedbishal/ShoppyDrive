@@ -942,7 +942,14 @@ createInertiaApp({
     defaults: {
         visitOptions: preserveScrollOnErrors,
     },
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    // DISC-95: same rule as PageSeo::title(): a title that already names the
+    // site isn't given a second " - ShoppyDrive".
+    title: (title) =>
+        !title
+            ? appName
+            : title.toLowerCase().includes(appName.toLowerCase())
+              ? title
+              : `${title} - ${appName}`,
     resolve: async (name) => {
         if (name.startsWith('admin/')) {
             const { resolveAdminPage } = await import('@/lib/admin-pages');

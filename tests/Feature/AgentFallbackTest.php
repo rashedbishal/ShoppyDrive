@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\SubCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -70,4 +72,18 @@ test('the homepage component carries one visible h1 with the intro heading (DISC
     expect(substr_count($source, '<h1'))->toBe(1)
         ->and($h1)->not->toBeEmpty()
         ->and($h1[1])->not->toContain('sr-only')->not->toContain('hidden');
+});
+
+test('every active category and its active sub-categories are real links, hidden ones are not (DISC-95)', function () {
+    $kitchen = Category::factory()->create(['name' => 'Kitchen & Dining', 'slug' => 'kitchen', 'is_active' => true]);
+    SubCategory::factory()->create(['name' => 'Pots', 'slug' => 'pots', 'category_id' => $kitchen->id, 'is_active' => true]);
+    SubCategory::factory()->create(['name' => 'Old pans', 'slug' => 'old-pans', 'category_id' => $kitchen->id, 'is_active' => false]);
+    Category::factory()->create(['name' => 'Hidden', 'slug' => 'hidden', 'is_active' => false]);
+
+    $fallback = noscriptBlock($this->get(route('products.index'))->assertOk()->getContent());
+
+    expect($fallback)->toContain('<a href="'.route('category.show', 'kitchen').'">Kitchen &amp; Dining</a>')
+        ->toContain('<a href="'.route('category.show', 'pots').'">Pots</a>')
+        ->not->toContain('old-pans')
+        ->not->toContain(route('category.show', 'hidden'));
 });

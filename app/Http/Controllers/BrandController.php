@@ -40,7 +40,18 @@ class BrandController extends Controller
 
         // DISC-86: the admin's SEO title/description, else the name and
         // description as before (BrandDetail.tsx shows the same title).
-        PageSeo::share($brand->meta_title ?: $brand->name, $brand->meta_description ?: $brand->description, $brand->logo);
+        // DISC-95: plus a BreadcrumbList (Home › Brands › this brand),
+        // matching the page's own link back to All Brands.
+        PageSeo::share(
+            $brand->meta_title ?: $brand->name,
+            $brand->meta_description ?: PageSeo::descriptionFromContent($brand->description),
+            $brand->logo,
+            breadcrumbs: PageSeo::breadcrumbList([
+                ['Home', route('home')],
+                ['Brands', route('brands.index')],
+                [$brand->name, route('brand.show', $brand->slug)],
+            ]),
+        );
 
         $productsQuery = Product::query()
             ->visible()
