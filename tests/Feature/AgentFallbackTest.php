@@ -69,7 +69,8 @@ test('the homepage component carries one visible h1 with the intro heading (DISC
 
     preg_match('#<h1 className="([^"]*)">\s*\{intro\.heading\}\s*</h1>#', $source, $h1);
 
-    expect(substr_count($source, '<h1'))->toBe(1)
+    // DISC-96: count animated headings too — the hero slide title was a <motion.h1>, which a plain '<h1' count missed.
+    expect(preg_match_all('#<(?:motion\.)?h1\b#', $source))->toBe(1)
         ->and($h1)->not->toBeEmpty()
         ->and($h1[1])->not->toContain('sr-only')->not->toContain('hidden');
 });

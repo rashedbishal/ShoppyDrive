@@ -369,7 +369,8 @@ function HeroSlider({
                                     </Badge>
                                 </motion.div>
 
-                                <motion.h1
+                                {/* DISC-96: h2, not h1 — the page's one h1 is the intro heading below. */}
+                                <motion.h2
                                     variants={{
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
@@ -377,7 +378,7 @@ function HeroSlider({
                                     className="line-clamp-2 font-display text-xl leading-[1.15] tracking-tight break-words sm:text-3xl sm:leading-[1.1] lg:text-5xl"
                                 >
                                     {activeSlide.title}
-                                </motion.h1>
+                                </motion.h2>
 
                                 <motion.div
                                     className="hidden sm:block"
