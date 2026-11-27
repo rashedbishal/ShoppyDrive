@@ -7,18 +7,20 @@ namespace App\Models;
 use App\Concerns\RecordsSlugRedirects;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * DISC-91: an old slug of a renamed product, category or sub-category.
+ * DISC-91: an old slug of a renamed product, category or sub-category
+ * (DISC-92: also brand and blog post).
  * Written only by RecordsSlugRedirects; read only when no live record has
  * the requested slug, so a current page always wins over a redirect.
  */
 class SlugRedirect extends Model
 {
     /** Every model whose old slugs are kept; used to prune rows whose record is gone. */
-    public const REDIRECTABLE_MODELS = [Product::class, Category::class, SubCategory::class];
+    public const REDIRECTABLE_MODELS = [Product::class, Category::class, SubCategory::class, Brand::class, Blog::class];
 
     protected $fillable = ['namespace', 'old_slug', 'redirectable_type', 'redirectable_id'];
 
@@ -54,18 +56,26 @@ class SlugRedirect extends Model
     }
 
     /**
-     * Rows whose record no longer exists, even soft-deleted. A category's
-     * permanent delete removes its sub-categories and products in the
-     * database without model events, so this runs after any permanent
-     * delete of a redirectable model.
+     * Rows whose record no longer exists (a soft-deleted one still counts as
+     * existing). A category's permanent delete removes its sub-categories
+     * and products in the database without model events, so this runs after
+     * any permanent delete of a redirectable model.
      */
     public static function pruneOrphans(): void
     {
         foreach (self::REDIRECTABLE_MODELS as $class) {
+            $existingIds = self::usesSoftDeletes($class) ? $class::withTrashed()->select('id') : $class::query()->select('id');
+
             self::query()
                 ->where('redirectable_type', (new $class)->getMorphClass())
-                ->whereNotIn('redirectable_id', $class::withTrashed()->select('id'))
+                ->whereNotIn('redirectable_id', $existingIds)
                 ->delete();
         }
+    }
+
+    /** @param  class-string<Model>  $class */
+    public static function usesSoftDeletes(string $class): bool
+    {
+        return in_array(SoftDeletes::class, class_uses_recursive($class), true);
     }
 }

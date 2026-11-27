@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Concerns\CleansUpReplacedFiles;
+use App\Concerns\RecordsSlugRedirects;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,10 @@ use Mews\Purifier\Facades\Purifier;
 
 class Blog extends Model
 {
-    use Auditable, CleansUpReplacedFiles, HasFactory;
+    use Auditable, CleansUpReplacedFiles, HasFactory, RecordsSlugRedirects;
+
+    /** DISC-92: old slugs redirect under /blog/{slug} (see RecordsSlugRedirects). */
+    public const SLUG_REDIRECT_NAMESPACE = 'blog';
 
     /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
     public const PUBLIC_FILE_COLUMNS = ['featured_image'];
@@ -61,5 +65,13 @@ class Blog extends Model
     {
         return $query->where('is_published', true)
             ->where(fn ($q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()));
+    }
+
+    /** DISC-92: where an old slug of this post sends visitors, while it's published (same rule as BlogController::show). */
+    public function currentPublicUrl(): ?string
+    {
+        $isLive = $this->is_published && ($this->published_at === null || $this->published_at->lessThanOrEqualTo(now()));
+
+        return $isLive ? route('blog.show', $this->slug) : null;
     }
 }

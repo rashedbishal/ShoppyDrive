@@ -21,7 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * - Rows point at the record, not at the new slug, so a → b → c sends both a
  *   and b straight to c.
  * - A permanent delete removes the record's rows (and any left by cascaded
- *   deletes). Soft deletes keep them: the redirect 404s while the record is
+ *   deletes); for a model without soft deletes that is its plain delete
+ *   (DISC-92). Soft deletes keep them: the redirect 404s while the record is
  *   trashed and works again if it's restored.
  */
 trait RecordsSlugRedirects
@@ -49,13 +50,23 @@ trait RecordsSlugRedirects
                 ->delete();
         });
 
-        static::forceDeleted(function (Model $model): void {
+        $removeRedirects = function (Model $model): void {
             SlugRedirect::query()
                 ->where('redirectable_type', $model->getMorphClass())
                 ->where('redirectable_id', $model->getKey())
                 ->delete();
 
             SlugRedirect::pruneOrphans();
-        });
+        };
+
+        // DISC-92: a soft-deleting model's rows go only when it's
+        // permanently deleted; a model without soft deletes (Brand, Blog)
+        // is gone on its plain delete. `forceDeleted` exists only on
+        // SoftDeletes models.
+        if (SlugRedirect::usesSoftDeletes(static::class)) {
+            static::forceDeleted($removeRedirects);
+        } else {
+            static::deleted($removeRedirects);
+        }
     }
 }

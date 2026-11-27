@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductListingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
+use App\Models\Brand;
 use App\Models\Product;
 use App\Models\SlugRedirect;
 use Illuminate\Http\Request;
@@ -28,7 +29,10 @@ Route::post('/product/{product:slug}/reviews', [ReviewController::class, 'store'
 Route::get('/search', [SearchController::class, 'index'])->middleware('throttle:product-browsing')->name('search');
 
 Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
-Route::get('/brand/{brand:slug}', [BrandController::class, 'show'])->name('brand.show');
+// DISC-92: an unknown brand slug may be an old one of a renamed brand (see product.show above).
+Route::get('/brand/{brand:slug}', [BrandController::class, 'show'])
+    ->missing(fn (Request $request) => SlugRedirect::redirectOrNotFound(Brand::SLUG_REDIRECT_NAMESPACE, (string) $request->route('brand'), $request))
+    ->name('brand.show');
 
 Route::get('/flash-sales', [FlashSaleController::class, 'index'])->name('flash-sales.index');
 

@@ -9,8 +9,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\NewsletterController;
+use App\Models\Blog;
 use App\Models\Page;
+use App\Models\SlugRedirect;
 use App\Support\PageSeo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -86,7 +89,11 @@ foreach (['return-policy', 'refund-policy', 'shipping-policy'] as $policySlug) {
 }
 
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
-Route::get('/blog/{blog:slug}', [BlogController::class, 'show'])->name('blog.show');
+// DISC-92: an unknown post slug may be an old one of a renamed post: 301 to
+// its current URL while it's published, otherwise 404 as before.
+Route::get('/blog/{blog:slug}', [BlogController::class, 'show'])
+    ->missing(fn (Request $request) => SlugRedirect::redirectOrNotFound(Blog::SLUG_REDIRECT_NAMESPACE, (string) $request->route('blog'), $request))
+    ->name('blog.show');
 
 // Newsletter
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.subscribe');

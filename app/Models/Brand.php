@@ -8,13 +8,17 @@ use App\Concerns\Auditable;
 use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
+use App\Concerns\RecordsSlugRedirects;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Brand extends Model
 {
-    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory;
+    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory, RecordsSlugRedirects;
+
+    /** DISC-92: old slugs redirect under /brand/{slug} (see RecordsSlugRedirects). */
+    public const SLUG_REDIRECT_NAMESPACE = 'brand';
 
     /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
     public const PUBLIC_FILE_COLUMNS = ['logo'];
@@ -50,5 +54,11 @@ class Brand extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /** DISC-92: where an old slug of this brand sends visitors, while it's active (same rule as BrandController::show). */
+    public function currentPublicUrl(): ?string
+    {
+        return $this->is_active ? route('brand.show', $this->slug) : null;
     }
 }
