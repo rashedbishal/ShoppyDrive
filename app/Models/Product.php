@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
+use App\Concerns\RecordsSlugRedirects;
 use App\Services\ReviewImageStorage;
 use App\Support\UnusedUploadRemover;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -21,7 +22,10 @@ use Mews\Purifier\Facades\Purifier;
 
 class Product extends Model
 {
-    use Auditable, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+    use Auditable, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory, RecordsSlugRedirects, SoftDeletes;
+
+    /** DISC-91: old slugs redirect under /product/{slug} (see RecordsSlugRedirects). */
+    public const SLUG_REDIRECT_NAMESPACE = 'product';
 
     /** Columns the product-listing filter options depend on (see FlushesCatalogFilters). */
     public const CATALOG_FILTER_FIELDS = ['is_active', 'published_at', 'category_id', 'sub_category_id', 'brand_id', 'price'];
@@ -337,5 +341,11 @@ class Product extends Model
             && $this->category?->is_active === true
             && ($this->sub_category_id === null || $this->subCategory?->is_active === true)
             && ($this->brand_id === null || $this->brand?->is_active === true);
+    }
+
+    /** DISC-91: where an old slug of this product sends visitors, while customers may see it. */
+    public function currentPublicUrl(): ?string
+    {
+        return $this->isPubliclyVisible() ? route('product.show', $this->slug) : null;
     }
 }

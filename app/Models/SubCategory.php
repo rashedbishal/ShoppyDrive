@@ -9,6 +9,7 @@ use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
+use App\Concerns\RecordsSlugRedirects;
 use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +19,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SubCategory extends Model
 {
-    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, RecordsSlugRedirects, SoftDeletes;
+
+    /** DISC-91: old slugs redirect under /category/{slug}, shared with categories. */
+    public const SLUG_REDIRECT_NAMESPACE = 'category';
 
     /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
     public const PUBLIC_FILE_COLUMNS = ['image'];
@@ -90,5 +94,20 @@ class SubCategory extends Model
                 $subCategory->products()->each(fn ($product) => $product->delete());
             }
         });
+    }
+
+    /**
+     * DISC-91: where an old slug of this sub-category sends visitors. Same
+     * rule as ProductListingController::category(): it and its parent must
+     * be active, and an active category with the same slug (a clash from
+     * before DISC-89) would be served instead, so then there's no target.
+     */
+    public function currentPublicUrl(): ?string
+    {
+        $reachable = $this->is_active
+            && $this->category?->is_active === true
+            && ! Category::where('slug', $this->slug)->where('is_active', true)->exists();
+
+        return $reachable ? route('category.show', $this->slug) : null;
     }
 }

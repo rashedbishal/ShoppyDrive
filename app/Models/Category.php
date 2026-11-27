@@ -9,6 +9,7 @@ use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
+use App\Concerns\RecordsSlugRedirects;
 use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, RecordsSlugRedirects, SoftDeletes;
+
+    /** DISC-91: old slugs redirect under /category/{slug}, shared with sub-categories. */
+    public const SLUG_REDIRECT_NAMESPACE = 'category';
 
     /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
     public const PUBLIC_FILE_COLUMNS = ['image'];
@@ -96,5 +100,11 @@ class Category extends Model
                 $category->products()->each(fn ($product) => $product->delete());
             }
         });
+    }
+
+    /** DISC-91: where an old slug of this category sends visitors, while it's active. */
+    public function currentPublicUrl(): ?string
+    {
+        return $this->is_active ? route('category.show', $this->slug) : null;
     }
 }

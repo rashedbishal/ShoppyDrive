@@ -9,12 +9,14 @@ use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\PromotionalBanner;
 use App\Models\Review;
+use App\Models\SlugRedirect;
 use App\Models\SubCategory;
 use App\Support\CatalogFilterCache;
 use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use App\Support\ProductSearchQuery;
 use App\Support\SearchTerm;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +30,7 @@ class ProductListingController extends Controller
         return $this->catalogResponse($request, null, null, route('products.index'));
     }
 
-    public function category(string $slug, Request $request): Response
+    public function category(string $slug, Request $request): Response|RedirectResponse
     {
         // An inactive category/sub-category's URL must 404, not just hide
         // from menus — and a sub-category whose own parent category was
@@ -41,7 +43,16 @@ class ProductListingController extends Controller
             $subCategory = SubCategory::where('slug', $slug)
                 ->where('is_active', true)
                 ->whereHas('category', fn ($q) => $q->where('is_active', true))
-                ->firstOrFail();
+                ->first();
+        }
+
+        // DISC-91: nothing to show. Only a slug no category or sub-category
+        // holds any more (an old, renamed one) may 301 to its record's
+        // current URL; a hidden record keeping this slug still 404s.
+        if (! $category && ! $subCategory) {
+            abort_if(Category::where('slug', $slug)->exists() || SubCategory::where('slug', $slug)->exists(), 404);
+
+            return SlugRedirect::redirectOrNotFound(Category::SLUG_REDIRECT_NAMESPACE, $slug, $request);
         }
 
         $listing = $category ?? $subCategory;
