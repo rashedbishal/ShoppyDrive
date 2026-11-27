@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\SubCategory;
 use App\Rules\RasterImageOrUrl;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class CategoryRequest extends FormRequest
 {
@@ -65,6 +68,7 @@ class CategoryRequest extends FormRequest
                 'string',
                 'max:100',
                 'unique:categories,slug,'.($categoryId ?? 'NULL').',id,deleted_at,NULL',
+                $this->notASubCategorySlug(...),
             ],
             'description' => ['nullable', 'string', 'max:2000'],
             'meta_title' => ['nullable', 'string', 'max:70'],
@@ -84,5 +88,25 @@ class CategoryRequest extends FormRequest
             }],
             'is_active' => ['boolean'],
         ];
+    }
+
+    /**
+     * DISC-89: /category/{slug} looks categories up before sub-categories, so
+     * a category taking a sub-category's slug would hide that sub-category's
+     * page. Compared with the slug as saved (CategoryController applies
+     * Str::slug). A category keeping its current slug is never blocked, so an
+     * older clash can't stop unrelated edits.
+     */
+    private function notASubCategorySlug(string $attribute, mixed $value, Closure $fail): void
+    {
+        $slug = Str::slug((string) $value);
+
+        if ($slug === $this->route('category')?->slug) {
+            return;
+        }
+
+        if (SubCategory::where('slug', $slug)->exists()) {
+            $fail('A sub-category already uses this slug. Category and sub-category pages share the same /category/ address, so choose a different slug.');
+        }
     }
 }

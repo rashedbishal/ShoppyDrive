@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Category;
 use App\Rules\RasterImageOrUrl;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,6 +29,7 @@ class SubCategoryRequest extends FormRequest
                 'string',
                 'max:100',
                 'unique:sub_categories,slug,'.($subCategoryId ?? 'NULL').',id,deleted_at,NULL',
+                $this->notACategorySlug(...),
             ],
             // A sub-category must not be (re-)created under an inactive
             // parent — but editing one that's already under a category
@@ -47,5 +50,22 @@ class SubCategoryRequest extends FormRequest
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
+    }
+
+    /**
+     * DISC-89: /category/{slug} looks categories up first, so a sub-category
+     * with a category's slug could never be reached. A sub-category keeping
+     * its current slug is never blocked, so an older clash can't stop
+     * unrelated edits.
+     */
+    private function notACategorySlug(string $attribute, mixed $value, Closure $fail): void
+    {
+        if ($value === $this->route('sub_category')?->slug) {
+            return;
+        }
+
+        if (Category::where('slug', $value)->exists()) {
+            $fail('A category already uses this slug. Category and sub-category pages share the same /category/ address, so choose a different slug.');
+        }
     }
 }

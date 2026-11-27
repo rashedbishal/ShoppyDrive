@@ -6,6 +6,8 @@ use App\Models\Category;
 use App\Models\SubCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+use function Pest\Laravel\actingAs;
+
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
@@ -45,4 +47,65 @@ test('the all-products listing keeps its own title and sends no SEO title overri
     $this->get(route('products.index'))->assertInertia(fn ($page) => $page
         ->where('seoTitle', null)
         ->where('title', 'All Products'));
+});
+
+// ── DISC-89: categories and sub-categories can't share a slug ───────────────
+
+test('a sub-category cannot take a category\'s slug', function () {
+    actingAs(createAdmin(), 'admin');
+    $kitchen = Category::factory()->create(['slug' => 'kitchen', 'is_active' => true]);
+
+    $this->post(route('admin.sub-categories.store'), ['name' => 'Kitchen', 'slug' => 'kitchen', 'category_id' => $kitchen->id])
+        ->assertSessionHasErrors(['slug' => 'A category already uses this slug. Category and sub-category pages share the same /category/ address, so choose a different slug.']);
+
+    $pots = SubCategory::factory()->create(['slug' => 'pots', 'category_id' => $kitchen->id]);
+    $this->put(route('admin.sub-categories.update', $pots), ['name' => $pots->name, 'slug' => 'kitchen', 'category_id' => $kitchen->id])
+        ->assertSessionHasErrors('slug');
+
+    expect(SubCategory::where('slug', 'kitchen')->exists())->toBeFalse()
+        ->and($pots->fresh()->slug)->toBe('pots');
+});
+
+test('a category cannot take a sub-category\'s slug, even typed in another form', function (string $typed) {
+    actingAs(createAdmin(), 'admin');
+    $kitchen = Category::factory()->create(['slug' => 'kitchen']);
+    SubCategory::factory()->create(['slug' => 'pots-pans', 'category_id' => $kitchen->id]);
+
+    $this->post(route('admin.categories.store'), ['name' => 'Pots', 'slug' => $typed, 'is_active' => true])
+        ->assertSessionHasErrors(['slug' => 'A sub-category already uses this slug. Category and sub-category pages share the same /category/ address, so choose a different slug.']);
+
+    $this->put(route('admin.categories.update', $kitchen), ['name' => $kitchen->name, 'slug' => $typed])
+        ->assertSessionHasErrors('slug');
+
+    expect(Category::where('slug', 'pots-pans')->exists())->toBeFalse()
+        ->and($kitchen->fresh()->slug)->toBe('kitchen');
+})->with(['pots-pans', 'Pots Pans']);
+
+test('an older clash never blocks editing a record that keeps its own slug', function () {
+    actingAs(createAdmin(), 'admin');
+    $kitchen = Category::factory()->create(['slug' => 'kitchen']);
+    $clash = SubCategory::factory()->create(['slug' => 'kitchen', 'category_id' => $kitchen->id]);
+
+    $this->put(route('admin.categories.update', $kitchen), ['name' => 'Kitchen & Dining', 'slug' => 'kitchen'])
+        ->assertSessionHasNoErrors();
+    $this->put(route('admin.sub-categories.update', $clash), ['name' => 'Kitchen tools', 'slug' => 'kitchen', 'category_id' => $kitchen->id])
+        ->assertSessionHasNoErrors();
+
+    expect($kitchen->fresh()->name)->toBe('Kitchen & Dining')
+        ->and($clash->fresh()->name)->toBe('Kitchen tools');
+});
+
+test('a slug used only by a deleted category or sub-category is free again', function () {
+    actingAs(createAdmin(), 'admin');
+    $kitchen = Category::factory()->create(['slug' => 'kitchen']);
+    Category::factory()->create(['slug' => 'old-category'])->delete();
+    SubCategory::factory()->create(['slug' => 'old-sub', 'category_id' => $kitchen->id])->delete();
+
+    $this->post(route('admin.sub-categories.store'), ['name' => 'Reused', 'slug' => 'old-category', 'category_id' => $kitchen->id])
+        ->assertSessionHasNoErrors();
+    $this->post(route('admin.categories.store'), ['name' => 'Reused', 'slug' => 'old-sub', 'is_active' => true])
+        ->assertSessionHasNoErrors();
+
+    expect(SubCategory::where('slug', 'old-category')->exists())->toBeTrue()
+        ->and(Category::where('slug', 'old-sub')->exists())->toBeTrue();
 });
