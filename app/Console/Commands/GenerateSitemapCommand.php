@@ -18,10 +18,12 @@ use App\Models\ProductBundle;
 use App\Models\PromotionalBanner;
 use App\Models\Setting;
 use App\Models\SubCategory;
+use App\Support\ImageVariants;
 use DateTimeInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
@@ -83,8 +85,16 @@ class GenerateSitemapCommand extends Command
                 $sitemap->add($this->url('/category/'.$subCategory->slug, $subCategory->updated_at));
             });
 
+        $products->load('images');
+
         $products->each(function (Product $product) use ($sitemap) {
-            $sitemap->add($this->url('/product/'.$product->slug, $product->updated_at));
+            $url = $this->url('/product/'.$product->slug, $product->updated_at);
+
+            foreach (self::sitemapImagePaths($product) as $imagePath) {
+                $url->addImage($imagePath);
+            }
+
+            $sitemap->add($url);
         });
 
         Page::where('is_published', true)->get()->each(function (Page $page) use ($sitemap) {
@@ -122,6 +132,33 @@ class GenerateSitemapCommand extends Command
         }
 
         return $url;
+    }
+
+    /**
+     * DISC-97: the product's own photos for its <image:image> entries, primary
+     * first, then in gallery order. Only original product uploads that exist
+     * on the public disk qualify, which leaves out videos saved as images,
+     * the placeholder, external URLs and the resized WebP copies; each path is
+     * listed once. Captions are left out on purpose: Google reads only
+     * <image:loc>, and products carry no real alt text to caption with.
+     *
+     * @return list<string>
+     */
+    private static function sitemapImagePaths(Product $product): array
+    {
+        return $product->images
+            ->sortBy([['is_primary', 'desc'], ['sort_order', 'asc'], ['id', 'asc']])
+            ->pluck('path')
+            ->filter(function (?string $path): bool {
+                $publicPath = ImageVariants::publicPath($path);
+
+                return $publicPath !== null
+                    && str_starts_with($publicPath, 'products/')
+                    && Storage::disk('public')->exists($publicPath);
+            })
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

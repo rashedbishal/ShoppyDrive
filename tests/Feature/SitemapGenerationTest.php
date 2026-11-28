@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\SubCategory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -234,4 +235,116 @@ test('robots.txt allows search and AI answers but not AI training, for every cra
 
 test('the generated file stays out of public/, where deploys would delete it', function () {
     expect(GenerateSitemapCommand::path())->toStartWith(storage_path('app/private'));
+});
+
+/**
+ * DISC-97: generates the sitemap and returns, for each product URL, its
+ * <image:loc> values in document order (read in the image namespace, so a
+ * wrong or missing namespace fails here).
+ *
+ * @return array<string, list<string>>
+ */
+function sitemapProductImages(): array
+{
+    test()->artisan('sitemap:generate')->assertSuccessful();
+
+    $xml = new SimpleXMLElement((string) file_get_contents(GenerateSitemapCommand::path()));
+    $images = [];
+
+    foreach ($xml->children('http://www.sitemaps.org/schemas/sitemap/0.9')->url as $url) {
+        $loc = (string) $url->loc;
+
+        $images[$loc] = [];
+
+        foreach ($url->children('http://www.google.com/schemas/sitemap-image/1.1')->image as $image) {
+            $images[$loc][] = (string) $image->loc;
+        }
+    }
+
+    return $images;
+}
+
+function sitemapProduct(string $slug): Product
+{
+    return Product::factory()->create(['slug' => $slug, 'is_active' => true, 'published_at' => now()->subDay()]);
+}
+
+/** @param array<string, mixed> $attributes */
+function sitemapProductMedia(Product $product, string $path, array $attributes = []): void
+{
+    if (str_starts_with($path, '/storage/')) {
+        Storage::disk('public')->put(substr($path, strlen('/storage/')), 'image');
+    }
+
+    $product->media()->create(['path' => $path, 'type' => 'image', 'sort_order' => 0, 'is_primary' => false, ...$attributes]);
+}
+
+test('a product lists its primary image first, then its gallery images in display order, as absolute URLs', function () {
+    Storage::fake('public');
+    $product = sitemapProduct('photo-product');
+    sitemapProductMedia($product, '/storage/products/third.jpg', ['sort_order' => 3]);
+    sitemapProductMedia($product, '/storage/products/first.png', ['sort_order' => 1]);
+    sitemapProductMedia($product, '/storage/products/main.webp', ['sort_order' => 2, 'is_primary' => true]);
+    sitemapProductMedia($product, '/storage/products/second.jpeg', ['sort_order' => 2]);
+
+    expect(sitemapProductImages()[url('/product/photo-product')])->toBe([
+        url('/storage/products/main.webp'),
+        url('/storage/products/first.png'),
+        url('/storage/products/second.jpeg'),
+        url('/storage/products/third.jpg'),
+    ]);
+});
+
+test('videos, placeholders, external URLs, resized copies, other folders and missing files are left out of a product\'s images', function () {
+    Storage::fake('public');
+    $product = sitemapProduct('filtered-product');
+    sitemapProductMedia($product, '/storage/products/real.jpg', ['is_primary' => true]);
+    sitemapProductMedia($product, '/storage/products/clip.mp4');
+    sitemapProductMedia($product, '/storage/products/movie.mp4', ['type' => 'video']);
+    sitemapProductMedia($product, '/placeholder.svg');
+    sitemapProductMedia($product, 'https://cdn.example.com/photo.jpg');
+    sitemapProductMedia($product, '/storage/products/real-400w.webp');
+    sitemapProductMedia($product, '/storage/categories/banner.jpg');
+    $product->media()->create(['path' => '/storage/products/deleted.jpg', 'type' => 'image', 'sort_order' => 1, 'is_primary' => false]);
+
+    expect(sitemapProductImages()[url('/product/filtered-product')])->toBe([url('/storage/products/real.jpg')]);
+});
+
+test('an image path saved twice on a product is listed once', function () {
+    Storage::fake('public');
+    $product = sitemapProduct('duplicate-photo-product');
+    sitemapProductMedia($product, '/storage/products/same.jpg', ['is_primary' => true]);
+    sitemapProductMedia($product, '/storage/products/same.jpg', ['sort_order' => 1]);
+
+    expect(sitemapProductImages()[url('/product/duplicate-photo-product')])->toBe([url('/storage/products/same.jpg')]);
+});
+
+test('a hidden product\'s images never appear, and a product without usable images is still listed without any', function () {
+    Storage::fake('public');
+    $hidden = Product::factory()->create(['slug' => 'hidden-photo-product', 'is_active' => false, 'published_at' => now()->subDay()]);
+    sitemapProductMedia($hidden, '/storage/products/hidden.jpg', ['is_primary' => true]);
+    $bare = sitemapProduct('bare-product');
+    sitemapProductMedia($bare, '/placeholder.svg', ['is_primary' => true]);
+
+    $images = sitemapProductImages();
+
+    expect($images)->toHaveKey(url('/product/bare-product'))
+        ->and($images[url('/product/bare-product')])->toBe([])
+        ->and(collect($images)->flatten()->implode(' '))->not->toContain('hidden.jpg');
+});
+
+test('product image entries stay valid, escaped XML with no caption, title, change frequency or priority added', function () {
+    Storage::fake('public');
+    $product = sitemapProduct('escaped-photo-product');
+    sitemapProductMedia($product, '/storage/products/tom&jerry.jpg', ['is_primary' => true, 'alt' => 'Tom & Jerry']);
+
+    expect(sitemapProductImages()[url('/product/escaped-photo-product')])->toBe([url('/storage/products/tom&jerry.jpg')]);
+
+    $xml = (string) file_get_contents(GenerateSitemapCommand::path());
+
+    expect($xml)->toContain('tom&amp;jerry.jpg')
+        ->not->toContain('image:caption')
+        ->not->toContain('image:title')
+        ->and(substr_count($xml, '<priority>'))->toBe(1)
+        ->and(substr_count($xml, '<changefreq>'))->toBe(1);
 });
