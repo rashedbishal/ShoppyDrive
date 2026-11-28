@@ -46,6 +46,13 @@ use Throwable;
 
 class ProductController extends Controller
 {
+    /**
+     * The stand-in picture of a product saved without media. It never stores
+     * alt text (DISC-98 F1): the storefront then uses the product's current
+     * name, which a stored copy would stop matching after a rename.
+     */
+    private const PLACEHOLDER_IMAGE = '/placeholder.svg';
+
     public function index(Request $request): Response|RedirectResponse
     {
         $products = Product::with([
@@ -147,10 +154,11 @@ class ProductController extends Controller
         $data = $request->validated();
         $images = $data['images'] ?? [];
         $mediaTags = $data['media_tags'] ?? [];
+        $mediaAlts = $data['media_alts'] ?? null;
         $variants = $data['variants'] ?? [];
         $primaryIndex = isset($data['primary_image_index']) ? (int) $data['primary_image_index'] : null;
         $hoverIndex = isset($data['hover_image_index']) ? (int) $data['hover_image_index'] : null;
-        unset($data['images'], $data['media_tags'], $data['variants'], $data['primary_image_index'], $data['hover_image_index']);
+        unset($data['images'], $data['media_tags'], $data['media_alts'], $data['variants'], $data['primary_image_index'], $data['hover_image_index']);
 
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? false;
@@ -167,7 +175,7 @@ class ProductController extends Controller
         }
 
         try {
-            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stock, $admin, $passwordVerified, $stockReason): void {
+            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags, $mediaAlts, $primaryIndex, $hoverIndex, $stock, $admin, $passwordVerified, $stockReason): void {
                 $product = Product::create($data);
 
                 $variantsByKey = $this->syncVariants($product, $variants);
@@ -175,7 +183,7 @@ class ProductController extends Controller
                 $nothingYet = ['product' => 0, 'has_variants' => false, 'variants' => []];
                 $this->recordStockChanges($stock, $admin, $product, $nothingYet, $this->stockSnapshot($product), $passwordVerified, $stockReason, StockAdjustmentService::SOURCE_PRODUCT_CREATE);
 
-                $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
+                $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex, $mediaAlts);
             });
         } catch (StockAdjustmentException $e) {
             return back()->withErrors(['stock_password' => $e->getMessage()]);
@@ -225,11 +233,12 @@ class ProductController extends Controller
         $data = $request->validated();
         $images = $data['images'] ?? null;
         $mediaTags = $data['media_tags'] ?? [];
+        $mediaAlts = $data['media_alts'] ?? null;
         $variants = $data['variants'] ?? [];
         $stockToken = $data['stock_token'];
         $primaryIndex = isset($data['primary_image_index']) ? (int) $data['primary_image_index'] : null;
         $hoverIndex = isset($data['hover_image_index']) ? (int) $data['hover_image_index'] : null;
-        unset($data['images'], $data['media_tags'], $data['variants'], $data['stock_token'], $data['primary_image_index'], $data['hover_image_index']);
+        unset($data['images'], $data['media_tags'], $data['media_alts'], $data['variants'], $data['stock_token'], $data['primary_image_index'], $data['hover_image_index']);
 
         if (isset($data['slug'])) {
             $data['slug'] = Str::slug($data['slug']);
@@ -256,7 +265,7 @@ class ProductController extends Controller
         $existingMediaTypes = $product->media()->pluck('type', 'path')->all();
 
         try {
-            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stockToken, $stock, $admin, $passwordVerified, $stockReason): void {
+            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $mediaAlts, $primaryIndex, $hoverIndex, $stockToken, $stock, $admin, $passwordVerified, $stockReason): void {
                 ProductStockToken::lockAndVerify($product, $stockToken);
                 $stockBefore = $this->stockSnapshot($product);
 
@@ -267,7 +276,7 @@ class ProductController extends Controller
                 $this->recordStockChanges($stock, $admin, $product, $stockBefore, $this->stockSnapshot($product), $passwordVerified, $stockReason, StockAdjustmentService::SOURCE_PRODUCT_EDIT);
 
                 if ($media !== null) {
-                    $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
+                    $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex, $mediaAlts);
                 }
             }, $existingMediaTypes);
         } catch (StaleProductStockException $e) {
@@ -786,18 +795,33 @@ class ProductController extends Controller
     }
 
     /**
+     * Rows are rebuilt on every save, so each image's alt text travels with
+     * the form (`media_alts`, by position like `media_tags`). A form that
+     * sends no alt for an item (one opened before alt text existed) keeps
+     * the alt that image already had, matched by path.
+     *
+     * DISC-98: the product's `updated_at` (its sitemap lastmod) moves when the
+     * media actually changed: a photo added, removed, replaced or moved, a new
+     * default or hover pick, a type, value tag or alt change. A save that
+     * resubmits the same media leaves it alone, even though the rows are
+     * recreated.
+     *
      * @param  array<int, array{path: string|null, type: string}>  $media
      * @param  array<int, string|null>  $mediaTags
      * @param  array<string, ProductVariant>  $variantsByKey
+     * @param  array<int, string|null>|null  $mediaAlts  null when the form sent no alt text at all
      */
-    private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey, ?int $primaryIndex = null, ?int $hoverIndex = null): void
+    private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey, ?int $primaryIndex = null, ?int $hoverIndex = null, ?array $mediaAlts = null): void
     {
+        $existing = $product->media()->orderBy('sort_order')->orderBy('id')->get();
+        $altByPath = $existing->pluck('alt', 'path')->all();
+
         // Files this save drops (replaced or removed) leave the disk once it
         // commits — unless an old order, a checkout in progress or another
         // product still shows them (UnusedUploadRemover). A save that rolls
         // back deletes nothing.
         $droppedPaths = array_diff(
-            $product->media()->pluck('path')->all(),
+            $existing->pluck('path')->all(),
             array_filter(array_column($media, 'path')),
         );
         app(UnusedUploadRemover::class)->removeIfUnused(...array_values($droppedPaths));
@@ -805,14 +829,16 @@ class ProductController extends Controller
         $product->media()->delete();
 
         if (empty($media)) {
-            ProductMedia::create([
+            $created = [ProductMedia::create([
                 'product_id' => $product->id,
-                'path' => '/placeholder.svg',
+                'path' => self::PLACEHOLDER_IMAGE,
                 'type' => 'image',
-                'alt' => $product->name,
+                'alt' => null,
                 'is_primary' => true,
                 'sort_order' => 0,
-            ]);
+            ])];
+
+            $this->touchWhenMediaChanged($product, $existing->all(), $created);
 
             return;
         }
@@ -822,21 +848,52 @@ class ProductController extends Controller
         // so the hover pick can't be a video, or the image already showing.
         $primaryIndex = ($media[$primaryIndex]['path'] ?? null) ? $primaryIndex : array_key_first(array_filter($media, fn (array $item) => (bool) $item['path']));
         $isHoverPick = fn (int $i, array $item): bool => $i === $hoverIndex && $i !== $primaryIndex && $item['type'] === 'image';
+        $created = [];
 
         foreach ($media as $i => $item) {
             if (! $item['path']) {
                 continue;
             }
 
-            ProductMedia::create([
+            $alt = $mediaAlts !== null && array_key_exists($i, $mediaAlts) ? $mediaAlts[$i] : ($altByPath[$item['path']] ?? null);
+
+            $created[] = ProductMedia::create([
                 'product_id' => $product->id,
                 ...$this->resolveMediaTag($mediaTags[$i] ?? null, $variantsByKey),
                 'path' => $item['path'],
                 'type' => $item['type'],
+                'alt' => $item['type'] === 'image' && $item['path'] !== self::PLACEHOLDER_IMAGE ? $alt : null,
                 'is_primary' => $i === $primaryIndex,
                 'is_hover' => $isHoverPick($i, $item),
                 'sort_order' => $i,
             ]);
+        }
+
+        $this->touchWhenMediaChanged($product, $existing->all(), $created);
+    }
+
+    /**
+     * DISC-98: see syncMedia(). Compares what a shopper can see of the media,
+     * in gallery order; ids, timestamps and `variant_id` (derived from the
+     * value tag) are left out because a rebuild changes them. Touching writes
+     * only `updated_at`, which no audit-log field or cache key watches.
+     *
+     * @param  list<ProductMedia>  $before
+     * @param  list<ProductMedia>  $after
+     */
+    private function touchWhenMediaChanged(Product $product, array $before, array $after): void
+    {
+        $signature = fn (array $media): array => array_map(fn (ProductMedia $item): array => [
+            'path' => $item->path,
+            'type' => $item->type,
+            'alt' => $item->alt,
+            'is_primary' => (bool) $item->is_primary,
+            'is_hover' => (bool) $item->is_hover,
+            'attribute_value_id' => $item->attribute_value_id === null ? null : (int) $item->attribute_value_id,
+        ], $media);
+
+        if (! $product->wasRecentlyCreated && $signature($before) !== $signature($after)) {
+            $product->touch();
         }
     }
 

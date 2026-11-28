@@ -39,6 +39,9 @@ class ProductRequest extends FormRequest
     /** Most units of stock one product or variant can hold (7 digits fit every stock column and list). */
     private const MAX_STOCK = 9999999;
 
+    /** DISC-98: longest image alt text, a common screen-reader-friendly limit (column is VARCHAR(255)). */
+    private const MAX_ALT_LENGTH = 125;
+
     /** Attributes one product can build variants from (each multiplies the combinations). */
     private const MAX_VARIANT_ATTRIBUTES = 5;
 
@@ -175,6 +178,11 @@ class ProductRequest extends FormRequest
             }],
             'media_tags' => ['nullable', 'array'],
             'media_tags.*' => ['nullable', 'string', 'max:50'],
+            // DISC-98: per-image alt text, by position like media_tags; plain
+            // text (see prepareForValidation()). A screen reader reads it in
+            // full, so it stays short.
+            'media_alts' => ['nullable', 'array'],
+            'media_alts.*' => ['nullable', 'string', 'max:'.self::MAX_ALT_LENGTH],
             'primary_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'hover_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'meta_title' => ['nullable', 'string', 'max:70'],
@@ -194,6 +202,8 @@ class ProductRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $this->normalizeMediaAlts();
+
         if ($this->has('variant_attribute_ids')) {
             return;
         }
@@ -230,6 +240,31 @@ class ProductRequest extends FormRequest
     }
 
     /**
+     * DISC-98: alt text is plain text: tags removed, whitespace collapsed and
+     * trimmed, and an empty result stored as null (the storefront then uses
+     * the product name). Only complete `<...>` tags are removed, so "5 < 6 cm"
+     * stays intact. Anything that isn't a string is left for the rules.
+     */
+    private function normalizeMediaAlts(): void
+    {
+        $alts = $this->input('media_alts');
+
+        if (! is_array($alts)) {
+            return;
+        }
+
+        $this->merge(['media_alts' => array_map(function (mixed $alt): mixed {
+            if (! is_string($alt)) {
+                return $alt;
+            }
+
+            $plain = trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('/<[^<>]*>/', ' ', $alt)));
+
+            return $plain === '' ? null : $plain;
+        }, $alts)]);
+    }
+
+    /**
      * Friendly field names, so the messages shown above the form say which
      * field they are about.
      *
@@ -242,6 +277,7 @@ class ProductRequest extends FormRequest
             'short_description' => 'short description',
             'description' => 'description',
             'images' => 'product image',
+            'media_alts.*' => 'image alt text',
             'category_id' => 'category',
             'sub_category_id' => 'sub-category',
             'stock_quantity' => 'stock quantity',

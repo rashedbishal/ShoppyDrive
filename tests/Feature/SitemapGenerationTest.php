@@ -348,3 +348,24 @@ test('product image entries stay valid, escaped XML with no caption, title, chan
         ->and(substr_count($xml, '<priority>'))->toBe(1)
         ->and(substr_count($xml, '<changefreq>'))->toBe(1);
 });
+
+test('with no published blog post, the empty /blog index is left out of the sitemap', function () {
+    Blog::factory()->create(['slug' => 'draft-only-post', 'is_published' => false]);
+    Blog::factory()->create(['slug' => 'scheduled-post', 'is_published' => true, 'published_at' => now()->addDay()]);
+
+    $locs = sitemapLocs();
+
+    expect($locs)->not->toContain(url('/blog'))
+        ->and(implode(' ', $locs))->not->toContain('/blog/');
+});
+
+test('once a post is published, /blog and that post are listed and unpublished posts still are not', function () {
+    Blog::factory()->create(['slug' => 'first-post', 'is_published' => true, 'published_at' => now()->subDay()]);
+    Blog::factory()->create(['slug' => 'unfinished-post', 'is_published' => false]);
+
+    $locs = sitemapLocs();
+
+    expect($locs)->toContain(url('/blog'))
+        ->toContain(url('/blog/first-post'))
+        ->and(implode(' ', $locs))->not->toContain('unfinished-post');
+});

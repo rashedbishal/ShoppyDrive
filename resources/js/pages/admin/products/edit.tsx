@@ -36,6 +36,7 @@ type ProductMedia = {
     id: number;
     path: string;
     type: 'image' | 'video';
+    alt: string | null;
     is_primary: boolean;
     is_hover: boolean;
     variant_id: number | null;
@@ -209,6 +210,7 @@ export default function ProductEdit({
         media_tags: product.media.map((m) =>
             mediaTagFor(m, product.variants, variantAttributes),
         ) as (string | null)[],
+        media_alts: product.media.map((m) => m.alt ?? ''),
         primary_image_index: mediaFlagIndex(product.media, 'is_primary'),
         hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
         meta_title: product.meta_title ?? '',
@@ -847,6 +849,18 @@ export default function ProductEdit({
                                             };
                                         })
                                     }
+                                    alts={data.media_alts}
+                                    onAltChange={(index, alt) =>
+                                        setData((prev) => {
+                                            const next = [...prev.media_alts];
+                                            next[index] = alt;
+
+                                            return {
+                                                ...prev,
+                                                media_alts: next,
+                                            };
+                                        })
+                                    }
                                 />
                                 {errors.images &&
                                     typeof errors.images === 'string' && (
@@ -855,7 +869,11 @@ export default function ProductEdit({
                                         </p>
                                     )}
                                 {Object.keys(errors)
-                                    .filter((k) => k.startsWith('images.'))
+                                    .filter(
+                                        (k) =>
+                                            k.startsWith('images.') ||
+                                            k.startsWith('media_alts.'),
+                                    )
                                     .map((k) => (
                                         <p
                                             key={k}

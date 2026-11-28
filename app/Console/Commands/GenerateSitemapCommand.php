@@ -105,7 +105,11 @@ class GenerateSitemapCommand extends Command
         $sitemap->add($this->url('/brands', $brands->max('updated_at')));
         $sitemap->add($this->url('/flash-sales', FlashSale::max('updated_at')));
         $sitemap->add($this->url('/bundle-deals', ProductBundle::max('updated_at')));
-        $sitemap->add($this->url('/blog', $blogs->max('updated_at')));
+        // DISC-98: an empty blog index has nothing to offer a search engine,
+        // so /blog is listed only once a published post exists.
+        if ($blogs->isNotEmpty()) {
+            $sitemap->add($this->url('/blog', $blogs->max('updated_at')));
+        }
         $sitemap->add($this->url('/about', Setting::whereIn('key', AboutController::keys())->max('updated_at')));
         $sitemap->add($this->url('/contact', Setting::whereIn('key', ContactController::keys())->max('updated_at')));
 

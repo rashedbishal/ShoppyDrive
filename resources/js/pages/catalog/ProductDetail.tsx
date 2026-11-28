@@ -103,6 +103,22 @@ function openingMediaIndex(
 }
 
 /** How many viewed products the browser remembers (ProductController::RECENTLY_VIEWED_LIMIT). */
+/**
+ * DISC-98: a gallery thumbnail button's accessible name. Each one says which
+ * picture it opens ("Show picture 2 of 5"), plus that picture's own alt text
+ * when the admin wrote one, instead of every button repeating the product
+ * name. The thumbnail image itself is then decorative (alt="").
+ */
+function galleryThumbnailLabel(
+    item: ProductMedia,
+    index: number,
+    total: number,
+): string {
+    const label = `Show ${item.type === 'video' ? 'video' : 'picture'} ${index + 1} of ${total}`;
+
+    return item.alt ? `${label}: ${item.alt}` : label;
+}
+
 const RECENTLY_VIEWED_LIMIT = 10;
 const NO_RECENTLY_VIEWED: unknown[] = [];
 
@@ -745,6 +761,17 @@ export default function ProductDetail({
                                     {media.map((item, idx) => (
                                         <button
                                             key={item.id}
+                                            type="button"
+                                            aria-label={galleryThumbnailLabel(
+                                                item,
+                                                idx,
+                                                media.length,
+                                            )}
+                                            aria-current={
+                                                currentImageIndex === idx
+                                                    ? 'true'
+                                                    : undefined
+                                            }
                                             onClick={() =>
                                                 handleThumbnailSelect(idx)
                                             }
@@ -775,9 +802,7 @@ export default function ProductDetail({
                                                     }
                                                     width={96}
                                                     height={96}
-                                                    alt={
-                                                        item.alt || product.name
-                                                    }
+                                                    alt=""
                                                     loading="lazy"
                                                     decoding="async"
                                                     className="h-full w-full object-cover"
@@ -1776,6 +1801,17 @@ export default function ProductDetail({
                             {media.map((item, idx) => (
                                 <button
                                     key={item.id}
+                                    type="button"
+                                    aria-label={galleryThumbnailLabel(
+                                        item,
+                                        idx,
+                                        media.length,
+                                    )}
+                                    aria-current={
+                                        currentImageIndex === idx
+                                            ? 'true'
+                                            : undefined
+                                    }
                                     onClick={() => handleThumbnailSelect(idx)}
                                     className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${currentImageIndex === idx ? 'border-[var(--color-primary)]' : 'border-white/20'}`}
                                 >
@@ -1801,7 +1837,7 @@ export default function ProductDetail({
                                             }
                                             width={96}
                                             height={96}
-                                            alt={item.alt || product.name}
+                                            alt=""
                                             loading="lazy"
                                             decoding="async"
                                             className="h-full w-full object-cover"

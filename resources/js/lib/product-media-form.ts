@@ -5,6 +5,8 @@ type MediaItem = File | string;
 type ProductMediaFormState = {
     images: MediaItem[];
     media_tags: (string | null)[];
+    /** DISC-98: alt text per item, by position like media_tags ('' = none). */
+    media_alts: string[];
     primary_image_index: number | null;
     hover_image_index: number | null;
 };
@@ -25,7 +27,7 @@ export function mediaFlagIndex<
 }
 
 /**
- * Carries each item's tag and default/hover selection over to a new image
+ * Carries each item's tag, alt text and default/hover selection over to a new image
  * list. They're stored by position, so they follow the item itself when
  * others are added or removed. A removed default passes to the first image.
  */
@@ -49,6 +51,13 @@ export function remapProductMedia(
             return previousIndex === -1
                 ? null
                 : (previous.media_tags[previousIndex] ?? null);
+        }),
+        media_alts: images.map((item) => {
+            const previousIndex = previous.images.indexOf(item);
+
+            return previousIndex === -1
+                ? ''
+                : (previous.media_alts[previousIndex] ?? '');
         }),
         primary_image_index: images.length > 0 ? primary : null,
         hover_image_index: hover === -1 || hover === primary ? null : hover,

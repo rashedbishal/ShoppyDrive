@@ -132,6 +132,7 @@ export default function ProductCreate({
         cry_baby_enabled: false,
         images: [] as (File | string)[],
         media_tags: [] as (string | null)[],
+        media_alts: [] as string[],
         primary_image_index: null as number | null,
         hover_image_index: null as number | null,
         meta_title: '',
@@ -782,6 +783,18 @@ export default function ProductCreate({
                                             };
                                         })
                                     }
+                                    alts={data.media_alts}
+                                    onAltChange={(index, alt) =>
+                                        setData((prev) => {
+                                            const next = [...prev.media_alts];
+                                            next[index] = alt;
+
+                                            return {
+                                                ...prev,
+                                                media_alts: next,
+                                            };
+                                        })
+                                    }
                                 />
                                 {errors.images &&
                                     typeof errors.images === 'string' && (
@@ -790,7 +803,11 @@ export default function ProductCreate({
                                         </p>
                                     )}
                                 {Object.keys(errors)
-                                    .filter((k) => k.startsWith('images.'))
+                                    .filter(
+                                        (k) =>
+                                            k.startsWith('images.') ||
+                                            k.startsWith('media_alts.'),
+                                    )
                                     .map((k) => (
                                         <p
                                             key={k}

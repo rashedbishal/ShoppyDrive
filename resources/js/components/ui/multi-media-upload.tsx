@@ -13,6 +13,8 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 const MAX_NEW_UPLOADS = 10;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+/** DISC-98: mirrors ProductRequest::MAX_ALT_LENGTH. */
+const MAX_ALT_LENGTH = 125;
 
 interface MultiMediaUploadProps {
     value: (string | File)[];
@@ -29,6 +31,9 @@ interface MultiMediaUploadProps {
     hoverIndex?: number | null;
     onPrimaryChange?: (index: number) => void;
     onHoverChange?: (index: number | null) => void;
+    /** DISC-98: when provided, renders an alt text input under each image. */
+    alts?: (string | null)[];
+    onAltChange?: (index: number, alt: string) => void;
 }
 
 export function MultiMediaUpload({
@@ -43,6 +48,8 @@ export function MultiMediaUpload({
     hoverIndex,
     onPrimaryChange,
     onHoverChange,
+    alts,
+    onAltChange,
 }: MultiMediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File; type: 'image' | 'video' }[]>([]);
@@ -243,6 +250,19 @@ export function MultiMediaUpload({
                             ))}
                         </select>
                     )}
+                    {onAltChange &&
+                        preview.type === 'image' &&
+                        preview.url !== '/placeholder.svg' && (
+                        <input
+                            type="text"
+                            value={alts?.[index] ?? ''}
+                            maxLength={MAX_ALT_LENGTH}
+                            placeholder="Alt text (optional)"
+                            aria-label={`Alt text for picture ${index + 1}`}
+                            onChange={(e) => onAltChange(index, e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+                        />
+                    )}
                     </div>
                 ))}
 
@@ -273,6 +293,20 @@ export function MultiMediaUpload({
                     Default is the main picture shoppers see. Hover is the
                     picture a product card swaps to when hovered: choose one, or
                     leave it unset for no swap.
+                </p>
+            )}
+
+            {onAltChange &&
+                previews.some(
+                    (preview) =>
+                        preview.type === 'image' &&
+                        preview.url !== '/placeholder.svg',
+                ) && (
+                <p className="mt-2 text-xs text-slate-600">
+                    Alt text describes what a picture shows for shoppers who
+                    can't see it (e.g. &quot;Gift box, open&quot;), in up to{' '}
+                    {MAX_ALT_LENGTH} characters. Leave it empty to use the
+                    product name.
                 </p>
             )}
 

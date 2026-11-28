@@ -319,7 +319,7 @@ export function ProductCard({
                     sizes={primaryImage?.srcset ? IMAGE_SIZES.card : undefined}
                     width={400}
                     height={300}
-                    alt={primaryImage?.alt ?? product.name}
+                    alt={primaryImage?.alt || product.name}
                     loading="lazy"
                     decoding="async"
                     className={cn(
