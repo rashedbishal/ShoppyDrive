@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CouponType;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\ImageOptimizer;
@@ -21,12 +22,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
 
 class SettingController extends Controller
 {
+    /** DISC-35: the most a percentage referral first-order discount may be. */
+    private const MAX_REFERRAL_DISCOUNT_PERCENT = 100;
+
     /**
      * `update()` is one endpoint shared by six sidebar sections (each page
      * posts only its own fields), so — unlike every other admin.can-gated
@@ -281,6 +286,8 @@ class SettingController extends Controller
             'loading_logo.dimensions' => 'The loading logo can be at most '.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE.' × '.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE.' pixels. Please resize it and upload again.',
         ], LoadingScreenSettings::attributes());
 
+        $this->ensureReferralPercentDiscountWithinCap($request);
+
         // Handle logo upload separately
         if ($request->hasFile('logo')) {
             $existing = Setting::where('key', 'logo')->first();
@@ -382,6 +389,39 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    /**
+     * DISC-35: a percentage referral discount above 100 would make the
+     * referred customer's first order free and advertise "150% off". The check
+     * uses the type and value this save leaves in effect (each submitted one,
+     * else the saved one), resolved the way ReferralService reads them, so
+     * switching a large fixed amount to percent is caught too. Saves of other
+     * settings pages, which send neither field, are not affected.
+     *
+     * @throws ValidationException
+     */
+    private function ensureReferralPercentDiscountWithinCap(Request $request): void
+    {
+        $typeSubmitted = $request->has('referral_discount_type');
+        $valueSubmitted = $request->has('referral_discount_value');
+
+        if (! $typeSubmitted && ! $valueSubmitted) {
+            return;
+        }
+
+        $type = $typeSubmitted ? $request->input('referral_discount_type') : Setting::find('referral_discount_type')?->value;
+        $value = $valueSubmitted ? $request->input('referral_discount_value') : Setting::find('referral_discount_value')?->value;
+
+        if ((CouponType::tryFrom((string) $type) ?? CouponType::PERCENT) !== CouponType::PERCENT
+            || ! is_numeric($value)
+            || (float) $value <= self::MAX_REFERRAL_DISCOUNT_PERCENT) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $valueSubmitted ? 'referral_discount_value' : 'referral_discount_type' => 'A percentage discount can be at most '.self::MAX_REFERRAL_DISCOUNT_PERCENT.'%. Enter a value from 0 to '.self::MAX_REFERRAL_DISCOUNT_PERCENT.', or choose a fixed amount.',
+        ]);
     }
 
     /**

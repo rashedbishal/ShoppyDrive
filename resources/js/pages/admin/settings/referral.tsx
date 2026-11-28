@@ -14,8 +14,11 @@ type Props = {
     settings: Record<string, string | number | boolean | null>;
 };
 
+/** DISC-35: mirrors SettingController::MAX_REFERRAL_DISCOUNT_PERCENT. */
+const MAX_REFERRAL_DISCOUNT_PERCENT = 100;
+
 export default function ReferralConfig({ settings }: Props) {
-    const { data, setData, put, processing, recentlySuccessful } = useForm({
+    const form = useForm({
         referral_enabled: Boolean(settings.referral_enabled),
         referral_discount_type:
             (settings.referral_discount_type as string) ?? 'percent',
@@ -50,6 +53,11 @@ export default function ReferralConfig({ settings }: Props) {
             settings.points_redeem_max_percent ?? 0,
         ),
     });
+
+    const { data, setData, put, processing, recentlySuccessful, errors } = form;
+
+    const referralDiscountError =
+        errors.referral_discount_value ?? errors.referral_discount_type;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -111,12 +119,17 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint={
                                         data.referral_discount_type ===
                                         'percent'
-                                            ? 'Percentage of the subtotal, e.g. 10 for 10%.'
+                                            ? `Percentage of the subtotal, from 0 to ${MAX_REFERRAL_DISCOUNT_PERCENT}, e.g. 10 for 10%.`
                                             : 'Flat currency amount, e.g. 100.'
                                     }
                                 >
                                     <input
-                                        max={99999999.99}
+                                        max={
+                                            data.referral_discount_type ===
+                                            'percent'
+                                                ? MAX_REFERRAL_DISCOUNT_PERCENT
+                                                : 99999999.99
+                                        }
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -129,6 +142,11 @@ export default function ReferralConfig({ settings }: Props) {
                                             )
                                         }
                                     />
+                                    {referralDiscountError && (
+                                        <p className="mt-1 text-xs text-red-500">
+                                            {referralDiscountError}
+                                        </p>
+                                    )}
                                 </SettingsField>
                                 <SettingsField
                                     label="Minimum Order Amount"

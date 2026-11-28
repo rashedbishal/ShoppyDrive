@@ -935,3 +935,59 @@ test('DISC-36: a setting saved as null shows the default, as the app treats it',
 test('DISC-36: the reward cap hint explains that 0 means no limit', function () {
     expect((string) file_get_contents(resource_path('js/pages/admin/settings/referral.tsx')))->toContain('0 = no limit.');
 });
+
+// ── DISC-35: a percentage referral discount is capped at 100 ────────────────
+
+test('DISC-35: the first-order discount value is capped at 100 only when it is a percentage', function (string $type, float $value, bool $accepted) {
+    actingAs(createMotherAdmin(), 'admin');
+
+    $response = $this->put(route('admin.settings.update'), [
+        'referral_discount_type' => $type,
+        'referral_discount_value' => $value,
+    ]);
+
+    if ($accepted) {
+        $response->assertSessionHasNoErrors();
+        expect(Setting::find('referral_discount_type')?->value)->toBe($type)
+            ->and((float) Setting::find('referral_discount_value')?->value)->toBe($value);
+    } else {
+        $response->assertSessionHasErrors('referral_discount_value');
+        expect(Setting::find('referral_discount_value'))->toBeNull();
+    }
+})->with([
+    'percent 100' => ['percent', 100.0, true],
+    'percent 100.01' => ['percent', 100.01, false],
+    'percent 150' => ['percent', 150.0, false],
+    'fixed 500' => ['fixed', 500.0, true],
+]);
+
+test('DISC-35: switching a large fixed amount to percent is rejected, with or without the value in the request', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    enableReferralProgram(['referral_discount_type' => 'fixed', 'referral_discount_value' => 500]);
+
+    $this->put(route('admin.settings.update'), ['referral_discount_type' => 'percent', 'referral_discount_value' => 500])
+        ->assertSessionHasErrors('referral_discount_value');
+    $this->put(route('admin.settings.update'), ['referral_discount_type' => 'percent'])
+        ->assertSessionHasErrors('referral_discount_type');
+
+    expect(Setting::find('referral_discount_type')?->value)->toBe('fixed');
+});
+
+test('DISC-35: a value-only save is checked against the saved percentage type', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    enableReferralProgram(['referral_discount_type' => 'percent', 'referral_discount_value' => 10]);
+
+    $this->put(route('admin.settings.update'), ['referral_discount_value' => 150])
+        ->assertSessionHasErrors('referral_discount_value');
+
+    expect((float) Setting::find('referral_discount_value')?->value)->toBe(10.0);
+});
+
+test('DISC-35: a percentage above 100 saved earlier does not block saving other settings pages', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    enableReferralProgram(['referral_discount_type' => 'percent', 'referral_discount_value' => 150]);
+
+    $this->put(route('admin.settings.update'), ['site_name' => 'ShoppyDrive'])->assertSessionHasNoErrors();
+
+    expect(Setting::find('site_name')?->value)->toBe('ShoppyDrive');
+});
