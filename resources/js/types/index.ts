@@ -222,6 +222,8 @@ export interface Product extends Timestamped, SoftDeletable {
     description?: string | null;
     specifications?: { key: string; value: string }[] | null;
     category: Category;
+    /** DISC-103: loaded on the product page for its breadcrumb. */
+    sub_category?: SubCategory | null;
     brand?: Brand | null;
     price: number;
     compare_price?: number | null;

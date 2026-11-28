@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ProductListingController;
 use App\Models\Category;
 use App\Models\SubCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,11 +42,12 @@ test('a category or sub-category page gives the browser the same title the serve
     'no SEO title' => [null, '{name}'],
 ]);
 
-test('the all-products listing keeps its own title and sends no SEO title override', function () {
-    expect(serverTitle(route('products.index')))->toBe('All Products');
+test('the all-products listing names what the shop sells, in the server title and the browser tab alike', function () {
+    // DISC-102: was the bare "All Products"; the page's own heading is unchanged.
+    expect(serverTitle(route('products.index')))->toBe(ProductListingController::ALL_PRODUCTS_TITLE);
 
     $this->get(route('products.index'))->assertInertia(fn ($page) => $page
-        ->where('seoTitle', null)
+        ->where('seoTitle', ProductListingController::ALL_PRODUCTS_TITLE)
         ->where('title', 'All Products'));
 });
 

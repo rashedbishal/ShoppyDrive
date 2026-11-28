@@ -23,11 +23,42 @@ use Inertia\Response;
 
 class ProductListingController extends Controller
 {
+    public const string ALL_PRODUCTS_TITLE = 'All Products: Watches, Night Lights, Toys & Gifts';
+
+    public const string ALL_PRODUCTS_DESCRIPTION = 'Browse every product at ShoppyDrive: wrist watches, night lights, toys and gift items, with prices in taka and delivery inside and outside Dhaka.';
+
+    /**
+     * DISC-104: a category's share image is its own picture; without one (or
+     * with only the placeholder) it is the photo of the product the listing
+     * shows first, so the preview shows something from that category rather
+     * than the site-wide default. No image anywhere still means the default.
+     */
+    private static function shareImage(?string $listingImage, ?Category $category, ?SubCategory $subCategory): ?string
+    {
+        if (filled($listingImage) && ! str_ends_with((string) $listingImage, '.svg')) {
+            return $listingImage;
+        }
+
+        $firstProduct = Product::query()
+            ->visible()
+            ->when($category, fn ($query) => $query->where('category_id', $category->id))
+            ->when($subCategory, fn ($query) => $query->where('sub_category_id', $subCategory->id))
+            ->orderByDesc('is_featured')->orderByDesc('published_at')->orderByDesc('created_at')
+            ->with('images')
+            ->first();
+        $path = $firstProduct?->primaryImagePath();
+
+        return filled($path) && ! str_ends_with((string) $path, '.svg') ? $path : $listingImage;
+    }
+
     public function index(Request $request): Response
     {
-        PageSeo::share('All Products', 'Browse all products at ShoppyDrive and narrow them down by category, brand, price and availability.');
+        // DISC-102: names what the shop sells instead of the bare "All Products";
+        // the same title reaches the browser tab (seoTitle, DISC-88).
+        $seoTitle = self::ALL_PRODUCTS_TITLE;
+        PageSeo::share($seoTitle, self::ALL_PRODUCTS_DESCRIPTION, heading: 'All products');
 
-        return $this->catalogResponse($request, null, null, route('products.index'));
+        return $this->catalogResponse($request, null, null, route('products.index'), $seoTitle);
     }
 
     public function category(string $slug, Request $request): Response|RedirectResponse
@@ -66,7 +97,14 @@ class ProductListingController extends Controller
         ]);
 
         $seoTitle = $listing->meta_title ?: $listing->name;
-        PageSeo::share($seoTitle, $listing->meta_description ?: PageSeo::descriptionFromContent($listing->description), $listing->image, breadcrumbs: $breadcrumbs);
+        PageSeo::share(
+            $seoTitle,
+            $listing->meta_description ?: PageSeo::descriptionFromContent($listing->description),
+            self::shareImage($listing->image, $category, $subCategory),
+            breadcrumbs: $breadcrumbs,
+            // DISC-101: the no-JavaScript fallback's <h1> is the listing's name, like the page's own.
+            heading: $listing->name,
+        );
 
         return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug), $seoTitle);
     }

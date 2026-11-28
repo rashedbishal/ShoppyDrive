@@ -736,6 +736,21 @@ export default function ProductDetail({
                   },
               ]
             : []),
+        // DISC-103: the sub-category under that category, matching the
+        // server's BreadcrumbList (ProductController).
+        ...(product.category &&
+        product.sub_category &&
+        product.sub_category.category_id === product.category.id
+            ? [
+                  {
+                      title: product.sub_category.name,
+                      href: route(
+                          'category.show',
+                          product.sub_category.slug,
+                      ) as string,
+                  },
+              ]
+            : []),
         { title: product.name, href: '#' },
     ];
 

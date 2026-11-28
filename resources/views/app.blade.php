@@ -106,7 +106,7 @@
     <body class="antialiased">
         @include('partials.boot-loader')
         @if(!request()->is('admin', 'admin/*'))
-            @include('partials.agent-fallback', ['title' => $seoTags['title'], 'description' => $seoTags['description']])
+            @include('partials.agent-fallback', ['heading' => $seoTags['heading'], 'description' => $seoTags['description']])
         @endif
         <x-inertia::app />
 

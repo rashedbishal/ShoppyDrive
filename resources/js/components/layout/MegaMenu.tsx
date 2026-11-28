@@ -9,6 +9,7 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { IMAGE_SIZES } from '@/lib/image-sizes';
+import { isMousePointer } from '@/lib/mouse-hover';
 import { cn } from '@/lib/utils';
 import type { Id, SharedPageProps } from '@/types';
 
@@ -170,11 +171,19 @@ export default function MegaMenu({
                                                         <Link
                                                             href={`/category/${category.slug}`}
                                                             onClick={onClose}
-                                                            onMouseEnter={() =>
-                                                                setActiveCategoryId(
-                                                                    category.id,
-                                                                )
-                                                            }
+                                                            onPointerEnter={(
+                                                                event,
+                                                            ) => {
+                                                                if (
+                                                                    isMousePointer(
+                                                                        event,
+                                                                    )
+                                                                ) {
+                                                                    setActiveCategoryId(
+                                                                        category.id,
+                                                                    );
+                                                                }
+                                                            }}
                                                             onFocus={() =>
                                                                 setActiveCategoryId(
                                                                     category.id,

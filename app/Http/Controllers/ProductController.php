@@ -33,6 +33,8 @@ class ProductController extends Controller
 
         $product->load([
             'category',
+            // DISC-103: the visible breadcrumb and BreadcrumbList name it.
+            'subCategory',
             'brand',
             'images',
             'media',
@@ -203,6 +205,8 @@ class ProductController extends Controller
             // DISC-77: "Product - Site", like every other page and like the
             // title the browser shows after ProductDetail's <Head> runs.
             'title' => PageSeo::title($product->meta_title ?: $product->name),
+            // DISC-101: the no-JavaScript fallback's <h1> is the product name, like the page's own.
+            'heading' => $product->name,
             'description' => $description,
             'canonical' => $productUrl,
             'image' => $imageUrl,
@@ -210,9 +214,13 @@ class ProductController extends Controller
             'jsonLd' => $jsonLd,
             // DISC-83: the same trail as the page's visible breadcrumb
             // (ProductDetail.tsx): Home, the product's category, the product.
+            // DISC-103: plus its sub-category, when it has one under that
+            // category (a visible product's sub-category is active, and its
+            // slug can't be a category's: DISC-89).
             'breadcrumbs' => PageSeo::breadcrumbList([
                 ['Home', route('home')],
                 ...($product->category ? [[$product->category->name, route('category.show', $product->category->slug)]] : []),
+                ...($this->breadcrumbSubCategory($product) ? [[$product->subCategory->name, route('category.show', $product->subCategory->slug)]] : []),
                 [$product->name, $productUrl],
             ]),
         ]);
@@ -295,6 +303,14 @@ class ProductController extends Controller
      * @param  array{product: FlashSaleItem|null, variants: array<int, FlashSaleItem>}  $flashSaleItems
      * @return array<string, mixed>
      */
+    /** DISC-103: the sub-category a product's breadcrumb shows: one under its own category. */
+    private function breadcrumbSubCategory(Product $product): bool
+    {
+        return $product->category !== null
+            && $product->subCategory !== null
+            && $product->subCategory->category_id === $product->category_id;
+    }
+
     private function jsonLdOffers(Product $product, array $flashSaleItems): array
     {
         $availability = $product->available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';

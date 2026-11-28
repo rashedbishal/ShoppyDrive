@@ -30,6 +30,7 @@ import {
 import { useInitials } from '@/hooks/use-initials';
 import { usePendingCartArrivals } from '@/lib/add-to-cart-feedback';
 import { LazyMobileMenu, useHasOpened } from '@/lib/deferred-ui';
+import { isMousePointer } from '@/lib/mouse-hover';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -606,15 +607,28 @@ export default function Header(): React.JSX.Element {
                     >
                         <nav
                             className="mx-auto flex h-12 max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8"
-                            onMouseLeave={() => setHoveredNavKey(null)}
+                            onPointerLeave={(event) => {
+                                if (isMousePointer(event)) {
+                                    setHoveredNavKey(null);
+                                }
+                            }}
                         >
+                            {/* DISC-100: hover opens the menu for a mouse only; on touch the
+                                button's own click toggles it (a tap used to open it on the
+                                emulated mouseenter and close it again on the click). */}
                             <div
                                 className="relative"
-                                onMouseEnter={() => {
-                                    setHoveredNavKey('categories');
-                                    openMegaMenu();
+                                onPointerEnter={(event) => {
+                                    if (isMousePointer(event)) {
+                                        setHoveredNavKey('categories');
+                                        openMegaMenu();
+                                    }
                                 }}
-                                onMouseLeave={scheduleMegaMenuClose}
+                                onPointerLeave={(event) => {
+                                    if (isMousePointer(event)) {
+                                        scheduleMegaMenuClose();
+                                    }
+                                }}
                             >
                                 <button
                                     type="button"
@@ -655,9 +669,11 @@ export default function Header(): React.JSX.Element {
                                     <Link
                                         key={item.label}
                                         href={item.href}
-                                        onMouseEnter={() =>
-                                            setHoveredNavKey(item.href)
-                                        }
+                                        onPointerEnter={(event) => {
+                                            if (isMousePointer(event)) {
+                                                setHoveredNavKey(item.href);
+                                            }
+                                        }}
                                         onFocus={() =>
                                             setHoveredNavKey(item.href)
                                         }

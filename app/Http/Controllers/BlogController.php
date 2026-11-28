@@ -41,7 +41,7 @@ class BlogController extends Controller
             ->limit(3)
             ->get();
 
-        PageSeo::share($blog->meta_title ?: $blog->title, $blog->meta_description ?: $blog->excerpt, $blog->featured_image, 'article', SiteJsonLd::forBlogPost($blog));
+        PageSeo::share($blog->meta_title ?: $blog->title, $blog->meta_description ?: $blog->excerpt, $blog->featured_image, 'article', SiteJsonLd::forBlogPost($blog), heading: $blog->title);
 
         return Inertia::render('blog/Show', [
             'blog' => $blog,

@@ -12,6 +12,7 @@ import { useCanHover } from '@/hooks/use-can-hover';
 import { MOTION, PRODUCT_CARD_HEIGHT } from '@/lib/constants';
 import { IMAGE_SIZES } from '@/lib/image-sizes';
 import { isMotionReady } from '@/lib/motion-ready';
+import { isMousePointer } from '@/lib/mouse-hover';
 import { cn, formatCurrency, getDiscountPercent } from '@/lib/utils';
 import productRoutes from '@/routes/product';
 import { useCartStore } from '@/stores/cartStore';
@@ -452,8 +453,16 @@ export function ProductCard({
 
         return (
             <article
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                onPointerEnter={(event) => {
+                    if (isMousePointer(event)) {
+                        setIsHovered(true);
+                    }
+                }}
+                onPointerLeave={(event) => {
+                    if (isMousePointer(event)) {
+                        setIsHovered(false);
+                    }
+                }}
                 onClick={handleCardClick}
                 className={cn(
                     'group grid cursor-pointer grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] sm:h-56 sm:grid-cols-[200px_minmax(0,1fr)]',

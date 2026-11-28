@@ -26,12 +26,14 @@ function noscriptBlock(string $html): string
     return $match[1];
 }
 
-test('the homepage has exactly one h1 naming the page and the site, plus about, contact and legal links', function () {
+test('the homepage has exactly one h1 naming the page, plus about, contact and legal links', function () {
     $html = $this->get(route('home'))->assertOk()->getContent();
     $fallback = noscriptBlock($html);
 
     expect(substr_count($html, '<h1'))->toBe(1)
-        ->and($fallback)->toContain('<h1>Online Shopping in Bangladesh - '.config('app.name').'</h1>')
+        // DISC-101: the page's subject only; the site name stays in the <title>.
+        ->and($fallback)->toContain('<h1>Online Shopping in Bangladesh</h1>')
+        ->not->toContain('<h1>Online Shopping in Bangladesh - ')
         ->toContain('href="'.url('/about').'"')
         ->toContain('href="'.url('/contact').'"')
         ->toContain('href="'.url('/terms').'"')

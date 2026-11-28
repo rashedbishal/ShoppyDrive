@@ -53,7 +53,7 @@ test('the heading and intro leave the homepage title, description and single h1 
 
     expect($html)->toContain('<title>Online Shopping in Bangladesh - '.config('app.name').'</title>')
         ->and(substr_count($html, '<meta name="description"'))->toBe(1)
-        ->and($html)->toContain('name="description" content="Premium e-commerce')
+        ->and($html)->toContain('name="description" content="Shop wrist watches')
         ->and(substr_count($html, '<h1'))->toBe(1)
         ->and(substr_count($html, 'application/ld+json'))->toBe(1);
 });

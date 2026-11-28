@@ -51,6 +51,8 @@ class BrandController extends Controller
                 ['Brands', route('brands.index')],
                 [$brand->name, route('brand.show', $brand->slug)],
             ]),
+            // DISC-101: the no-JavaScript fallback's <h1> is the brand name, like the page's own.
+            heading: $brand->name,
         );
 
         $productsQuery = Product::query()

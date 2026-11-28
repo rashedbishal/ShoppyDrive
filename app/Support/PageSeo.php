@@ -17,7 +17,12 @@ use Illuminate\Support\Str;
  */
 class PageSeo
 {
-    public const string DEFAULT_DESCRIPTION = 'Premium e-commerce destination in Bangladesh for electronics, lifestyle, and more.';
+    /**
+     * DISC-102: what the shop actually sells (the old text promised
+     * electronics, which it does not stock). Used where a page has no
+     * description of its own, and by /llms.txt.
+     */
+    public const string DEFAULT_DESCRIPTION = 'Shop wrist watches, night lights, toys and gifts online in Bangladesh at ShoppyDrive, with prices in taka and delivery inside and outside Dhaka.';
 
     private const string DEFAULT_IMAGE = '/images/brand/og-image.jpg';
 
@@ -28,11 +33,15 @@ class PageSeo
      *
      * @param  array<string, mixed>|null  $jsonLd
      * @param  array<string, mixed>|null  $breadcrumbs  a breadcrumbList() result
+     * @param  string|null  $heading  DISC-101: the page's subject (a product, category or brand
+     *                                name) for the no-JavaScript fallback's <h1>; defaults to
+     *                                $title without the " - Site" suffix the <title> gets
      */
-    public static function share(string $title, ?string $description = null, ?string $image = null, string $type = 'website', ?array $jsonLd = null, ?array $breadcrumbs = null): void
+    public static function share(string $title, ?string $description = null, ?string $image = null, string $type = 'website', ?array $jsonLd = null, ?array $breadcrumbs = null, ?string $heading = null): void
     {
         View::share('seo', [
             'title' => self::title($title),
+            'heading' => self::heading($heading ?? $title),
             'description' => $description,
             'image' => $image,
             'type' => $type,
@@ -109,6 +118,18 @@ class PageSeo
         return $text === '' ? null : $text;
     }
 
+    /**
+     * DISC-101: a page heading names its subject, without the site-name
+     * suffix titles get (an <h1> of "Cute Cat Night Light - ShoppyDrive"
+     * repeats the brand on every page). Blank falls back to the site name.
+     */
+    public static function heading(?string $heading): string
+    {
+        $heading = trim((string) $heading);
+
+        return $heading !== '' ? $heading : (string) config('app.name');
+    }
+
     public static function shareForPage(Page $page): void
     {
         self::share($page->meta_title ?: $page->title, $page->meta_description);
@@ -118,12 +139,13 @@ class PageSeo
      * What the root view prints, with every default applied.
      *
      * @param  array<string, mixed>  $seo
-     * @return array{title: string, description: string, canonical: string|null, image: string, type: string, jsonLd: array<string, mixed>|null, breadcrumbs: array<string, mixed>|null}
+     * @return array{title: string, heading: string, description: string, canonical: string|null, image: string, type: string, jsonLd: array<string, mixed>|null, breadcrumbs: array<string, mixed>|null}
      */
     public static function tags(array $seo): array
     {
         return [
             'title' => (string) ($seo['title'] ?? config('app.name')),
+            'heading' => self::heading($seo['heading'] ?? null),
             'description' => self::description($seo['description'] ?? null),
             'canonical' => $seo['canonical'] ?? self::canonical(),
             'image' => self::absoluteImage($seo['image'] ?? null),

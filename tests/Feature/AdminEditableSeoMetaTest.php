@@ -146,7 +146,7 @@ test('blank SEO settings fall back to the page\'s usual title and description', 
         ->and($head['descriptions'])->toHaveCount(1)
         ->and($head['descriptions'][0])->toStartWith($descriptionStart);
 })->with([
-    'home' => ['/', 'home_meta_title', 'home_meta_description', 'Online Shopping in Bangladesh', 'Premium e-commerce'],
+    'home' => ['/', 'home_meta_title', 'home_meta_description', 'Online Shopping in Bangladesh', 'Shop wrist watches, night lights, toys and gifts'],
     'about' => ['/about', 'about_meta_title', 'about_meta_description', 'About Us', 'ShoppyDrive was built'],
     'contact' => ['/contact', 'contact_page_meta_title', 'contact_page_meta_description', 'Contact Us', 'Have a question'],
 ]);

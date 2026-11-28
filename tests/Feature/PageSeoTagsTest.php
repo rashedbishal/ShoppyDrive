@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ProductListingController;
 use App\Models\Blog;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Models\SubCategory;
+use App\Support\PageSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -81,7 +83,7 @@ test('any other public page gets the site defaults, with a share picture that re
     $html = $this->get(route('home'))->assertOk()->getContent();
 
     expect($html)->toContain('property="og:image" content="'.url('/images/brand/og-image.jpg').'"')
-        ->toContain('name="description" content="Premium e-commerce')
+        ->toContain('name="description" content="'.e(PageSeo::DEFAULT_DESCRIPTION).'"')
         ->toContain('rel="canonical" href="'.url('/').'"')
         ->and(file_exists(public_path('images/brand/og-image.jpg')))->toBeTrue();
 });
@@ -89,7 +91,7 @@ test('any other public page gets the site defaults, with a share picture that re
 test('each main shop page has its own title, description and canonical in the first HTML', function () {
     $pages = [
         '/' => 'Online Shopping in Bangladesh',
-        '/products' => 'All Products',
+        '/products' => ProductListingController::ALL_PRODUCTS_TITLE,
         '/brands' => 'All Brands',
         '/about' => 'About Us',
         '/contact' => 'Contact Us',
@@ -101,8 +103,8 @@ test('each main shop page has its own title, description and canonical in the fi
     foreach ($pages as $path => $title) {
         $html = $this->get($path)->assertOk()->getContent();
 
-        expect($html)->toContain('<title>'.$title.' - '.config('app.name').'</title>')
-            ->toContain('property="og:title" content="'.$title.' - '.config('app.name').'"')
+        expect($html)->toContain('<title>'.e($title.' - '.config('app.name')).'</title>')
+            ->toContain('property="og:title" content="'.e($title.' - '.config('app.name')).'"')
             ->toContain('rel="canonical" href="'.url($path).'"');
 
         preg_match('/name="description" content="([^"]*)"/', $html, $tag);

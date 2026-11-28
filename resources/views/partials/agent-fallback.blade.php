@@ -30,7 +30,8 @@
 @endphp
 <noscript>
     <header>
-        <h1>{{ $title }}</h1>
+        {{-- DISC-101: the page's subject, without the " - ShoppyDrive" the <title> carries. --}}
+        <h1>{{ $heading }}</h1>
         <p>{{ $description }}</p>
     </header>
     <nav aria-label="Site">
